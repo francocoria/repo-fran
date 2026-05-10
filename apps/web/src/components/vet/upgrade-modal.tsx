@@ -1,0 +1,240 @@
+"use client";
+
+import { useState } from "react";
+import { Button, Badge } from "@pet-app/ui";
+import {
+  Sparkles,
+  X,
+  Check,
+  MessageCircle,
+  Crown,
+  Infinity as InfinityIcon,
+  ShieldCheck,
+  FileText,
+  TrendingUp,
+  Palette,
+} from "lucide-react";
+
+interface UpgradeModalProps {
+  triggerLabel?: string;
+  variant?: "button" | "link" | "inline";
+  className?: string;
+  /** Si se pasa, controla el modal externamente */
+  externalOpen?: boolean;
+  onExternalClose?: () => void;
+}
+
+const PRICE_MONTHLY = Number(
+  process.env.NEXT_PUBLIC_PREMIUM_PRICE_USD_MONTHLY ?? 10,
+);
+const PRICE_YEARLY = Number(
+  process.env.NEXT_PUBLIC_PREMIUM_PRICE_USD_YEARLY ?? 100,
+);
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_PREMIUM_WHATSAPP ?? "";
+
+const FEATURES = [
+  {
+    icon: InfinityIcon,
+    title: "Pacientes ilimitados",
+    desc: "Sin tope de 5 — todos los pacientes que necesites.",
+  },
+  {
+    icon: FileText,
+    title: "Certificados profesionales",
+    desc: "Salud, antirrábico, viaje. PDFs con tu branding.",
+  },
+  {
+    icon: Palette,
+    title: "Recetas con tu marca",
+    desc: "Sin marca de agua. Logo y datos de tu clínica.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Verificación de matrícula",
+    desc: "Badge visible para que los dueños te elijan con confianza.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Estadísticas de tu práctica",
+    desc: "Pacientes, consultas, vacunaciones del mes.",
+  },
+  {
+    icon: Sparkles,
+    title: "Plantillas de consulta propias",
+    desc: "Guardá tus diagnósticos y tratamientos más usados.",
+  },
+];
+
+export function UpgradeModal({
+  triggerLabel = "Pasar a Premium",
+  variant = "button",
+  className = "",
+  externalOpen,
+  onExternalClose,
+}: UpgradeModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen ?? internalOpen;
+  const close = onExternalClose ?? (() => setInternalOpen(false));
+
+  const annualSavings = PRICE_MONTHLY * 12 - PRICE_YEARLY;
+
+  // Mensaje pre-armado para WhatsApp
+  const whatsappMessage = encodeURIComponent(
+    "Hola! Soy veterinario/a y quiero pasar al plan Premium de PetApp. ¿Me podés mandar los datos para pagar?",
+  );
+  const whatsappUrl = WHATSAPP_NUMBER
+    ? `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}?text=${whatsappMessage}`
+    : null;
+
+  const trigger =
+    variant === "button" ? (
+      <Button
+        type="button"
+        onClick={() => setInternalOpen(true)}
+        className={`gap-2 ${className}`}
+      >
+        <Crown className="h-4 w-4" />
+        {triggerLabel}
+      </Button>
+    ) : variant === "link" ? (
+      <button
+        type="button"
+        onClick={() => setInternalOpen(true)}
+        className={`text-sm font-medium text-primary underline-offset-4 hover:underline ${className}`}
+      >
+        {triggerLabel}
+      </button>
+    ) : null;
+
+  return (
+    <>
+      {externalOpen === undefined && trigger}
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+          onClick={close}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="upgrade-modal-title"
+        >
+          <div
+            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl animate-fade-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={close}
+              className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              aria-label="Cerrar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Hero */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-accent/10 p-8 pb-6 border-b border-border">
+              <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+              <div className="relative">
+                <Badge variant="secondary" className="gap-1 mb-3">
+                  <Crown className="h-3 w-3 text-amber-500" />
+                  Premium
+                </Badge>
+                <h2
+                  id="upgrade-modal-title"
+                  className="text-2xl font-bold tracking-tight"
+                >
+                  Llevá tu práctica al siguiente nivel
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground max-w-lg">
+                  Desbloqueá pacientes ilimitados, certificados, branding
+                  propio y herramientas pensadas para profesionales.
+                </p>
+              </div>
+            </div>
+
+            {/* Pricing */}
+            <div className="grid sm:grid-cols-2 gap-3 px-8 py-6 border-b border-border">
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                  Mensual
+                </p>
+                <p className="mt-1">
+                  <span className="text-3xl font-bold">USD {PRICE_MONTHLY}</span>
+                  <span className="text-sm text-muted-foreground"> /mes</span>
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sin compromiso. Cancelás cuando quieras.
+                </p>
+              </div>
+              <div className="rounded-xl border-2 border-primary bg-primary/5 p-4 relative">
+                <Badge className="absolute -top-2.5 left-4 text-[10px]">
+                  Más elegido
+                </Badge>
+                <p className="text-xs text-primary font-medium uppercase tracking-wide">
+                  Anual
+                </p>
+                <p className="mt-1">
+                  <span className="text-3xl font-bold">USD {PRICE_YEARLY}</span>
+                  <span className="text-sm text-muted-foreground"> /año</span>
+                </p>
+                <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  Ahorrás USD {annualSavings} (2 meses gratis)
+                </p>
+              </div>
+            </div>
+
+            {/* Features */}
+            <div className="px-8 py-6">
+              <h3 className="mb-3 text-sm font-semibold">¿Qué incluye?</h3>
+              <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+                {FEATURES.map((f) => (
+                  <li key={f.title} className="flex items-start gap-2.5">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
+                      <Check className="h-3 w-3" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-medium">{f.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {f.desc}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* CTA */}
+            <div className="border-t border-border bg-secondary/30 px-8 py-5">
+              {whatsappUrl ? (
+                <>
+                  <Button asChild className="w-full gap-2 h-11">
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Activar Premium por WhatsApp
+                    </a>
+                  </Button>
+                  <p className="mt-2 text-xs text-center text-muted-foreground">
+                    Te respondemos en menos de 24hs con los datos para pagar.
+                    Activación al instante.
+                  </p>
+                </>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  WhatsApp de contacto no configurado. Configurá{" "}
+                  <code className="font-mono text-xs">
+                    NEXT_PUBLIC_PREMIUM_WHATSAPP
+                  </code>{" "}
+                  en tu .env.local
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

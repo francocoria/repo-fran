@@ -1,0 +1,778 @@
+// =============================================================
+// pet-app — schema completo MVP
+// Convención: snake_case en TS y DB (consistente con el código)
+// IMPORTANTE: usuarios viven en auth.users (managed by Supabase)
+// Las FKs a user_id apuntan a auth.users.id (UUID)
+// =============================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public"]
+}
+
+// ============= ENUMS =============
+
+enum UserRole {
+  owner
+  vet
+  admin
+
+  @@schema("public")
+}
+
+enum AdminRole {
+  superadmin
+  support
+
+  @@schema("public")
+}
+
+enum AnimalSpecies {
+  dog
+  cat
+  bird
+  rabbit
+  rodent
+  reptile
+  fish
+  exotic
+  other
+
+  @@schema("public")
+}
+
+enum AnimalSex {
+  male
+  female
+  unknown
+
+  @@schema("public")
+}
+
+enum AnimalStatus {
+  active
+  archived
+  memorial
+  lost
+
+  @@schema("public")
+}
+
+enum AccessStatus {
+  pending
+  approved
+  revoked
+
+  @@schema("public")
+}
+
+enum CoOwnerStatus {
+  active
+  pending
+  removed
+
+  @@schema("public")
+}
+
+enum CoOwnerPermission {
+  full
+  limited
+
+  @@schema("public")
+}
+
+enum AppointmentStatus {
+  scheduled
+  completed
+  cancelled
+  missed
+
+  @@schema("public")
+}
+
+enum DewormingType {
+  internal
+  external
+
+  @@schema("public")
+}
+
+enum AllergyType {
+  food
+  medication
+  environmental
+  other
+
+  @@schema("public")
+}
+
+enum AllergySeverity {
+  mild
+  moderate
+  severe
+
+  @@schema("public")
+}
+
+enum CertificateType {
+  health
+  rabies
+  travel
+  other
+
+  @@schema("public")
+}
+
+enum LostAlertStatus {
+  active
+  found
+  cancelled
+
+  @@schema("public")
+}
+
+enum SubscriptionPlan {
+  free
+  trial
+  premium
+
+  @@schema("public")
+}
+
+enum SubscriptionStatus {
+  active
+  expired
+  suspended
+
+  @@schema("public")
+}
+
+enum PaymentMethod {
+  transfer
+  cash
+  mp_external
+  stripe_external
+  other
+
+  @@schema("public")
+}
+
+enum VerificationStatus {
+  pending
+  approved
+  rejected
+
+  @@schema("public")
+}
+
+enum StudyType {
+  blood_test
+  xray
+  ultrasound
+  urinalysis
+  biopsy
+  other
+
+  @@schema("public")
+}
+
+// ============= PERFILES =============
+
+/// Perfil de dueño de mascota — extiende auth.users
+model OwnerProfile {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @unique @db.Uuid
+  full_name  String
+  phone      String?
+  address    String?
+  city       String?
+  country    String?  @default("AR")
+  avatar_url String?
+  locale     String   @default("es")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  animals       Animal[]       @relation("OwnerAnimals")
+  co_ownerships CoOwner[]
+  notifications Notification[]
+
+  @@map("owner_profiles")
+  @@schema("public")
+}
+
+/// Perfil de veterinario — extiende auth.users
+model VetProfile {
+  id              String    @id @default(uuid()) @db.Uuid
+  user_id         String    @unique @db.Uuid
+  full_name       String
+  license_number  String?
+  license_country String?   @default("AR")
+  specialty       String?
+  clinic_name     String?
+  clinic_address  String?
+  clinic_city     String?
+  phone           String?
+  bio             String?
+  avatar_url      String?
+  logo_url        String?
+  verified        Boolean   @default(false)
+  verified_at     DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  vet_accesses           VetAccess[]
+  medical_records        MedicalRecord[]
+  applied_vaccines       Vaccine[]
+  prescribed_medications Medication[]
+  prescriptions          Prescription[]
+  certificates           Certificate[]
+  appointments           Appointment[]
+  subscription           Subscription?
+  manual_payments        ManualPayment[]
+  verification_requests  VerificationRequest[]
+  consult_templates      ConsultTemplate[]
+
+  @@map("vet_profiles")
+  @@schema("public")
+}
+
+/// Tabla de admins
+model AdminUser {
+  id         String    @id @default(uuid()) @db.Uuid
+  user_id    String    @unique @db.Uuid
+  role       AdminRole @default(support)
+  created_at DateTime  @default(now())
+
+  @@map("admin_users")
+  @@schema("public")
+}
+
+// ============= ANIMALES =============
+
+model Animal {
+  id                String        @id @default(uuid()) @db.Uuid
+  owner_id          String        @db.Uuid
+  /// Token público para el QR — UUID random no adivinable
+  url_token         String        @unique @default(uuid()) @db.Uuid
+  name              String
+  species           AnimalSpecies
+  breed             String?
+  sex               AnimalSex     @default(unknown)
+  birth_date        DateTime?     @db.Date
+  birth_date_approx Boolean       @default(false)
+  color             String?
+  distinctive_marks String?
+  microchip         String?       @unique
+  weight_kg         Decimal?      @db.Decimal(6, 2)
+  neutered          Boolean       @default(false)
+  neutered_date     DateTime?     @db.Date
+  pedigree_url      String?
+  photo_url         String?
+  status            AnimalStatus  @default(active)
+  notes             String?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+
+  owner_profile   OwnerProfile    @relation("OwnerAnimals", fields: [owner_id], references: [id], onDelete: Cascade)
+  co_owners       CoOwner[]
+  photos          AnimalPhoto[]
+  weight_entries  WeightEntry[]
+  vaccines        Vaccine[]
+  dewormings      Deworming[]
+  medications     Medication[]
+  allergies       Allergy[]
+  medical_records MedicalRecord[]
+  prescriptions   Prescription[]
+  studies         Study[]
+  certificates    Certificate[]
+  appointments    Appointment[]
+  vet_accesses    VetAccess[]
+  lost_alerts     LostPetAlert[]
+
+  @@index([owner_id])
+  @@index([microchip])
+  @@index([url_token])
+  @@map("animals")
+  @@schema("public")
+}
+
+/// Co-dueños de un animal — invitados por el owner principal
+model CoOwner {
+  id                String            @id @default(uuid()) @db.Uuid
+  animal_id         String            @db.Uuid
+  owner_id          String            @db.Uuid
+  status            CoOwnerStatus     @default(pending)
+  permissions       CoOwnerPermission @default(full)
+  added_by_owner_id String            @db.Uuid
+  added_at          DateTime          @default(now())
+  accepted_at       DateTime?
+  removed_at        DateTime?
+
+  animal        Animal       @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+  owner_profile OwnerProfile @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+
+  @@unique([animal_id, owner_id])
+  @@index([owner_id, status])
+  @@map("co_owners")
+  @@schema("public")
+}
+
+model AnimalPhoto {
+  id             String    @id @default(uuid()) @db.Uuid
+  animal_id      String    @db.Uuid
+  url            String
+  caption        String?
+  taken_at       DateTime?
+  uploaded_by_id String    @db.Uuid
+  created_at     DateTime  @default(now())
+
+  animal Animal @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+
+  @@index([animal_id])
+  @@map("animal_photos")
+  @@schema("public")
+}
+
+model WeightEntry {
+  id             String   @id @default(uuid()) @db.Uuid
+  animal_id      String   @db.Uuid
+  weight_kg      Decimal  @db.Decimal(6, 2)
+  recorded_at    DateTime @default(now())
+  recorded_by_id String?  @db.Uuid
+  notes          String?
+
+  animal Animal @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+
+  @@index([animal_id, recorded_at])
+  @@map("weight_entries")
+  @@schema("public")
+}
+
+// ============= SALUD =============
+
+model Vaccine {
+  id                String    @id @default(uuid()) @db.Uuid
+  animal_id         String    @db.Uuid
+  name              String
+  applied_date      DateTime  @db.Date
+  lot_number        String?
+  next_dose_date    DateTime? @db.Date
+  applied_by_vet_id String?   @db.Uuid
+  notes             String?
+  created_by_id     String?   @db.Uuid
+  created_at        DateTime  @default(now())
+
+  animal         Animal      @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+  applied_by_vet VetProfile? @relation(fields: [applied_by_vet_id], references: [id], onDelete: SetNull)
+
+  @@index([animal_id])
+  @@index([next_dose_date])
+  @@map("vaccines")
+  @@schema("public")
+}
+
+model Deworming {
+  id            String        @id @default(uuid()) @db.Uuid
+  animal_id     String        @db.Uuid
+  type          DewormingType
+  product       String
+  applied_date  DateTime      @db.Date
+  next_date     DateTime?     @db.Date
+  notes         String?
+  created_by_id String?       @db.Uuid
+  created_at    DateTime      @default(now())
+
+  animal Animal @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+
+  @@index([animal_id])
+  @@index([next_date])
+  @@map("deworming")
+  @@schema("public")
+}
+
+model Medication {
+  id                   String    @id @default(uuid()) @db.Uuid
+  animal_id            String    @db.Uuid
+  name                 String
+  dosage               String
+  frequency            String
+  start_date           DateTime  @db.Date
+  end_date             DateTime? @db.Date
+  prescribed_by_vet_id String?   @db.Uuid
+  active               Boolean   @default(true)
+  notes                String?
+  created_at           DateTime  @default(now())
+
+  animal            Animal      @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+  prescribed_by_vet VetProfile? @relation(fields: [prescribed_by_vet_id], references: [id], onDelete: SetNull)
+
+  @@index([animal_id, active])
+  @@map("medications")
+  @@schema("public")
+}
+
+model Allergy {
+  id          String          @id @default(uuid()) @db.Uuid
+  animal_id   String          @db.Uuid
+  type        AllergyType
+  allergen    String
+  severity    AllergySeverity @default(moderate)
+  notes       String?
+  added_by_id String?         @db.Uuid
+  created_at  DateTime        @default(now())
+
+  animal Animal @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+
+  @@index([animal_id])
+  @@map("allergies")
+  @@schema("public")
+}
+
+/// Consulta veterinaria — solo creada por vets con acceso
+model MedicalRecord {
+  id            String   @id @default(uuid()) @db.Uuid
+  animal_id     String   @db.Uuid
+  vet_id        String   @db.Uuid
+  visit_date    DateTime
+  reason        String
+  examination   String?
+  diagnosis     String?
+  treatment     String?
+  next_steps    String?
+  public_notes  String?
+  /// Notas privadas — SOLO el vet que las escribió las ve.
+  /// Filtrado server-side (RLS no filtra columnas individuales).
+  private_notes String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  animal       Animal              @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+  vet          VetProfile          @relation(fields: [vet_id], references: [id], onDelete: Restrict)
+  attachments  MedicalAttachment[]
+  prescription Prescription?
+
+  @@index([animal_id, visit_date])
+  @@index([vet_id])
+  @@map("medical_records")
+  @@schema("public")
+}
+
+model MedicalAttachment {
+  id                String   @id @default(uuid()) @db.Uuid
+  medical_record_id String   @db.Uuid
+  url               String
+  filename          String
+  file_type         String
+  file_size         Int
+  created_at        DateTime @default(now())
+
+  medical_record MedicalRecord @relation(fields: [medical_record_id], references: [id], onDelete: Cascade)
+
+  @@index([medical_record_id])
+  @@map("medical_attachments")
+  @@schema("public")
+}
+
+model Prescription {
+  id                String   @id @default(uuid()) @db.Uuid
+  medical_record_id String?  @unique @db.Uuid
+  vet_id            String   @db.Uuid
+  animal_id         String   @db.Uuid
+  /// JSON: { items: [{ name, dosage, frequency, duration, instructions }] }
+  content           Json
+  pdf_url           String?
+  signed_at         DateTime @default(now())
+
+  vet            VetProfile     @relation(fields: [vet_id], references: [id], onDelete: Restrict)
+  animal         Animal         @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+  medical_record MedicalRecord? @relation(fields: [medical_record_id], references: [id], onDelete: SetNull)
+
+  @@index([animal_id])
+  @@index([vet_id])
+  @@map("prescriptions")
+  @@schema("public")
+}
+
+model Study {
+  id             String    @id @default(uuid()) @db.Uuid
+  animal_id      String    @db.Uuid
+  /// Título descriptivo que pone el usuario ("Análisis de sangre 5/5")
+  title          String
+  type           StudyType @default(other)
+  study_date     DateTime  @db.Date
+  file_url       String
+  /// Nombre original del archivo subido
+  filename       String?
+  file_type      String
+  notes          String?
+  uploaded_by_id String?   @db.Uuid
+  created_at     DateTime  @default(now())
+
+  animal Animal @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+
+  @@index([animal_id, study_date])
+  @@map("studies")
+  @@schema("public")
+}
+
+/// Certificados generados por vet — feature premium
+model Certificate {
+  id         String          @id @default(uuid()) @db.Uuid
+  animal_id  String          @db.Uuid
+  vet_id     String          @db.Uuid
+  type       CertificateType
+  issue_date DateTime        @default(now())
+  expires_at DateTime?
+  pdf_url    String?
+  metadata   Json
+
+  animal Animal     @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+  vet    VetProfile @relation(fields: [vet_id], references: [id], onDelete: Restrict)
+
+  @@index([animal_id])
+  @@index([vet_id])
+  @@map("certificates")
+  @@schema("public")
+}
+
+// ============= VINCULO VET ↔ ANIMAL =============
+
+/// Modelo A+B híbrido: QR + aprobación
+model VetAccess {
+  id              String       @id @default(uuid()) @db.Uuid
+  animal_id       String       @db.Uuid
+  vet_id          String       @db.Uuid
+  status          AccessStatus @default(pending)
+  requested_at    DateTime     @default(now())
+  approved_at     DateTime?
+  revoked_at      DateTime?
+  /// Si el vet "archiva" al paciente: no cuenta al cap free, pero sigue viendo el historial
+  archived_by_vet Boolean      @default(false)
+  archived_at     DateTime?
+
+  animal Animal     @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+  vet    VetProfile @relation(fields: [vet_id], references: [id], onDelete: Cascade)
+
+  @@unique([animal_id, vet_id])
+  @@index([vet_id, status])
+  @@index([animal_id, status])
+  @@map("vet_access")
+  @@schema("public")
+}
+
+// ============= TURNOS =============
+
+model Appointment {
+  id            String            @id @default(uuid()) @db.Uuid
+  animal_id     String            @db.Uuid
+  vet_id        String?           @db.Uuid
+  scheduled_at  DateTime
+  reason        String?
+  status        AppointmentStatus @default(scheduled)
+  notes         String?
+  created_by_id String            @db.Uuid
+  created_at    DateTime          @default(now())
+  updated_at    DateTime          @updatedAt
+
+  animal Animal      @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+  vet    VetProfile? @relation(fields: [vet_id], references: [id], onDelete: SetNull)
+
+  @@index([animal_id, scheduled_at])
+  @@index([vet_id, scheduled_at])
+  @@map("appointments")
+  @@schema("public")
+}
+
+// ============= MODO PERDIDO =============
+
+model LostPetAlert {
+  id                 String          @id @default(uuid()) @db.Uuid
+  animal_id          String          @db.Uuid
+  status             LostAlertStatus @default(active)
+  /// Slug público para la URL /lost/[slug]
+  public_slug        String          @unique
+  last_seen_location String?
+  last_seen_at       DateTime?
+  contact_name       String
+  contact_phone      String
+  contact_email      String?
+  reward_description String?
+  additional_info    String?
+  activated_at       DateTime        @default(now())
+  resolved_at        DateTime?
+
+  animal Animal @relation(fields: [animal_id], references: [id], onDelete: Cascade)
+
+  @@index([animal_id])
+  @@index([status])
+  @@map("lost_pet_alerts")
+  @@schema("public")
+}
+
+// ============= DIRECTORIO VETS (Google Places cache) =============
+
+model GoogleVetCache {
+  place_id       String   @id
+  name           String
+  address        String?
+  lat            Decimal  @db.Decimal(10, 7)
+  lng            Decimal  @db.Decimal(10, 7)
+  rating         Decimal? @db.Decimal(2, 1)
+  reviews_count  Int?
+  phone          String?
+  website        String?
+  hours_json     Json?
+  city           String?
+  country        String?
+  last_synced_at DateTime @default(now())
+
+  @@index([city])
+  @@index([lat, lng])
+  @@map("google_vets_cache")
+  @@schema("public")
+}
+
+// ============= PREMIUM / SUBSCRIPCIONES =============
+
+model Subscription {
+  id            String             @id @default(uuid()) @db.Uuid
+  vet_id        String             @unique @db.Uuid
+  plan          SubscriptionPlan   @default(free)
+  status        SubscriptionStatus @default(active)
+  starts_at     DateTime           @default(now())
+  expires_at    DateTime?
+  granted_by_id String?            @db.Uuid
+  notes         String?
+  created_at    DateTime           @default(now())
+  updated_at    DateTime           @updatedAt
+
+  vet      VetProfile      @relation(fields: [vet_id], references: [id], onDelete: Cascade)
+  payments ManualPayment[]
+
+  @@index([vet_id])
+  @@index([expires_at])
+  @@map("subscriptions")
+  @@schema("public")
+}
+
+model ManualPayment {
+  id              String        @id @default(uuid()) @db.Uuid
+  subscription_id String        @db.Uuid
+  vet_id          String        @db.Uuid
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  method          PaymentMethod
+  paid_at         DateTime
+  months_granted  Int
+  recorded_by_id  String        @db.Uuid
+  notes           String?
+  created_at      DateTime      @default(now())
+
+  subscription Subscription @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+  vet          VetProfile   @relation(fields: [vet_id], references: [id], onDelete: Cascade)
+
+  @@index([vet_id])
+  @@index([paid_at])
+  @@map("manual_payments")
+  @@schema("public")
+}
+
+model VerificationRequest {
+  id                String             @id @default(uuid()) @db.Uuid
+  vet_id            String             @db.Uuid
+  license_photo_url String
+  status            VerificationStatus @default(pending)
+  reviewed_by_id    String?            @db.Uuid
+  reviewed_at       DateTime?
+  rejection_reason  String?
+  created_at        DateTime           @default(now())
+
+  vet VetProfile @relation(fields: [vet_id], references: [id], onDelete: Cascade)
+
+  @@index([vet_id])
+  @@index([status])
+  @@map("verification_requests")
+  @@schema("public")
+}
+
+// ============= PLANTILLAS DE CONSULTA =============
+
+model ConsultTemplate {
+  id         String   @id @default(uuid()) @db.Uuid
+  vet_id     String?  @db.Uuid // null = template global del sistema
+  name       String
+  /// JSON con campos pre-armados: examination, diagnosis, treatment, etc.
+  content    Json
+  is_system  Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  vet VetProfile? @relation(fields: [vet_id], references: [id], onDelete: Cascade)
+
+  @@index([vet_id])
+  @@map("consult_templates")
+  @@schema("public")
+}
+
+// ============= NOTIFICACIONES IN-APP =============
+
+model Notification {
+  id               String   @id @default(uuid()) @db.Uuid
+  user_id          String   @db.Uuid
+  owner_profile_id String?  @db.Uuid
+  type             String
+  title            String
+  body             String?
+  link             String?
+  read             Boolean  @default(false)
+  created_at       DateTime @default(now())
+
+  owner_profile OwnerProfile? @relation(fields: [owner_profile_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, read, created_at])
+  @@map("notifications")
+  @@schema("public")
+}
+
+// ============= AUDIT LOG (compliance) =============
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  actor_id      String   @db.Uuid
+  action        String
+  resource_type String
+  resource_id   String?
+  metadata      Json?
+  ip_address    String?
+  user_agent    String?
+  created_at    DateTime @default(now())
+
+  @@index([actor_id, created_at])
+  @@index([resource_type, resource_id])
+  @@map("audit_log")
+  @@schema("public")
+}
+
+// ============= EMAIL LOGS =============
+
+model EmailLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  to_user_id String?  @db.Uuid
+  to_email   String
+  type       String
+  subject    String
+  status     String
+  error_msg  String?
+  sent_at    DateTime @default(now())
+
+  @@index([to_user_id])
+  @@index([sent_at])
+  @@map("email_logs")
+  @@schema("public")
+}

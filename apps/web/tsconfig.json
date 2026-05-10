@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "noEmit": true,
+    "allowJs": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@pet-app/db": ["../../packages/db/src"],
+      "@pet-app/db/*": ["../../packages/db/src/*"],
+      "@pet-app/lib": ["../../packages/lib/src"],
+      "@pet-app/lib/*": ["../../packages/lib/src/*"],
+      "@pet-app/lib/client": ["../../packages/lib/src/client"],
+      "@pet-app/ui": ["../../packages/ui/src"],
+      "@pet-app/ui/*": ["../../packages/ui/src/*"],
+      "@pet-app/emails": ["../../packages/emails/src"],
+      "@pet-app/emails/*": ["../../packages/emails/src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}
