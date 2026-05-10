@@ -1,20 +1,31 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local", "**/.env"],
-  "globalEnv": ["NODE_ENV", "VERCEL_ENV"],
+  "globalEnv": ["NODE_ENV", "VERCEL_ENV", "VERCEL_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^db:generate"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_APP_NAME",
         "NEXT_PUBLIC_SUPABASE_URL",
         "NEXT_PUBLIC_SUPABASE_ANON_KEY",
         "SUPABASE_SERVICE_ROLE_KEY",
         "DATABASE_URL",
         "DIRECT_URL",
         "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "RESEND_REPLY_TO",
         "GOOGLE_PLACES_API_KEY",
-        "NEXT_PUBLIC_APP_URL"
+        "NEXT_PUBLIC_MAPBOX_TOKEN",
+        "ADMIN_BOOTSTRAP_EMAIL",
+        "CRON_SECRET",
+        "NEXT_PUBLIC_PREMIUM_WHATSAPP",
+        "NEXT_PUBLIC_PREMIUM_PRICE_USD_MONTHLY",
+        "NEXT_PUBLIC_PREMIUM_PRICE_USD_YEARLY",
+        "NEXT_PUBLIC_FEATURE_LOST_MODE",
+        "NEXT_PUBLIC_FEATURE_DIRECTORY"
       ]
     },
     "dev": {
