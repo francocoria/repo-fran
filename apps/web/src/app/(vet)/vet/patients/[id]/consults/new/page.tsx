@@ -6,6 +6,7 @@ import { prisma } from "@pet-app/db";
 import { ConsultForm } from "./consult-form";
 
 export const metadata = { title: "Nueva consulta" };
+export const dynamic = "force-dynamic";
 
 export default async function NewConsultPage({
   params,

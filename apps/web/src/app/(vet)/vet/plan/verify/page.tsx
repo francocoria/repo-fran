@@ -7,6 +7,7 @@ import { prisma } from "@pet-app/db";
 import { VerifyForm } from "./verify-form";
 
 export const metadata = { title: "Verificar matrícula" };
+export const dynamic = "force-dynamic";
 
 export default async function VerifyPage() {
   const user = await requireUser();

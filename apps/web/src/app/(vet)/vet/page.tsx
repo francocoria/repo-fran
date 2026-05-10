@@ -23,6 +23,7 @@ import { formatDateLong } from "@pet-app/lib/utils/format";
 import { UpgradeModal } from "@/components/vet/upgrade-modal";
 
 export const metadata = { title: "Panel veterinario" };
+export const dynamic = "force-dynamic";
 
 export default async function VetDashboardPage() {
   const user = await requireUser();

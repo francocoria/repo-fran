@@ -23,6 +23,7 @@ import { formatDateLong } from "@pet-app/lib/utils/format";
 import { UpgradeModal } from "@/components/vet/upgrade-modal";
 
 export const metadata = { title: "Mi plan" };
+export const dynamic = "force-dynamic";
 
 const ALL_FEATURES = [
   {
