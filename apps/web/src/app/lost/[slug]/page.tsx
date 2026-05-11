@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import { prisma } from "@pet-app/db";
-import { Button, Badge } from "@pet-app/ui";
+import { Button, Badge, PetAvatar } from "@pet-app/ui";
 import { getAge, formatDateLong } from "@pet-app/lib/utils/format";
 import { ShareButtonsClient } from "./share-buttons";
 
@@ -128,30 +128,50 @@ export default async function LostPetPublicPage({
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-background to-background dark:from-rose-950/30">
+    <div
+      className="min-h-screen"
+      style={{
+        background:
+          "linear-gradient(to bottom, hsl(var(--rose-50)) 0%, hsl(var(--background)) 50%)",
+      }}
+    >
       {/* Banner de urgencia */}
-      <div className="bg-rose-600 text-white">
-        <div className="container py-3 flex items-center justify-center gap-2 text-sm font-semibold">
-          <AlertTriangle className="h-4 w-4 animate-pulse" />
+      <div className="bg-rose text-white shadow-lg">
+        <div className="container flex items-center justify-center gap-2 py-3 text-sm font-semibold tracking-wide">
+          <AlertTriangle className="size-4 animate-pulse" strokeWidth={2.4} />
           MASCOTA PERDIDA — Ayudanos a encontrarla
         </div>
       </div>
 
-      <main className="container max-w-2xl py-8 md:py-12">
-        {/* Foto */}
-        <div className="mx-auto mb-6 w-full max-w-sm aspect-square rounded-3xl overflow-hidden bg-secondary border-4 border-rose-200 dark:border-rose-900/50 shadow-2xl shadow-rose-500/20">
-          {animal.photo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={animal.photo_url}
-              alt={animal.name}
-              className="h-full w-full object-cover"
+      <main className="container max-w-2xl py-10 md:py-14">
+        {/* Foto con halo rose */}
+        <div className="mx-auto mb-6 w-full max-w-sm">
+          <div className="relative aspect-square">
+            <div
+              className="absolute inset-0 rounded-3xl animate-pulse-rose"
+              aria-hidden
             />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-              {speciesIcons[animal.species] ?? <PawPrint className="h-16 w-16" />}
+            <div className="relative aspect-square overflow-hidden rounded-3xl border-4 border-rose/30 bg-surface-2 shadow-2xl shadow-rose/30">
+              {animal.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={animal.photo_url}
+                  alt={animal.name}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center">
+                  <PetAvatar
+                    name={animal.name}
+                    species={animal.species}
+                    size={280}
+                    radius={0}
+                    className="size-full rounded-none"
+                  />
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Nombre */}
@@ -170,8 +190,8 @@ export default async function LostPetPublicPage({
         </div>
 
         {/* CTA contacto principal */}
-        <div className="mb-6 rounded-2xl border-2 border-rose-300 dark:border-rose-800 bg-white dark:bg-card p-5 shadow-lg">
-          <p className="text-xs font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-400 mb-1">
+        <div className="mb-6 rounded-2xl border-2 border-rose/40 bg-card p-5 shadow-lg shadow-rose/10">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-rose">
             Si la viste, escribinos
           </p>
           <p className="text-lg font-semibold">{alert.contact_name}</p>
