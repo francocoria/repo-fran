@@ -80,84 +80,89 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
           aria-labelledby="qr-modal-title"
         >
           <div
-            className="relative w-full max-w-md rounded-2xl border border-border bg-background p-6 shadow-2xl animate-fade-up"
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              className="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-lg bg-surface-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               aria-label="Cerrar"
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" />
             </button>
 
-            <div className="text-center">
-              <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <QrCode className="h-6 w-6" />
+            {/* Hero con gradient */}
+            <div className="bg-grad-brand px-6 pt-6 pb-12 text-center text-white">
+              <div className="mx-auto mb-3 inline-flex size-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                <QrCode className="size-6" />
               </div>
-              <h2 id="qr-modal-title" className="text-xl font-semibold tracking-tight">
+              <h2
+                id="qr-modal-title"
+                className="text-xl font-semibold tracking-tight"
+              >
                 QR de {animalName}
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Mostralo al veterinario para que solicite acceso al historial.
+              <p className="mt-1 text-sm text-white/85">
+                Mostralo al veterinario para que solicite acceso.
               </p>
             </div>
 
-            <div className="mt-6 flex justify-center">
-              <div className="rounded-xl border border-border bg-white p-4 shadow-inner">
+            {/* QR card flotante */}
+            <div className="-mt-8 flex justify-center px-6">
+              <div className="rounded-2xl border-2 border-white bg-white p-4 shadow-xl">
                 {qrDataUrl ? (
                   <img
                     src={qrDataUrl}
                     alt="QR del animal"
-                    className="h-64 w-64"
+                    className="size-64"
                   />
                 ) : (
-                  <div className="flex h-64 w-64 items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <div className="flex size-64 items-center justify-center">
+                    <Loader2 className="size-8 animate-spin text-muted-foreground" />
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="mt-4 rounded-lg bg-secondary/40 px-3 py-2 text-center">
-              <p className="text-xs text-muted-foreground">
-                El veterinario escanea con la cámara de su celular o desde la app.
-                Después tenés que aprobar la solicitud desde{" "}
-                <span className="font-medium text-foreground">Accesos</span>.
+            <div className="px-6 pb-6 pt-4">
+              <p className="rounded-lg bg-surface-2 px-3 py-2 text-center text-xs text-muted-foreground">
+                El veterinario escanea con la cámara de su celu. Después
+                aprobás desde{" "}
+                <span className="font-semibold text-foreground">Accesos</span>.
               </p>
-            </div>
 
-            <div className="mt-4 flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleCopy}
-                className="flex-1 gap-1.5"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5" />
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5" />
-                    Copiar link
-                  </>
-                )}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleDownload}
-                disabled={!qrDataUrl}
-                className="flex-1 gap-1.5"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Descargar
-              </Button>
+              <div className="mt-4 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="default"
+                  onClick={handleCopy}
+                  className="flex-1"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="size-4" />
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="size-4" />
+                      Copiar link
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  size="default"
+                  onClick={handleDownload}
+                  disabled={!qrDataUrl}
+                  className="flex-1"
+                >
+                  <Download className="size-4" />
+                  Descargar
+                </Button>
+              </div>
             </div>
           </div>
         </div>

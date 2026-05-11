@@ -2,12 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
-import { Button, Badge } from "@pet-app/ui";
+import { Button, Badge, PetAvatar } from "@pet-app/ui";
 import {
-  Dog,
-  Cat,
-  Bird,
-  Rabbit,
   Calendar,
   AlertTriangle,
   Pill,
@@ -18,15 +14,9 @@ import {
   User,
   Phone,
   Activity,
+  MessageCircle,
 } from "lucide-react";
 import { getAge, formatDateLong } from "@pet-app/lib/utils/format";
-
-const speciesIcons: Record<string, React.ReactNode> = {
-  dog: <Dog className="h-6 w-6" />,
-  cat: <Cat className="h-6 w-6" />,
-  bird: <Bird className="h-6 w-6" />,
-  rabbit: <Rabbit className="h-6 w-6" />,
-};
 
 const speciesLabels: Record<string, string> = {
   dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo",
@@ -122,34 +112,33 @@ export default async function VetPatientView({
       </Link>
 
       {/* ─── HEADER PACIENTE ────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start mb-6">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-secondary">
-          {animal.photo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={animal.photo_url} alt={animal.name} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-              {speciesIcons[animal.species] ?? <Dog className="h-8 w-8" />}
-            </div>
-          )}
-        </div>
+      <div className="mb-5 flex flex-wrap items-start gap-4">
+        <PetAvatar
+          name={animal.name}
+          species={animal.species}
+          photoUrl={animal.photo_url}
+          size={88}
+          radius={20}
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">{animal.name}</h1>
+            <h1 className="text-[28px] font-bold leading-tight tracking-tight md:text-3xl">
+              {animal.name}
+            </h1>
             {access.archived_by_vet && (
               <Badge variant="secondary">Archivado</Badge>
             )}
           </div>
 
-          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span>
               {speciesLabels[animal.species] ?? animal.species}
               {animal.breed && ` · ${animal.breed}`}
             </span>
             {ageText && (
               <span className="flex items-center gap-1">
-                <Calendar className="h-3.5 w-3.5" />
+                <Calendar className="size-3.5" />
                 {ageText}
               </span>
             )}
@@ -157,42 +146,73 @@ export default async function VetPatientView({
               <span>{animal.sex === "male" ? "♂ Macho" : "♀ Hembra"}</span>
             )}
             {animal.weight_kg && (
-              <span>
-                <Activity className="inline h-3.5 w-3.5 mr-0.5" />
-                {Number(animal.weight_kg).toFixed(1)} kg
+              <span className="flex items-center gap-1">
+                <Activity className="size-3.5" />
+                <span className="font-mono">
+                  {Number(animal.weight_kg).toFixed(1)} kg
+                </span>
               </span>
             )}
           </div>
 
           {animal.microchip && (
-            <p className="mt-1 text-xs text-muted-foreground/70 font-mono">
+            <p className="mt-1 font-mono text-[11px] text-subtle">
               Chip: {animal.microchip}
             </p>
           )}
-
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <User className="h-3.5 w-3.5" />
-              {animal.owner_profile.full_name}
-            </span>
-            {animal.owner_profile.phone && (
-              <span className="flex items-center gap-1">
-                <Phone className="h-3.5 w-3.5" />
-                <span className="font-mono">{animal.owner_profile.phone}</span>
-              </span>
-            )}
-            {animal.owner_profile.city && (
-              <span>{animal.owner_profile.city}</span>
-            )}
-          </div>
         </div>
 
-        <Button asChild className="gap-2 shrink-0">
+        <Button asChild className="shrink-0" variant="accent">
           <Link href={`/vet/patients/${animal.id}/consults/new`}>
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
             Nueva consulta
           </Link>
         </Button>
+      </div>
+
+      {/* ─── OWNER CARD CON WHATSAPP ────────────────────────── */}
+      <div className="mb-5 rounded-xl border bg-card p-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-white text-xs font-semibold">
+            {animal.owner_profile.full_name
+              .split(" ")
+              .map((n) => n[0])
+              .slice(0, 2)
+              .join("")
+              .toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate">
+              {animal.owner_profile.full_name}
+            </p>
+            {animal.owner_profile.phone && (
+              <p className="font-mono text-[11.5px] text-subtle">
+                {animal.owner_profile.phone}
+              </p>
+            )}
+            {animal.owner_profile.city && (
+              <p className="text-[11.5px] text-muted-foreground">
+                {animal.owner_profile.city}
+              </p>
+            )}
+          </div>
+          {animal.owner_profile.phone && (
+            <Button
+              asChild
+              size="icon"
+              variant="whatsapp"
+              aria-label="WhatsApp al dueño"
+            >
+              <a
+                href={`https://wa.me/${animal.owner_profile.phone.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="size-4" />
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ─── ALERTAS DESTACADAS ─────────────────────────────────── */}

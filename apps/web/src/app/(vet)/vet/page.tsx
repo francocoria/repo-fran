@@ -279,57 +279,59 @@ export default async function VetDashboardPage() {
         </Card>
       </div>
 
-      {/* ─── QUICK ACTIONS ──────────────────────────────────────── */}
+      {/* ─── ACCIONES RÁPIDAS (cards grandes) ────────────────── */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Acciones rápidas
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Link href="/vet/scan" className="group">
-            <Card className="transition-all hover:border-accent/50 hover:shadow-md">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                  <QrCode className="h-5 w-5" />
+        <div className="mb-3">
+          <h2 className="text-base font-semibold">Acciones rápidas</h2>
+          <p className="text-xs text-muted-foreground">
+            Lo que más usás todos los días.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Link href="/vet/scan" className="group focus-ring rounded-2xl">
+            <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-md">
+              <CardContent className="p-5">
+                <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-accent/12 text-accent">
+                  <QrCode className="size-[22px]" />
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold">Escanear QR</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Vinculá un nuevo paciente.
-                  </p>
-                </div>
+                <h3 className="text-[15px] font-semibold">Escanear QR</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+                  Apuntá la cámara al QR del animal y accedés al historial completo.
+                </p>
               </CardContent>
             </Card>
           </Link>
 
-          <Link href="/vet" className="group">
-            <Card className="transition-all hover:border-primary/50 hover:shadow-md">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Users className="h-5 w-5" />
+          <Link
+            href="/vet/patients"
+            className="group focus-ring rounded-2xl"
+          >
+            <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+              <CardContent className="p-5">
+                <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                  <Users className="size-[22px]" />
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold">Mis pacientes</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {activeAccessCount} activos · {archivedAccessCount}{" "}
-                    archivados
-                  </p>
-                </div>
+                <h3 className="text-[15px] font-semibold">Mis pacientes</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+                  {activeAccessCount} activos · {archivedAccessCount}{" "}
+                  archivados. Ver listado, filtrar o archivar.
+                </p>
               </CardContent>
             </Card>
           </Link>
 
-          <Link href="/vet/plan" className="group">
-            <Card className="transition-all hover:border-amber-500/50 hover:shadow-md">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                  <Crown className="h-5 w-5" />
+          <Link href="/vet/plan" className="group focus-ring rounded-2xl">
+            <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-amber/60 hover:shadow-md">
+              <CardContent className="p-5">
+                <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-grad-gold text-white shadow-sm">
+                  <Crown className="size-[22px]" />
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold">Mi plan</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {isPremium ? "Premium activo" : "Conocé los beneficios"}
-                  </p>
-                </div>
+                <h3 className="text-[15px] font-semibold">Mi plan</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+                  {isPremium
+                    ? "Premium activo. Pacientes ilimitados y recetas con tu marca."
+                    : "Pacientes ilimitados, recetas y verificación de matrícula."}
+                </p>
               </CardContent>
             </Card>
           </Link>

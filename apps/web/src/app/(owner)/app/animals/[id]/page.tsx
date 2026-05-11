@@ -2,8 +2,27 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
-import { Dog, Cat, Bird, Rabbit, Calendar, Activity, Info, Pencil } from "lucide-react";
-import { Button, Badge } from "@pet-app/ui";
+import {
+  Calendar,
+  Pencil,
+  ChevronLeft,
+  Share2,
+  Image as ImageIcon,
+  Sparkles,
+  Bookmark,
+  Crown,
+  ArrowRight,
+  AlertTriangle,
+  Palette,
+  Microchip,
+  CheckCircle2,
+} from "lucide-react";
+import {
+  Button,
+  Badge,
+  Banner,
+  PetAvatar,
+} from "@pet-app/ui";
 import { getAge } from "@pet-app/lib/utils/format";
 import { PhotoUpload } from "@/components/animal/photo-upload";
 import { WeightTracker } from "@/components/animal/weight-tracker";
@@ -16,13 +35,6 @@ import { StudyList } from "@/components/animal/study-list";
 import { QRModal } from "@/components/animal/qr-modal";
 import { MedicalHistoryList } from "@/components/animal/medical-history-list";
 import { LostModeToggle } from "@/components/animal/lost-mode-toggle";
-
-const speciesIcons: Record<string, React.ReactNode> = {
-  dog: <Dog className="h-5 w-5" />,
-  cat: <Cat className="h-5 w-5" />,
-  bird: <Bird className="h-5 w-5" />,
-  rabbit: <Rabbit className="h-5 w-5" />,
-};
 
 const speciesLabels: Record<string, string> = {
   dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo",
@@ -93,74 +105,134 @@ export default async function AnimalProfilePage({ params }: { params: { id: stri
   const ageText = animal.birth_date ? getAge(animal.birth_date) : null;
   const severeAllergies = animal.allergies.filter((a: any) => a.severity === "severe");
 
+  const isLost = animal.status === "lost";
+
   return (
-    <div className="animate-fade-up max-w-5xl mx-auto">
-      {/* ─── HEADER ──────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row gap-6 md:items-end bg-card border rounded-2xl p-6 md:p-8 mb-6 shadow-sm">
-        <PhotoUpload animalId={animal.id} currentPhotoUrl={animal.photo_url} animalName={animal.name} />
+    <div className="animate-fade-up mx-auto max-w-5xl">
+      {/* ─── BREADCRUMB ─────────────────────────────────────── */}
+      <Link
+        href="/app"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft className="size-4" />
+        Mis mascotas
+      </Link>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <h1 className="text-3xl font-bold tracking-tight">{animal.name}</h1>
-            <Badge variant={animal.status === "active" ? "default" : "destructive"}>
-              {animal.status === "active" ? "Activo" : animal.status === "lost" ? "🔴 Perdido" : animal.status}
-            </Badge>
-            {!isOwner && <Badge variant="outline">Co-dueño</Badge>}
-          </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-muted-foreground text-sm">
-            <span className="flex items-center gap-1.5">
-              <Info className="h-4 w-4 shrink-0" />
-              {speciesLabels[animal.species] || animal.species}
-              {animal.breed && <span className="opacity-60">· {animal.breed}</span>}
-            </span>
-            {ageText && <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 shrink-0" />{ageText}{animal.birth_date_approx ? " (aprox.)" : ""}</span>}
-            {animal.sex !== "unknown" && <span>{animal.sex === "male" ? "♂ Macho" : "♀ Hembra"}</span>}
-            {animal.neutered && <span className="text-emerald-600 dark:text-emerald-400">✓ Castrado</span>}
-          </div>
-          {animal.microchip && <p className="mt-1 text-xs text-muted-foreground/60 font-mono">Chip: {animal.microchip}</p>}
-
-          {/* Severe allergies banner */}
-          {severeAllergies.length > 0 && (
-            <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 text-xs font-medium">
-              ⚠️ Alergias severas: {severeAllergies.map((a: any) => a.allergen).join(", ")}
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-2 shrink-0">
-          {isOwner && (
-            <Button variant="outline" size="sm" asChild className="gap-1.5">
-              <Link href={`/app/animals/${animal.id}/edit`}><Pencil className="h-3.5 w-3.5" />Editar</Link>
-            </Button>
-          )}
-          <QRModal
+      {/* ─── HEADER CARD ────────────────────────────────────── */}
+      <div className="mb-5 rounded-2xl border bg-card p-6 shadow-sm md:p-7">
+        <div className="flex flex-wrap items-start gap-5">
+          <PhotoUpload
             animalId={animal.id}
+            currentPhotoUrl={animal.photo_url}
             animalName={animal.name}
-            urlToken={animal.url_token}
           />
+
+          <div className="min-w-0 flex-1">
+            {/* Name + status badges */}
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-[32px] font-bold leading-tight tracking-tight md:text-[36px]">
+                {animal.name}
+              </h1>
+              {isLost ? (
+                <Badge variant="rose" size="md">
+                  <AlertTriangle className="size-3" />
+                  MODO PERDIDO
+                </Badge>
+              ) : (
+                <Badge variant="emerald" size="md">
+                  <CheckCircle2 className="size-3" />
+                  Activa
+                </Badge>
+              )}
+              {!isOwner && (
+                <Badge variant="secondary" size="md">
+                  Co-dueño
+                </Badge>
+              )}
+            </div>
+
+            {/* Spec grid 6 cells */}
+            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <Spec label="Especie" value={speciesLabels[animal.species] ?? animal.species} />
+              {animal.breed && <Spec label="Raza" value={animal.breed} />}
+              {ageText && (
+                <Spec
+                  label="Edad"
+                  value={`${ageText}${animal.birth_date_approx ? " (aprox.)" : ""}`}
+                />
+              )}
+              {animal.sex !== "unknown" && (
+                <Spec
+                  label="Sexo"
+                  value={animal.sex === "male" ? "♂ Macho" : "♀ Hembra"}
+                />
+              )}
+              {animal.weight_kg && (
+                <Spec
+                  label="Peso actual"
+                  value={
+                    <span className="font-mono">
+                      {Number(animal.weight_kg).toFixed(1)} kg
+                    </span>
+                  }
+                />
+              )}
+              {animal.microchip && (
+                <Spec
+                  label="Microchip"
+                  value={
+                    <span className="font-mono text-xs">{animal.microchip}</span>
+                  }
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Actions stacked */}
+          <div className="flex shrink-0 flex-col gap-2">
+            <QRModal
+              animalId={animal.id}
+              animalName={animal.name}
+              urlToken={animal.url_token}
+            />
+            {isOwner && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/app/animals/${animal.id}/edit`}>
+                  <Pencil className="size-3.5" />
+                  Editar
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ─── INFO CARDS ──────────────────────────────────────── */}
+      {/* ─── BANNER ALERGIAS SEVERAS ────────────────────────── */}
+      {severeAllergies.length > 0 && (
+        <Banner
+          tone="rose"
+          title="Alergias severas"
+          className="mb-5"
+        >
+          {severeAllergies.map((a: any) => a.allergen).join(" · ")} — informá esto siempre al vet.
+        </Banner>
+      )}
+
+      {/* ─── INFO CHIPS ─────────────────────────────────────── */}
       {(animal.color || animal.distinctive_marks || animal.notes) && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {animal.color && (
-            <div className="rounded-xl bg-card border px-4 py-3">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-0.5">Color</p>
-              <p className="text-sm font-medium">{animal.color}</p>
-            </div>
+            <InfoChip icon={Palette} label="Color" value={animal.color} />
           )}
           {animal.distinctive_marks && (
-            <div className="rounded-xl bg-card border px-4 py-3">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-0.5">Marcas</p>
-              <p className="text-sm">{animal.distinctive_marks}</p>
-            </div>
+            <InfoChip
+              icon={Sparkles}
+              label="Marcas"
+              value={animal.distinctive_marks}
+            />
           )}
           {animal.notes && (
-            <div className="rounded-xl bg-card border px-4 py-3">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-0.5">Notas</p>
-              <p className="text-sm">{animal.notes}</p>
-            </div>
+            <InfoChip icon={Bookmark} label="Notas" value={animal.notes} />
           )}
         </div>
       )}
@@ -256,6 +328,73 @@ export default async function AnimalProfilePage({ params }: { params: { id: stri
           />
         </div>
       )}
+
+      {/* ─── UPGRADE CALLOUT ────────────────────────────────── */}
+      <div className="mt-6 rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 p-5">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-grad-gold text-white shadow-sm">
+            <Crown className="size-5" strokeWidth={2} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">¿Sos veterinario?</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Probá Premium 30 días gratis — recetas, certificados, pacientes
+              ilimitados.
+            </p>
+          </div>
+          <Button variant="dark" size="default" asChild>
+            <Link href="/signup/vet">
+              Ver Premium
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Helpers ─────────────────────────────────────────────── */
+
+function Spec({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-subtle">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-medium">{value}</p>
+    </div>
+  );
+}
+
+function InfoChip({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border bg-card p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted-foreground">
+          <Icon className="size-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-subtle">
+            {label}
+          </p>
+          <p className="mt-0.5 text-sm">{value}</p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,11 +8,24 @@ import {
   Syringe,
   Pill,
   Dog,
+  PawPrint,
+  Users,
+  Scale,
+  Shield,
+  Stethoscope,
+  type LucideIcon,
 } from "lucide-react";
-import { Button, Badge, Card, CardContent, PetAvatar } from "@pet-app/ui";
+import {
+  Button,
+  Badge,
+  Card,
+  CardContent,
+  PetAvatar,
+  StatCard,
+} from "@pet-app/ui";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
-import { getAge } from "@pet-app/lib/utils/format";
+import { getAge, formatDateLong } from "@pet-app/lib/utils/format";
 
 export const metadata = { title: "Mis mascotas" };
 export const dynamic = "force-dynamic";
@@ -23,17 +36,29 @@ export default async function OwnerDashboardPage() {
 
   if (!profile) return null;
 
+  const now = new Date();
+  const in60days = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
   const ownedAnimals = await prisma.animal.findMany({
     where: { owner_id: profile.id, status: { not: "archived" } },
     include: {
       allergies: { where: { severity: "severe" }, select: { id: true } },
       vaccines: {
-        select: { id: true, next_dose_date: true },
+        select: { id: true, name: true, next_dose_date: true },
         orderBy: { next_dose_date: "asc" },
+      },
+      dewormings: {
+        select: { id: true, product: true, next_date: true },
+        orderBy: { next_date: "asc" },
       },
       medications: {
         where: { active: true },
         select: { id: true },
+      },
+      weight_entries: { select: { id: true } },
+      co_owners: {
+        where: { status: "active" },
+        select: { id: true, owner_profile: { select: { full_name: true } } },
       },
     },
     orderBy: { created_at: "desc" },
@@ -46,12 +71,24 @@ export default async function OwnerDashboardPage() {
         include: {
           allergies: { where: { severity: "severe" }, select: { id: true } },
           vaccines: {
-            select: { id: true, next_dose_date: true },
+            select: { id: true, name: true, next_dose_date: true },
             orderBy: { next_dose_date: "asc" },
+          },
+          dewormings: {
+            select: { id: true, product: true, next_date: true },
+            orderBy: { next_date: "asc" },
           },
           medications: {
             where: { active: true },
             select: { id: true },
+          },
+          weight_entries: { select: { id: true } },
+          co_owners: {
+            where: { status: "active" },
+            select: {
+              id: true,
+              owner_profile: { select: { full_name: true } },
+            },
           },
         },
       },
@@ -68,8 +105,7 @@ export default async function OwnerDashboardPage() {
     ...coOwnedAnimals.map((a) => ({ ...a, isCoOwned: true })),
   ];
 
-  // Stats globales
-  const now = new Date();
+  // ─── Stats ────────────────────────────────────────────────
   const lostCount = allAnimals.filter((a) => a.status === "lost").length;
   const allDoneCount = allAnimals.filter((a) => {
     const severeAllergy = a.allergies.length > 0;
@@ -79,9 +115,85 @@ export default async function OwnerDashboardPage() {
     return !severeAllergy && !overdueVaccine && a.status === "active";
   }).length;
 
+  // Próxima vacuna (la más cercana en el futuro)
+  let nextVaccine: { animal: string; name: string; date: Date } | null = null;
+  for (const a of allAnimals) {
+    for (const v of a.vaccines) {
+      if (v.next_dose_date && new Date(v.next_dose_date) >= now) {
+        const d = new Date(v.next_dose_date);
+        if (!nextVaccine || d < nextVaccine.date) {
+          nextVaccine = { animal: a.name, name: v.name, date: d };
+        }
+      }
+    }
+  }
+
+  const totalWeightEntries = allAnimals.reduce(
+    (sum, a) => sum + a.weight_entries.length,
+    0,
+  );
+  const totalCoOwners = allAnimals.reduce(
+    (sum, a) => sum + a.co_owners.length,
+    0,
+  );
+  const firstCoOwner = allAnimals
+    .flatMap((a) => a.co_owners)
+    .find((co) => co.owner_profile)?.owner_profile?.full_name;
+
+  // ─── Próximos eventos ─────────────────────────────────────
+  type UpcomingEvent = {
+    id: string;
+    icon: LucideIcon;
+    tone: "primary" | "amber" | "rose";
+    title: string;
+    subtitle: string;
+    date: Date;
+    overdue: boolean;
+  };
+
+  const upcoming: UpcomingEvent[] = [];
+
+  for (const a of allAnimals) {
+    for (const v of a.vaccines) {
+      if (!v.next_dose_date) continue;
+      const d = new Date(v.next_dose_date);
+      const overdue = d < now;
+      if (!overdue && d > in60days) continue;
+      upcoming.push({
+        id: `vac-${v.id}`,
+        icon: overdue ? AlertTriangle : Syringe,
+        tone: overdue ? "rose" : "primary",
+        title: `${a.name} — ${v.name}`,
+        subtitle: overdue ? "Vacuna vencida" : "Próxima dosis",
+        date: d,
+        overdue,
+      });
+    }
+    for (const dw of a.dewormings) {
+      if (!dw.next_date) continue;
+      const d = new Date(dw.next_date);
+      const overdue = d < now;
+      if (!overdue && d > in60days) continue;
+      upcoming.push({
+        id: `dw-${dw.id}`,
+        icon: overdue ? AlertTriangle : Shield,
+        tone: overdue ? "amber" : "primary",
+        title: `${a.name} — ${dw.product}`,
+        subtitle: overdue
+          ? "Desparasitación vencida"
+          : "Próxima desparasitación",
+        date: d,
+        overdue,
+      });
+    }
+  }
+
+  upcoming.sort((a, b) => a.date.getTime() - b.date.getTime());
+  const upcomingTop = upcoming.slice(0, 5);
+
   return (
     <div className="animate-fade-up space-y-8">
-      {/* Header — greeting style */}
+      {/* ─── HEADER GREETING ──────────────────────────────────── */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[13px] text-muted-foreground">Hola de nuevo,</p>
@@ -99,6 +211,9 @@ export default async function OwnerDashboardPage() {
                   Hay {lostCount === 1 ? "una" : `${lostCount}`} en modo perdido.
                 </span>
               </>
+            )}
+            {lostCount === 0 && allAnimals.length > 0 && (
+              <> Todo en orden.</>
             )}
           </p>
         </div>
@@ -121,7 +236,48 @@ export default async function OwnerDashboardPage() {
         )}
       </div>
 
-      {/* Section header */}
+      {/* ─── QUICK STATS STRIP (4 cols) ──────────────────────── */}
+      {allAnimals.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Mascotas"
+            value={allAnimals.length}
+            icon={PawPrint}
+            accent="primary"
+          />
+          <StatCard
+            label="Próxima vacuna"
+            value={nextVaccine ? nextVaccine.animal : "—"}
+            sublabel={
+              nextVaccine
+                ? `${nextVaccine.name} · ${formatDateLong(nextVaccine.date)}`
+                : "Nada agendado"
+            }
+            icon={Syringe}
+            accent={nextVaccine ? "primary" : "muted"}
+          />
+          <StatCard
+            label="Pesajes"
+            value={totalWeightEntries}
+            sublabel={
+              totalWeightEntries === 0
+                ? "Sin registros"
+                : `${totalWeightEntries} entradas`
+            }
+            icon={Scale}
+            accent="accent"
+          />
+          <StatCard
+            label="Co-dueños"
+            value={totalCoOwners}
+            sublabel={firstCoOwner ?? "Sin co-dueños"}
+            icon={Users}
+            accent="muted"
+          />
+        </div>
+      )}
+
+      {/* ─── SECTION: MIS MASCOTAS ───────────────────────────── */}
       {allAnimals.length > 0 && (
         <div>
           <div className="mb-4 flex items-baseline justify-between">
@@ -160,7 +316,6 @@ export default async function OwnerDashboardPage() {
               />
             ))}
 
-            {/* Add card */}
             <Link
               href="/app/animals/new"
               className="group flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border-strong p-5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
@@ -172,7 +327,29 @@ export default async function OwnerDashboardPage() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* ─── SECTION: PRÓXIMAMENTE ───────────────────────────── */}
+      {upcomingTop.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-baseline gap-2">
+            <Calendar className="size-4 text-primary" />
+            <h2 className="text-lg font-semibold">Próximamente</h2>
+            <span className="text-xs text-muted-foreground">
+              Lo que se viene
+            </span>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <ul className="divide-y divide-border/60">
+                {upcomingTop.map((event) => (
+                  <UpcomingRow key={event.id} event={event} />
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── EMPTY STATE ─────────────────────────────────────── */}
       {allAnimals.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border-strong px-6 py-20 text-center">
           <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
@@ -197,9 +374,9 @@ export default async function OwnerDashboardPage() {
   );
 }
 
-/* ────────────────────────────────────────────────────── */
-/* PetCard — card visual con avatar, info y estado          */
-/* ────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────── */
+/* PetCard                                                     */
+/* ─────────────────────────────────────────────────────────── */
 interface PetCardData {
   id: string;
   name: string;
@@ -219,7 +396,6 @@ function PetCard({ animal }: { animal: PetCardData }) {
   const ageText = animal.birthDate ? getAge(animal.birthDate) : null;
   const isLost = animal.status === "lost";
 
-  // Estado primario
   const stateBadge = isLost
     ? { variant: "rose" as const, icon: AlertTriangle, label: "PERDIDA" }
     : animal.severeAllergiesCount > 0
@@ -306,6 +482,52 @@ function PetCard({ animal }: { animal: PetCardData }) {
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* UpcomingRow                                                 */
+/* ─────────────────────────────────────────────────────────── */
+function UpcomingRow({
+  event,
+}: {
+  event: {
+    icon: LucideIcon;
+    tone: "primary" | "amber" | "rose";
+    title: string;
+    subtitle: string;
+    date: Date;
+    overdue: boolean;
+  };
+}) {
+  const Icon = event.icon;
+  const toneBg = {
+    primary: "bg-primary/12 text-primary",
+    amber: "bg-amber/15 text-amber-dark dark:text-amber",
+    rose: "bg-rose/12 text-rose",
+  }[event.tone];
+
+  return (
+    <li className="flex items-center gap-3.5 px-4 py-3.5">
+      <div
+        className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${toneBg}`}
+      >
+        <Icon className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[14px] font-medium">{event.title}</p>
+        <p className="text-xs text-muted-foreground">{event.subtitle}</p>
+      </div>
+      {event.overdue ? (
+        <Badge variant="rose" size="xs">
+          VENCIDA
+        </Badge>
+      ) : (
+        <span className="shrink-0 whitespace-nowrap font-mono text-xs font-medium text-muted-foreground">
+          {formatDateLong(event.date)}
+        </span>
+      )}
+    </li>
   );
 }
 
