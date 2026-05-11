@@ -15,8 +15,10 @@ import {
   Stethoscope,
   Lock,
   Sparkles,
+  Plus,
 } from "lucide-react";
 import { createConsult } from "../../consult-actions";
+import { COMMON_DIAGNOSES } from "@pet-app/lib/constants";
 
 interface Template {
   id: string;
@@ -184,6 +186,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
           placeholder="Diagnóstico presuntivo o definitivo..."
           maxLength={2000}
         />
+        <DiagnosisChips />
       </div>
 
       {/* Tratamiento */}
@@ -273,5 +276,67 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
         </Button>
       </div>
     </form>
+  );
+}
+
+/* ─── DiagnosisChips ──────────────────────────────────────────
+ * Lista de diagnósticos comunes — al click append al textarea.
+ * El vet puede seguir tipeando libremente después.
+ */
+function DiagnosisChips() {
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? COMMON_DIAGNOSES : COMMON_DIAGNOSES.slice(0, 8);
+
+  function append(diagnosis: string) {
+    const ta = document.getElementById("diagnosis") as HTMLTextAreaElement | null;
+    if (!ta) return;
+    const current = ta.value.trim();
+    // Si ya existe, no duplicar
+    if (current.toLowerCase().includes(diagnosis.toLowerCase())) return;
+    ta.value = current ? `${current}\n· ${diagnosis}` : `· ${diagnosis}`;
+    // Trigger React change event para que se actualice si hay listener
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    ta.focus();
+    // Auto-scroll al final
+    ta.scrollTop = ta.scrollHeight;
+  }
+
+  return (
+    <div className="mt-2">
+      <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+        Diagnósticos comunes (click para agregar):
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {visible.map((dx) => (
+          <button
+            key={dx}
+            type="button"
+            onClick={() => append(dx)}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+          >
+            <Plus className="size-3" />
+            {dx}
+          </button>
+        ))}
+        {!showAll && (
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="inline-flex items-center rounded-full border border-dashed border-border-strong px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary"
+          >
+            +{COMMON_DIAGNOSES.length - 8} más
+          </button>
+        )}
+        {showAll && (
+          <button
+            type="button"
+            onClick={() => setShowAll(false)}
+            className="inline-flex items-center rounded-full border border-dashed border-border-strong px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            Mostrar menos
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
