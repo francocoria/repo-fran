@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { createSupabaseServerClient } from "@pet-app/lib";
 import { ownerSignupSchema, vetSignupSchema } from "@pet-app/lib";
 import { redirect } from "next/navigation";
@@ -163,6 +164,7 @@ export async function createOwnerProfile(): Promise<AuthResult> {
   }
 
   const { error } = await supabase.from("owner_profiles").insert({
+    id: randomUUID(),
     user_id: user.id,
     full_name: metadata.full_name ?? metadata.name ?? "Sin nombre",
     phone: metadata.phone ?? null,
@@ -176,10 +178,14 @@ export async function createOwnerProfile(): Promise<AuthResult> {
   // Check si es el email de admin bootstrap
   const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
   if (adminEmail && user.email === adminEmail) {
-    await supabase.from("admin_users").upsert({
-      user_id: user.id,
-      role: "superadmin",
-    });
+    await supabase.from("admin_users").upsert(
+      {
+        id: randomUUID(),
+        user_id: user.id,
+        role: "superadmin",
+      },
+      { onConflict: "user_id" },
+    );
   }
 
   return { success: true };
@@ -209,21 +215,21 @@ export async function createVetProfile(): Promise<AuthResult> {
   }
 
   // Crear perfil vet
-  const { data: vetProfile, error: vetError } = await supabase
+  const vetProfileId = randomUUID();
+  const { error: vetError } = await supabase
     .from("vet_profiles")
     .insert({
+      id: vetProfileId,
       user_id: user.id,
       full_name: metadata.full_name ?? metadata.name ?? "Sin nombre",
       license_number: metadata.license_number ?? null,
       clinic_name: metadata.clinic_name ?? null,
       phone: metadata.phone ?? null,
       avatar_url: metadata.avatar_url ?? null,
-    })
-    .select("id")
-    .single();
+    });
 
-  if (vetError || !vetProfile) {
-    return { success: false, error: vetError?.message ?? "Error al crear perfil" };
+  if (vetError) {
+    return { success: false, error: vetError.message };
   }
 
   // Crear subscription trial 30 días
@@ -231,7 +237,8 @@ export async function createVetProfile(): Promise<AuthResult> {
   trialEnd.setDate(trialEnd.getDate() + 30);
 
   await supabase.from("subscriptions").insert({
-    vet_id: vetProfile.id,
+    id: randomUUID(),
+    vet_id: vetProfileId,
     plan: "trial",
     status: "active",
     starts_at: new Date().toISOString(),
