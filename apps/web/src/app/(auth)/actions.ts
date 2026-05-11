@@ -1,8 +1,8 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { createSupabaseServerClient } from "@pet-app/lib";
 import { ownerSignupSchema, vetSignupSchema } from "@pet-app/lib";
+import { prisma } from "@pet-app/db";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
@@ -141,111 +141,120 @@ export async function signupVet(formData: FormData): Promise<AuthResult> {
 // ─── Crear perfil después del primer login ───
 
 export async function createOwnerProfile(): Promise<AuthResult> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { success: false, error: "No autenticado" };
-  }
+    if (!user) {
+      return { success: false, error: "No autenticado" };
+    }
 
-  const metadata = user.user_metadata;
+    const metadata = user.user_metadata ?? {};
 
-  // Verificar que no exista ya
-  const { data: existing } = await supabase
-    .from("owner_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
+    // Usar Prisma — bypasea RLS (service role) y genera UUIDs nativamente.
+    const existing = await prisma.ownerProfile.findUnique({
+      where: { user_id: user.id },
+      select: { id: true },
+    });
 
-  if (existing) {
-    return { success: true }; // Ya existe
-  }
+    if (existing) {
+      return { success: true };
+    }
 
-  const { error } = await supabase.from("owner_profiles").insert({
-    id: randomUUID(),
-    user_id: user.id,
-    full_name: metadata.full_name ?? metadata.name ?? "Sin nombre",
-    phone: metadata.phone ?? null,
-    avatar_url: metadata.avatar_url ?? null,
-  });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  // Check si es el email de admin bootstrap
-  const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
-  if (adminEmail && user.email === adminEmail) {
-    await supabase.from("admin_users").upsert(
-      {
-        id: randomUUID(),
+    await prisma.ownerProfile.create({
+      data: {
         user_id: user.id,
-        role: "superadmin",
+        full_name:
+          (metadata.full_name as string) ??
+          (metadata.name as string) ??
+          "Sin nombre",
+        phone: (metadata.phone as string) ?? null,
+        avatar_url: (metadata.avatar_url as string) ?? null,
       },
-      { onConflict: "user_id" },
-    );
-  }
+    });
 
-  return { success: true };
+    // Bootstrap admin si corresponde
+    const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
+    if (adminEmail && user.email === adminEmail) {
+      await prisma.adminUser.upsert({
+        where: { user_id: user.id },
+        create: { user_id: user.id, role: "superadmin" },
+        update: { role: "superadmin" },
+      });
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("createOwnerProfile error:", error);
+    return {
+      success: false,
+      error: error?.message ?? "No se pudo crear el perfil.",
+    };
+  }
 }
 
 export async function createVetProfile(): Promise<AuthResult> {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { success: false, error: "No autenticado" };
-  }
+    if (!user) {
+      return { success: false, error: "No autenticado" };
+    }
 
-  const metadata = user.user_metadata;
+    const metadata = user.user_metadata ?? {};
 
-  // Verificar que no exista ya
-  const { data: existing } = await supabase
-    .from("vet_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
-
-  if (existing) {
-    return { success: true };
-  }
-
-  // Crear perfil vet
-  const vetProfileId = randomUUID();
-  const { error: vetError } = await supabase
-    .from("vet_profiles")
-    .insert({
-      id: vetProfileId,
-      user_id: user.id,
-      full_name: metadata.full_name ?? metadata.name ?? "Sin nombre",
-      license_number: metadata.license_number ?? null,
-      clinic_name: metadata.clinic_name ?? null,
-      phone: metadata.phone ?? null,
-      avatar_url: metadata.avatar_url ?? null,
+    const existing = await prisma.vetProfile.findUnique({
+      where: { user_id: user.id },
+      select: { id: true },
     });
 
-  if (vetError) {
-    return { success: false, error: vetError.message };
+    if (existing) {
+      return { success: true };
+    }
+
+    // Crear perfil + trial subscription en una transacción
+    const trialEnd = new Date();
+    trialEnd.setDate(trialEnd.getDate() + 30);
+
+    await prisma.$transaction(async (tx) => {
+      const vet = await tx.vetProfile.create({
+        data: {
+          user_id: user.id,
+          full_name:
+            (metadata.full_name as string) ??
+            (metadata.name as string) ??
+            "Sin nombre",
+          license_number: (metadata.license_number as string) ?? null,
+          clinic_name: (metadata.clinic_name as string) ?? null,
+          phone: (metadata.phone as string) ?? null,
+          avatar_url: (metadata.avatar_url as string) ?? null,
+        },
+      });
+
+      await tx.subscription.create({
+        data: {
+          vet_id: vet.id,
+          plan: "trial",
+          status: "active",
+          starts_at: new Date(),
+          expires_at: trialEnd,
+        },
+      });
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("createVetProfile error:", error);
+    return {
+      success: false,
+      error: error?.message ?? "No se pudo crear el perfil.",
+    };
   }
-
-  // Crear subscription trial 30 días
-  const trialEnd = new Date();
-  trialEnd.setDate(trialEnd.getDate() + 30);
-
-  await supabase.from("subscriptions").insert({
-    id: randomUUID(),
-    vet_id: vetProfileId,
-    plan: "trial",
-    status: "active",
-    starts_at: new Date().toISOString(),
-    expires_at: trialEnd.toISOString(),
-  });
-
-  return { success: true };
 }
 
 // ─── Logout ───
