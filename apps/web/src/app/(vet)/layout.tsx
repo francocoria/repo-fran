@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import { getVetProfile } from "@/lib/auth";
+import { requireUser, getVetProfile } from "@/lib/auth";
 import { AppHeader } from "@/components/app-header";
+import { MobileNav } from "@/components/mobile-nav";
 
 /**
  * Layout protegido para veterinarios.
@@ -28,6 +28,7 @@ export default async function VetLayout({
         avatarUrl={profile.avatar_url}
       />
       <main className="container py-6 md:py-8">{children}</main>
+      <MobileNav role="vet" fabHref="/vet/scan" fabIcon="scan" fabLabel="Escanear QR" />
     </div>
   );
 }
