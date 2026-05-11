@@ -2,19 +2,39 @@
 
 import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@pet-app/ui";
+import { Button, Input, Label } from "@pet-app/ui";
 import { createVetProfile } from "../../actions";
-import { Stethoscope, Loader2, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import {
+  Stethoscope,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 
 export default function OnboardingVetPage() {
   const router = useRouter();
+  const [fullName, setFullName] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
+  const [clinicName, setClinicName] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleContinue() {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      setError("Ingresá tu nombre (mínimo 2 caracteres).");
+      return;
+    }
     startTransition(async () => {
-      const result = await createVetProfile();
+      const result = await createVetProfile({
+        fullName: fullName.trim(),
+        licenseNumber: licenseNumber.trim() || undefined,
+        clinicName: clinicName.trim() || undefined,
+        phone: phone.trim() || undefined,
+      });
       if (result.success) {
         router.push("/vet");
       } else {
@@ -24,56 +44,88 @@ export default function OnboardingVetPage() {
   }
 
   return (
-    <div className="animate-fade-up text-center">
-      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-accent/10">
-        <Stethoscope className="h-10 w-10 text-accent" />
+    <form onSubmit={handleSubmit} className="animate-fade-up text-center">
+      <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-accent/10">
+        <Stethoscope className="size-10 text-accent" />
       </div>
-      <h1 className="text-2xl font-bold tracking-tight">
-        ¡Bienvenido, Doc!
-      </h1>
-      <p className="mt-3 text-muted-foreground max-w-sm mx-auto">
-        Tu cuenta profesional está casi lista. Hacé click para continuar y
-        empezar a gestionar pacientes.
+      <h1 className="text-2xl font-bold tracking-tight">¡Bienvenido, Doc!</h1>
+      <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
+        Completá estos datos para empezar a gestionar pacientes.
       </p>
 
-      <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-2 text-sm text-accent">
-        <Sparkles className="h-4 w-4" />
+      <div className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-2 text-sm text-accent">
+        <Sparkles className="size-4" />
         30 días premium incluidos
       </div>
 
-      <div className="mt-6 space-y-4 text-left max-w-xs mx-auto">
-        {[
-          "Accedé al historial completo de tus pacientes",
-          "Creá consultas con plantillas profesionales",
-          "Generá recetas y certificados digitales",
-          "Notas privadas solo para vos",
-        ].map((item) => (
-          <div key={item} className="flex items-center gap-3 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
-            <span>{item}</span>
-          </div>
-        ))}
+      <div className="mx-auto mt-6 max-w-sm space-y-3 text-left">
+        <div className="space-y-1.5">
+          <Label htmlFor="fullName">
+            Nombre completo <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="fullName"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Dra. Camila Martínez"
+            maxLength={100}
+            autoFocus
+            required
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="licenseNumber">Matrícula profesional</Label>
+          <Input
+            id="licenseNumber"
+            value={licenseNumber}
+            onChange={(e) => setLicenseNumber(e.target.value)}
+            placeholder="Ej: 12345 (opcional)"
+            maxLength={50}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="clinicName">Clínica</Label>
+          <Input
+            id="clinicName"
+            value={clinicName}
+            onChange={(e) => setClinicName(e.target.value)}
+            placeholder="Veterinaria Palermo (opcional)"
+            maxLength={100}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="phone">Teléfono</Label>
+          <Input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+54 11 1234-5678 (opcional)"
+            maxLength={30}
+          />
+        </div>
       </div>
 
       {error && (
-        <div className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {error}
+        <div className="mx-auto mt-5 flex max-w-sm items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+          <AlertCircle className="size-4 shrink-0" />
+          <span className="text-left">{error}</span>
         </div>
       )}
 
       <Button
-        onClick={handleContinue}
-        className="mt-8 w-full max-w-xs"
+        type="submit"
+        variant="accent"
+        className="mt-6 w-full max-w-sm"
         size="lg"
         disabled={isPending}
       >
         {isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="size-4 animate-spin" />
         ) : (
-          "Continuar al panel veterinario"
+          "Empezar a usar PetApp"
         )}
       </Button>
-    </div>
+    </form>
   );
 }

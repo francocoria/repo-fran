@@ -140,7 +140,9 @@ export async function signupVet(formData: FormData): Promise<AuthResult> {
 
 // ─── Crear perfil después del primer login ───
 
-export async function createOwnerProfile(): Promise<AuthResult> {
+export async function createOwnerProfile(
+  fullNameFromForm?: string,
+): Promise<AuthResult> {
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -163,13 +165,18 @@ export async function createOwnerProfile(): Promise<AuthResult> {
       return { success: true };
     }
 
+    // Prioridad: form input → metadata → derivar de email → "Sin nombre"
+    const resolvedName =
+      fullNameFromForm?.trim() ||
+      (metadata.full_name as string) ||
+      (metadata.name as string) ||
+      user.email?.split("@")[0] ||
+      "Sin nombre";
+
     await prisma.ownerProfile.create({
       data: {
         user_id: user.id,
-        full_name:
-          (metadata.full_name as string) ??
-          (metadata.name as string) ??
-          "Sin nombre",
+        full_name: resolvedName,
         phone: (metadata.phone as string) ?? null,
         avatar_url: (metadata.avatar_url as string) ?? null,
       },
@@ -195,7 +202,12 @@ export async function createOwnerProfile(): Promise<AuthResult> {
   }
 }
 
-export async function createVetProfile(): Promise<AuthResult> {
+export async function createVetProfile(input?: {
+  fullName?: string;
+  licenseNumber?: string;
+  clinicName?: string;
+  phone?: string;
+}): Promise<AuthResult> {
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -221,17 +233,28 @@ export async function createVetProfile(): Promise<AuthResult> {
     const trialEnd = new Date();
     trialEnd.setDate(trialEnd.getDate() + 30);
 
+    const resolvedName =
+      input?.fullName?.trim() ||
+      (metadata.full_name as string) ||
+      (metadata.name as string) ||
+      user.email?.split("@")[0] ||
+      "Sin nombre";
+
     await prisma.$transaction(async (tx) => {
       const vet = await tx.vetProfile.create({
         data: {
           user_id: user.id,
-          full_name:
-            (metadata.full_name as string) ??
-            (metadata.name as string) ??
-            "Sin nombre",
-          license_number: (metadata.license_number as string) ?? null,
-          clinic_name: (metadata.clinic_name as string) ?? null,
-          phone: (metadata.phone as string) ?? null,
+          full_name: resolvedName,
+          license_number:
+            input?.licenseNumber?.trim() ||
+            (metadata.license_number as string) ||
+            null,
+          clinic_name:
+            input?.clinicName?.trim() ||
+            (metadata.clinic_name as string) ||
+            null,
+          phone:
+            input?.phone?.trim() || (metadata.phone as string) || null,
           avatar_url: (metadata.avatar_url as string) ?? null,
         },
       });
