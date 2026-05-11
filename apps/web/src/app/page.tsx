@@ -1,180 +1,208 @@
 import Link from "next/link";
 import {
-  Shield,
-  Zap,
-  QrCode,
-  Heart,
-  Stethoscope,
-  Calendar,
   FileText,
+  QrCode,
+  AlertTriangle,
+  Users,
   Bell,
+  ShieldCheck,
+  Sparkles,
   ArrowRight,
-  CheckCircle2,
-  Star,
+  Check,
+  Crown,
+  Stethoscope,
+  Syringe,
+  Scale,
+  TrendingUp,
 } from "lucide-react";
+import { Button, Badge, Brand, PetAvatar } from "@pet-app/ui";
 
 const features = [
   {
-    icon: Heart,
-    title: "Historial completo",
-    description:
-      "Vacunas, desparasitaciones, alergias y medicaciones en un solo lugar.",
-    color: "text-rose-500 bg-rose-500/10",
+    icon: FileText,
+    title: "Historial clínico completo",
+    desc: "Vacunas, peso, alergias, estudios y medicaciones en un solo lugar. Para siempre, gratis.",
   },
   {
     icon: QrCode,
-    title: "Conexión por QR",
-    description:
-      "Tu vet escanea el QR de tu mascota y accede al historial en segundos.",
-    color: "text-primary bg-primary/10",
+    title: "QR único por mascota",
+    desc: "El vet escanea, ve todo. Sin trámites, sin papeles, sin contar la historia desde cero.",
   },
   {
-    icon: Shield,
-    title: "Privacidad primero",
-    description:
-      "Vos controlás quién ve la info. Aprobá o revocá accesos cuando quieras.",
-    color: "text-amber-500 bg-amber-500/10",
+    icon: AlertTriangle,
+    title: "Modo perdido viral",
+    desc: "Activás un toque y generás una página pública para compartir por WhatsApp. Foto, datos y contacto.",
   },
   {
-    icon: FileText,
-    title: "Recetas digitales",
-    description:
-      "Tu vet genera recetas y certificados profesionales desde la app.",
-    color: "text-violet-500 bg-violet-500/10",
+    icon: Users,
+    title: "Co-dueños y familia",
+    desc: "Compartí la mascota con tu pareja, tus viejos o quien la cuida. Todos ven lo mismo.",
   },
   {
-    icon: Calendar,
-    title: "Recordatorios",
-    description:
-      "Nunca más te olvides de una vacuna o turno. Te avisamos a tiempo.",
-    color: "text-sky-500 bg-sky-500/10",
+    icon: Bell,
+    title: "Avisos automáticos",
+    desc: "Te avisamos antes de que se venza una vacuna o desparasitación. Sin agenda, sin estrés.",
   },
   {
-    icon: Zap,
-    title: "Modo perdido",
-    description:
-      "Si tu mascota se pierde, activá una página pública con sus datos y QR.",
-    color: "text-orange-500 bg-orange-500/10",
+    icon: ShieldCheck,
+    title: "Vets verificados",
+    desc: "Solo veterinarios con matrícula validada pueden escribir en el historial de tu mascota.",
   },
 ];
 
-const vetBenefits = [
-  "Acceso al historial completo de tus pacientes",
-  "Consultas con plantillas profesionales",
-  "Recetas y certificados digitales",
-  "Notas privadas que solo vos ves",
-  "30 días premium gratis al registrarte",
+const ownerPlanItems = [
+  "Mascotas ilimitadas",
+  "Historial completo",
+  "QR para vets",
+  "Modo perdido",
+  "Co-dueños",
 ];
 
-export default function HomePage() {
+const vetPlanItems = [
+  "Pacientes ilimitados",
+  "Recetas con tu marca",
+  "Certificados oficiales",
+  "Verificación de matrícula",
+  "Stats de tu práctica",
+  "Plantillas de consulta",
+];
+
+export default function LandingPage() {
   return (
-    <div className="relative overflow-hidden">
-      {/* Navbar */}
-      <header className="absolute inset-x-0 top-0 z-50">
-        <nav className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-            <span className="text-2xl">🐾</span>
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              PetApp
-            </span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+    <div className="bg-background">
+      {/* Header sticky */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-xl">
+        <div className="container flex h-16 items-center justify-between">
+          <Brand size="md" />
+          <nav className="hidden items-center gap-6 text-sm md:flex">
+            <a
+              href="#features"
+              className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              Iniciar sesión
-            </Link>
-            <Link
-              href="/signup"
-              className="focus-ring rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-transform hover:scale-105 active:scale-[0.98]"
+              Features
+            </a>
+            <a
+              href="#pricing"
+              className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              Empezar gratis
-            </Link>
+              Precios
+            </a>
+            <a
+              href="#vets"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Para vets
+            </a>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/login">Ingresar</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/signup">Crear cuenta</Link>
+            </Button>
+          </nav>
+          <div className="md:hidden">
+            <Button size="sm" asChild>
+              <Link href="/signup">Empezar</Link>
+            </Button>
           </div>
-        </nav>
+        </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative flex min-h-[90vh] flex-col items-center justify-center px-4 pt-24 pb-16">
-        {/* Background decoration */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-primary/8 blur-3xl" />
-          <div className="absolute right-1/4 bottom-1/3 h-64 w-64 rounded-full bg-accent/6 blur-3xl" />
-        </div>
+      {/* ─── HERO ────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-grad-brand text-white">
+        {/* Glow accents */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 20%, rgb(255 255 255 / 0.18), transparent 40%), radial-gradient(circle at 80% 80%, rgb(255 255 255 / 0.12), transparent 40%)",
+          }}
+          aria-hidden
+        />
 
-        <div className="relative mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur-sm animate-fade-in">
-            <Star className="h-3.5 w-3.5 text-accent" />
-            Beta privada · Próximamente
-          </div>
-          <h1 className="text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl lg:text-8xl animate-fade-up">
-            <span className="bg-gradient-to-br from-foreground via-foreground/90 to-foreground/50 bg-clip-text text-transparent">
-              El centro de control
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              de tu mascota.
-            </span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground md:text-xl animate-fade-up" style={{ animationDelay: "100ms" }}>
-            Vacunas, turnos, historial médico y comunicación con tu veterinario.
-            Todo en un solo lugar, simple y profesional.
-          </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-4 animate-fade-up" style={{ animationDelay: "200ms" }}>
-            <Link
-              href="/signup"
-              className="focus-ring group flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:scale-105 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98]"
+        <div className="container relative px-6 py-20 md:py-28">
+          <div className="mx-auto max-w-3xl text-center animate-fade-up">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 py-1.5 text-sm backdrop-blur-sm">
+              <Sparkles className="size-3.5" />
+              Free para dueños · 30 días premium gratis para vets
+            </div>
+            <h1
+              className="text-balance text-[40px] font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-[68px]"
+              style={{ letterSpacing: "-0.02em" }}
             >
-              Empezar gratis
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              href="/signup/vet"
-              className="focus-ring flex items-center gap-2 rounded-full border border-border bg-background/80 px-7 py-3.5 text-sm font-medium backdrop-blur-sm transition-all hover:bg-secondary hover:scale-105"
-            >
-              <Stethoscope className="h-4 w-4 text-accent" />
-              Soy veterinario
-            </Link>
+              El historial de tu mascota,
+              <br className="hidden sm:block" /> en el bolsillo de tu vet.
+            </h1>
+            <p className="mx-auto mt-5 max-w-2xl text-pretty text-[17px] leading-relaxed text-white/90 md:text-lg">
+              Llevá vacunas, peso, alergias y estudios. El vet escanea un QR y ve
+              todo. Sin papeles, sin perder libretas, sin contar la historia
+              veinte veces.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <Button size="lg" variant="dark" asChild>
+                <Link href="/signup">
+                  Empezar gratis
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="border-white/40 bg-white/10 text-white hover:bg-white/20"
+              >
+                <Link href="/signup/vet">
+                  <Stethoscope className="size-4" />
+                  Soy veterinario
+                </Link>
+              </Button>
+            </div>
+            <p className="mt-8 text-xs text-white/80">
+              <Check className="-mt-0.5 mr-1 inline size-3.5" />
+              Sin tarjeta de crédito · Sin instalar nada · Funciona en cualquier celu
+            </p>
           </div>
-        </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="h-8 w-5 rounded-full border-2 border-border p-1">
-            <div className="h-2 w-1 mx-auto rounded-full bg-muted-foreground animate-pulse" />
+          {/* Hero preview card */}
+          <div
+            className="mx-auto mt-16 max-w-3xl animate-fade-up md:mt-20"
+            style={{ animationDelay: "120ms" }}
+          >
+            <HeroPreview />
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="border-t bg-secondary/30 py-20 md:py-28">
+      {/* ─── FEATURES ────────────────────────────────────── */}
+      <section id="features" className="py-20 md:py-28">
         <div className="container">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Todo lo que necesitás, nada que sobre.
+          <div className="mx-auto mb-12 max-w-2xl text-center md:mb-16">
+            <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.1em] text-primary">
+              Todo lo que necesitás
+            </p>
+            <h2 className="text-balance text-3xl font-bold tracking-tight md:text-4xl lg:text-[42px]">
+              Un solo lugar para la salud de tu mascota
             </h2>
-            <p className="mt-4 text-muted-foreground">
-              Diseñada para dueños que se toman en serio la salud de sus
-              animales y vets que quieren una herramienta profesional.
+            <p className="mt-4 text-pretty text-base text-muted-foreground md:text-[17px]">
+              Diseñado con veterinarios argentinos para que cuidar a tu mascota
+              sea simple.
             </p>
           </div>
-          <div className="mx-auto mt-14 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => {
-              const Icon = feature.icon;
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {features.map((f) => {
+              const Icon = f.icon;
               return (
                 <div
-                  key={feature.title}
-                  className="group rounded-2xl border bg-card p-6 transition-all hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
+                  key={f.title}
+                  className="rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
                 >
-                  <div
-                    className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${feature.color} transition-transform group-hover:scale-110`}
-                  >
-                    <Icon className="h-5 w-5" />
+                  <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                    <Icon className="size-[22px]" />
                   </div>
-                  <h3 className="font-semibold text-lg">{feature.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                    {feature.description}
+                  <h3 className="mb-1.5 text-base font-semibold">{f.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {f.desc}
                   </p>
                 </div>
               );
@@ -183,90 +211,201 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Vet CTA */}
-      <section className="py-20 md:py-28">
+      {/* ─── PRICING ─────────────────────────────────────── */}
+      <section id="pricing" className="border-y border-border bg-surface-2 py-20">
         <div className="container">
-          <div className="mx-auto max-w-4xl rounded-3xl bg-gradient-to-br from-background via-accent/5 to-primary/5 border p-8 md:p-12 lg:p-16">
-            <div className="grid gap-8 md:grid-cols-2 md:items-center">
-              <div>
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-                  <Stethoscope className="h-3.5 w-3.5" />
-                  Para veterinarios
-                </div>
-                <h2 className="text-3xl font-bold tracking-tight">
-                  Profesionalizá tu práctica
-                </h2>
-                <p className="mt-3 text-muted-foreground">
-                  Accedé al historial completo de tus pacientes, generá recetas
-                  digitales y mantené notas privadas. Todo desde una sola
-                  plataforma.
-                </p>
-                <Link
-                  href="/signup/vet"
-                  className="focus-ring mt-6 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-all hover:scale-105 shadow-lg shadow-accent/25"
-                >
-                  Empezar gratis — 30 días premium
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+          <div className="mb-12 text-center">
+            <h2 className="text-balance text-3xl font-bold tracking-tight md:text-[38px]">
+              Precios honestos
+            </h2>
+            <p className="mt-3 text-base text-muted-foreground">
+              Free para dueños, siempre. Para vets, lo que se usa.
+            </p>
+          </div>
+
+          <div className="mx-auto grid max-w-4xl gap-5 sm:grid-cols-2">
+            {/* Owner plan */}
+            <div className="rounded-2xl border border-border bg-card p-7 shadow-sm">
+              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-primary">
+                Dueños
+              </p>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-5xl font-bold tracking-tight">Gratis</span>
               </div>
-              <div className="space-y-3">
-                {vetBenefits.map((benefit) => (
-                  <div
-                    key={benefit}
-                    className="flex items-center gap-3 text-sm"
-                  >
-                    <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
-                    <span>{benefit}</span>
-                  </div>
+              <p className="mb-5 mt-1.5 text-sm text-muted-foreground">
+                Para siempre. No es un trial.
+              </p>
+              <ul className="mb-6 space-y-2.5">
+                {ownerPlanItems.map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm">
+                    <Check className="size-4 shrink-0 text-primary" />
+                    {item}
+                  </li>
                 ))}
+              </ul>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/signup">Empezar</Link>
+              </Button>
+            </div>
+
+            {/* Vet plan */}
+            <div
+              id="vets"
+              className="relative rounded-2xl border-2 border-primary bg-card p-7 shadow-md"
+              style={{
+                boxShadow:
+                  "0 0 0 4px hsl(var(--primary) / 0.1), var(--shadow-md)",
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-accent">
+                  Veterinarios
+                </p>
+                <Badge variant="gold">
+                  <Crown className="size-3" />
+                  Más elegido
+                </Badge>
               </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="font-mono text-5xl font-bold tracking-tight">
+                  USD 10
+                </span>
+                <span className="text-base text-muted-foreground">/ mes</span>
+              </div>
+              <p className="mb-5 mt-1.5 text-sm text-muted-foreground">
+                Free hasta 5 pacientes activos.
+              </p>
+              <ul className="mb-6 space-y-2.5">
+                {vetPlanItems.map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm">
+                    <Check className="size-4 shrink-0 text-accent" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Button variant="accent" className="w-full" asChild>
+                <Link href="/signup/vet">Probar 30 días gratis</Link>
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing hint */}
-      <section className="border-t bg-secondary/30 py-20 md:py-28">
-        <div className="container mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Gratis para siempre para dueños.
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            PetApp es y siempre será gratuita para dueños de mascotas. Los
-            veterinarios pueden usar el plan gratuito con hasta 5 pacientes, o
-            desbloquear todo con el plan premium.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/signup"
-              className="focus-ring rounded-full bg-primary px-7 py-3 text-sm font-medium text-primary-foreground transition-all hover:scale-105"
-            >
-              Crear cuenta gratis
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t py-10">
-        <div className="container flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="text-lg">🐾</span>
-            <span>PetApp © {new Date().getFullYear()}</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">
+      {/* ─── FOOTER ──────────────────────────────────────── */}
+      <footer className="py-10">
+        <div className="container flex flex-wrap items-center justify-between gap-4">
+          <Brand size="sm" />
+          <div className="flex gap-5 text-sm text-muted-foreground">
+            <a href="#" className="hover:text-foreground">
               Términos
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
+            </a>
+            <a href="#" className="hover:text-foreground">
               Privacidad
-            </Link>
-            <Link href="/contact" className="hover:text-foreground transition-colors">
+            </a>
+            <a href="#" className="hover:text-foreground">
               Contacto
-            </Link>
+            </a>
           </div>
+          <p className="text-xs text-subtle">Hecho en Buenos Aires</p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* HeroPreview — card 3D con datos de mock mascota          */
+/* ─────────────────────────────────────────────────────── */
+function HeroPreview() {
+  return (
+    <div
+      className="overflow-hidden rounded-2xl border border-white/40 bg-card"
+      style={{
+        boxShadow:
+          "0 24px 60px rgb(8 51 68 / 0.25), 0 8px 20px rgb(8 51 68 / 0.15)",
+        transform: "perspective(1200px) rotateX(2deg)",
+        transformOrigin: "center top",
+      }}
+    >
+      {/* Window chrome */}
+      <div className="flex items-center gap-1.5 border-b border-border bg-surface-2 px-3.5 py-3">
+        <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+        <span className="size-2.5 rounded-full bg-[#febc2e]" />
+        <span className="size-2.5 rounded-full bg-[#28c840]" />
+        <span className="ml-3 inline-block rounded-md border border-border bg-card px-3 py-0.5 font-mono text-[11.5px] text-subtle">
+          petapp.com.ar/luna
+        </span>
+      </div>
+
+      {/* Preview content */}
+      <div className="grid gap-6 p-6 sm:grid-cols-[1fr,1.2fr] md:p-8">
+        <div className="flex flex-col items-center text-center">
+          <PetAvatar name="Luna" species="dog" size={120} radius={28} />
+          <div className="mt-3">
+            <p className="text-xl font-bold">Luna</p>
+            <p className="text-[13px] text-muted-foreground">
+              Border Collie · 3 años
+            </p>
+          </div>
+          <Badge variant="primary" className="mt-3">
+            <Check className="size-3" />
+            Vacunas al día
+          </Badge>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          <PreviewRow
+            icon={Syringe}
+            iconBg="bg-primary/12 text-primary"
+            title="Antirrábica"
+            subtitle="Próxima: 12 sept 2026"
+            badge={<Badge variant="emerald" size="xs">OK</Badge>}
+          />
+          <PreviewRow
+            icon={AlertTriangle}
+            iconBg="bg-rose/12 text-rose"
+            title="Alergia · Pollo"
+            subtitle="Severa — confirmada 2024"
+            badge={<Badge variant="rose" size="xs">SEVERA</Badge>}
+          />
+          <PreviewRow
+            icon={Scale}
+            iconBg="bg-accent/15 text-accent"
+            title={<span className="font-mono">18.4 kg</span>}
+            subtitle="+0.4kg desde feb"
+            badge={<TrendingUp className="size-3.5 text-emerald" />}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewRow({
+  icon: Icon,
+  iconBg,
+  title,
+  subtitle,
+  badge,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  iconBg: string;
+  title: React.ReactNode;
+  subtitle: string;
+  badge: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-surface-2 p-3">
+      <div className={`flex size-8 items-center justify-center rounded-lg ${iconBg}`}>
+        <Icon className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13.5px] font-medium">{title}</p>
+        <p className="truncate text-[11.5px] text-muted-foreground">
+          {subtitle}
+        </p>
+      </div>
+      {badge}
     </div>
   );
 }
