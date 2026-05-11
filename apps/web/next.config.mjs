@@ -49,6 +49,17 @@ const nextConfig = {
     "@pet-app/ui",
     "@pet-app/emails",
   ],
+  // Prisma Client: no bundlear — cargarlo desde node_modules en runtime
+  // para que los binarios .so.node del query engine sean encontrados.
+  serverExternalPackages: ["@prisma/client", "prisma"],
+  // Asegurar que Vercel incluya los archivos binarios y el schema en el trace
+  outputFileTracingIncludes: {
+    "/**/*": [
+      "../../node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**/*",
+      "../../node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client/**/*",
+      "../../packages/db/prisma/**/*",
+    ],
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },

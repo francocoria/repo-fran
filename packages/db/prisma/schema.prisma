@@ -8,6 +8,8 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
+  // Vercel serverless usa rhel-openssl-3.0.x — sin esto el query engine no se copia al bundle.
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
