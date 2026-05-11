@@ -38,28 +38,50 @@ export async function createAnimal(formData: FormData) {
       return { success: false, error: "No se encontró el perfil de dueño." };
     }
 
+    // Helper: FormData.get() devuelve null para campos vacios/ausentes.
+    // Zod acepta undefined/"" pero NO null. Normalizamos.
+    const str = (key: string): string | undefined => {
+      const v = formData.get(key);
+      if (v === null || v === undefined) return undefined;
+      return String(v);
+    };
+
+    const weightRaw = str("weightKg");
+
+    // Si el form duplica "species" via append, usar el ultimo valor
+    const speciesValues = formData.getAll("species");
+    const speciesValue =
+      speciesValues.length > 0
+        ? String(speciesValues[speciesValues.length - 1])
+        : undefined;
+
     const payload = {
-      name: formData.get("name"),
-      species: formData.get("species"),
-      breed: formData.get("breed"),
-      sex: formData.get("sex"),
-      birthDate: formData.get("birthDate"),
+      name: str("name"),
+      species: speciesValue,
+      breed: str("breed"),
+      sex: str("sex"),
+      birthDate: str("birthDate"),
       birthDateApprox: formData.get("birthDateApprox") === "true",
-      color: formData.get("color"),
-      distinctiveMarks: formData.get("distinctiveMarks"),
-      microchip: formData.get("microchip"),
-      weightKg: formData.get("weightKg") ? Number(formData.get("weightKg")) : undefined,
+      color: str("color"),
+      distinctiveMarks: str("distinctiveMarks"),
+      microchip: str("microchip"),
+      weightKg: weightRaw ? Number(weightRaw) : undefined,
       neutered: formData.get("neutered") === "true",
-      neuteredDate: formData.get("neuteredDate"),
-      notes: formData.get("notes"),
+      neuteredDate: str("neuteredDate"),
+      notes: str("notes"),
     };
 
     const parsed = animalCreateSchema.safeParse(payload);
 
     if (!parsed.success) {
+      console.error("createAnimal validation failed:", parsed.error.flatten());
+      const firstError =
+        Object.values(parsed.error.flatten().fieldErrors)
+          .flat()
+          .filter(Boolean)[0] ?? "Datos inválidos";
       return {
         success: false,
-        error: "Datos inválidos",
+        error: firstError,
         errors: parsed.error.flatten().fieldErrors,
       };
     }
