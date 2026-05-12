@@ -13,7 +13,7 @@ type AuthResult = {
   error?: string;
 };
 
-// ─── Login con magic link ───
+// ─── Login con magic link / OTP code ───
 
 export async function loginWithMagicLink(email: string): Promise<AuthResult> {
   const supabase = await createSupabaseServerClient();
@@ -24,6 +24,7 @@ export async function loginWithMagicLink(email: string): Promise<AuthResult> {
     email: email.trim().toLowerCase(),
     options: {
       emailRedirectTo: `${origin}/auth/callback`,
+      shouldCreateUser: true,
     },
   });
 
@@ -32,6 +33,52 @@ export async function loginWithMagicLink(email: string): Promise<AuthResult> {
   }
 
   return { success: true };
+}
+
+export async function verifyOtpCode(
+  email: string,
+  token: string,
+): Promise<AuthResult & { redirectTo?: string }> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: email.trim().toLowerCase(),
+    token: token.trim(),
+    type: "email",
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const userId = data.user?.id;
+  if (!userId) {
+    return { success: true, redirectTo: "/onboarding" };
+  }
+
+  const { data: vet } = await supabase
+    .from("vet_profiles")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (vet) return { success: true, redirectTo: "/vet" };
+
+  const { data: owner } = await supabase
+    .from("owner_profiles")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (owner) {
+    const { data: admin } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (admin) return { success: true, redirectTo: "/admin" };
+    return { success: true, redirectTo: "/app" };
+  }
+
+  return { success: true, redirectTo: "/onboarding" };
 }
 
 // ─── Login con Google OAuth ───

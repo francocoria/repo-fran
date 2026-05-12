@@ -1,55 +1,162 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@pet-app/ui";
-import { Input } from "@pet-app/ui";
-import { Label } from "@pet-app/ui";
-import { loginWithMagicLink } from "../actions";
-import { Mail, ArrowRight, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Button, Input, Label } from "@pet-app/ui";
+import { loginWithMagicLink, verifyOtpCode } from "../actions";
+import {
+  Mail,
+  ArrowRight,
+  AlertCircle,
+  Loader2,
+  KeyRound,
+  ChevronLeft,
+} from "lucide-react";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (step === "code") {
+      setTimeout(() => codeInputRef.current?.focus(), 100);
+    }
+  }, [step]);
+
+  function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
     startTransition(async () => {
       const result = await loginWithMagicLink(email);
       if (result.success) {
-        setSent(true);
+        setStep("code");
       } else {
-        setError(result.error ?? "Error al enviar el enlace");
+        setError(result.error ?? "Error al enviar el código");
       }
     });
   }
 
-  if (sent) {
+  function handleCodeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (code.trim().length < 6) {
+      setError("Ingresá los 6 dígitos del email");
+      return;
+    }
+    startTransition(async () => {
+      const result = await verifyOtpCode(email, code);
+      if (result.success) {
+        router.push((result.redirectTo ?? "/app") as never);
+        router.refresh();
+      } else {
+        setError(result.error ?? "Código incorrecto. Probá de nuevo.");
+      }
+    });
+  }
+
+  async function handleResend() {
+    setResending(true);
+    setError(null);
+    const result = await loginWithMagicLink(email);
+    setResending(false);
+    if (!result.success) {
+      setError(result.error ?? "No pudimos reenviar.");
+    }
+  }
+
+  if (step === "code") {
     return (
-      <div className="text-center animate-fade-up">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <CheckCircle2 className="h-8 w-8 text-primary" />
+      <div className="animate-fade-up">
+        <button
+          type="button"
+          onClick={() => {
+            setStep("email");
+            setCode("");
+            setError(null);
+          }}
+          className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="size-4" />
+          Cambiar email
+        </button>
+
+        <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
+          <KeyRound className="size-6 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold">¡Revisá tu email!</h1>
-        <p className="mt-3 text-muted-foreground">
-          Te enviamos un enlace mágico a{" "}
+        <h1 className="text-2xl font-bold tracking-tight">Revisá tu email</h1>
+        <p className="mt-2 text-muted-foreground">
+          Te mandamos un código de 6 dígitos a{" "}
           <span className="font-medium text-foreground">{email}</span>.
-          <br />
-          Hacé click en el enlace para iniciar sesión.
         </p>
-        <p className="mt-6 text-sm text-muted-foreground">
-          ¿No lo ves?{" "}
-          <button
-            onClick={() => setSent(false)}
-            className="text-primary hover:underline font-medium"
+
+        <form onSubmit={handleCodeSubmit} className="mt-6 space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="code">Código</Label>
+            <Input
+              ref={codeInputRef}
+              id="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="123456"
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              className="text-center font-mono text-2xl tracking-[0.5em]"
+            />
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+              <AlertCircle className="size-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={isPending || code.length < 6}
           >
-            Reenviar
-          </button>
-        </p>
+            {isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <>
+                Verificar y entrar
+                <ArrowRight className="size-4" />
+              </>
+            )}
+          </Button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resending || isPending}
+              className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
+            >
+              {resending ? "Reenviando..." : "No me llegó, reenviar"}
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-8 rounded-lg border border-border bg-surface-2 p-3">
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            <strong className="text-foreground">¿Instalaste la app?</strong> Usá
+            el código numérico que viene en el email — así te quedás dentro de
+            la app instalada y no se abre el navegador.
+          </p>
+        </div>
       </div>
     );
   }
@@ -59,15 +166,15 @@ export default function LoginPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">Iniciar sesión</h1>
         <p className="mt-2 text-muted-foreground">
-          Ingresá tu email y te enviamos un enlace mágico.
+          Ingresá tu email y te mandamos un código de 6 dígitos.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleEmailSubmit} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="email"
               type="email"
@@ -83,24 +190,28 @@ export default function LoginPage() {
 
         {error && (
           <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4 shrink-0" />
+            <AlertCircle className="size-4 shrink-0" />
             {error}
           </div>
         )}
 
-        <Button type="submit" className="w-full" disabled={isPending}>
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={isPending || !email.trim()}
+        >
           {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="size-4 animate-spin" />
           ) : (
             <>
-              Enviar enlace mágico
-              <ArrowRight className="h-4 w-4" />
+              Enviar código
+              <ArrowRight className="size-4" />
             </>
           )}
         </Button>
       </form>
 
-      {/* Divider */}
       <div className="relative my-8">
         <div className="absolute inset-0 flex items-center">
           <span className="w-full border-t" />
@@ -114,14 +225,14 @@ export default function LoginPage() {
 
       <div className="flex flex-col gap-3">
         <Button variant="outline" asChild className="w-full">
-          <Link href="/signup">
-            Crear cuenta como dueño
-          </Link>
+          <Link href="/signup">Crear cuenta como dueño</Link>
         </Button>
-        <Button variant="ghost" asChild className="w-full text-muted-foreground">
-          <Link href="/signup/vet">
-            Soy veterinario →
-          </Link>
+        <Button
+          variant="ghost"
+          asChild
+          className="w-full text-muted-foreground"
+        >
+          <Link href="/signup/vet">Soy veterinario →</Link>
         </Button>
       </div>
     </div>
