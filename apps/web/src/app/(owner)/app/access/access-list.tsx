@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { approveAccess, rejectAccess, revokeAccess } from "./actions";
+import { useAutoReset } from "@/lib/use-copy-feedback";
 
 export interface AccessRow {
   id: string;
@@ -171,11 +172,11 @@ export function ApprovedAccessList({ accesses }: { accesses: AccessRow[] }) {
 function ApprovedRow({ access }: { access: AccessRow }) {
   const [isPending, startTransition] = useTransition();
   const [confirmRevoke, setConfirmRevoke] = useState(false);
+  useAutoReset(confirmRevoke, setConfirmRevoke, 4000);
 
   function handleRevoke() {
     if (!confirmRevoke) {
       setConfirmRevoke(true);
-      setTimeout(() => setConfirmRevoke(false), 4000);
       return;
     }
     startTransition(async () => {

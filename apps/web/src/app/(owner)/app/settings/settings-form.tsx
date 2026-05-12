@@ -23,6 +23,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { updateOwnerProfile } from "./actions";
+import { useAutoReset } from "@/lib/use-copy-feedback";
 
 interface Props {
   email: string;
@@ -39,6 +40,7 @@ export function SettingsForm({ email, initialData }: Props) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  useAutoReset(saved, setSaved, 3000);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,7 +52,6 @@ export function SettingsForm({ email, initialData }: Props) {
       const result = await updateOwnerProfile(formData);
       if (result.success) {
         setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
         router.refresh();
       } else {
         setError(result.error ?? "Error al guardar");

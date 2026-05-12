@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
 import { Button } from "@pet-app/ui";
 import { QrCode, Download, X, Copy, Check, Loader2 } from "lucide-react";
+import { useCopyFeedback } from "@/lib/use-copy-feedback";
 
 interface QRModalProps {
   animalId: string;
@@ -17,7 +18,7 @@ interface QRModalProps {
 export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
   const [open, setOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyFeedback();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const scanUrl =
@@ -49,12 +50,9 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
   }
 
   async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(scanUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (e) {
-      console.error("Copy failed:", e);
+    const ok = await copy(scanUrl);
+    if (!ok) {
+      console.error("Copy failed");
     }
   }
 

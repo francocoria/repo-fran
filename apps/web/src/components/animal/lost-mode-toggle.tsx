@@ -25,6 +25,8 @@ import {
   activateLostMode,
   deactivateLostMode,
 } from "@/app/(owner)/app/animals/[id]/lost-actions";
+import { useCopyFeedback } from "@/lib/use-copy-feedback";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface ActiveAlert {
   id: string;
@@ -48,8 +50,9 @@ export function LostModeToggle({
 }: LostModeToggleProps) {
   const router = useRouter();
   const [showActivateForm, setShowActivateForm] = useState(false);
+  const [showFoundConfirm, setShowFoundConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyFeedback();
   const [isPending, startTransition] = useTransition();
 
   const isLost = currentStatus === "lost" && activeAlert !== null;
@@ -75,10 +78,8 @@ export function LostModeToggle({
     });
   }
 
-  function handleMarkFound() {
-    if (!confirm("¿Confirmás que apareció? Se desactiva el modo perdido.")) {
-      return;
-    }
+  function confirmMarkFound() {
+    setShowFoundConfirm(false);
     startTransition(async () => {
       const result = await deactivateLostMode(animalId, true);
       if (result.success) {
@@ -90,13 +91,8 @@ export function LostModeToggle({
   }
 
   async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (e) {
-      console.error("Copy failed:", e);
-    }
+    const ok = await copy(publicUrl);
+    if (!ok) console.error("Copy failed");
   }
 
   const whatsappShare = activeAlert
@@ -108,6 +104,16 @@ export function LostModeToggle({
   // ─── ACTIVO ─────────────────────────────────────────────────
   if (isLost && activeAlert) {
     return (
+      <>
+        <ConfirmDialog
+          open={showFoundConfirm}
+          onClose={() => setShowFoundConfirm(false)}
+          onConfirm={confirmMarkFound}
+          title={`Marcar a ${animalName} como encontrada`}
+          description="Se desactiva la alerta y la página pública deja de estar disponible."
+          confirmLabel="Sí, apareció"
+          loading={isPending}
+        />
       <Card className="border-rose-300/60 dark:border-rose-800/50 bg-rose-50/50 dark:bg-rose-950/20">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
@@ -194,7 +200,7 @@ export function LostModeToggle({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleMarkFound}
+                  onClick={() => setShowFoundConfirm(true)}
                   disabled={isPending}
                   className="gap-1.5 ml-auto"
                 >
@@ -214,6 +220,7 @@ export function LostModeToggle({
           </div>
         </CardContent>
       </Card>
+      </>
     );
   }
 

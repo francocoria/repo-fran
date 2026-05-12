@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@pet-app/ui";
 import { MessageCircle, Share2, Copy, Check, Download } from "lucide-react";
+import { useCopyFeedback } from "@/lib/use-copy-feedback";
 
 interface ShareButtonsClientProps {
   animalName: string;
@@ -13,7 +13,7 @@ export function ShareButtonsClient({
   animalName,
   slug,
 }: ShareButtonsClientProps) {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyFeedback();
 
   const url =
     typeof window !== "undefined"
@@ -23,16 +23,6 @@ export function ShareButtonsClient({
   const message = `🚨 SE PERDIÓ ${animalName.toUpperCase()} 🚨\n\nAyudanos a encontrarla. Toda la info acá:\n${url}\n\nPor favor compartí 🙏`;
 
   const whatsappShare = `https://wa.me/?text=${encodeURIComponent(message)}`;
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (e) {
-      console.error("Copy failed:", e);
-    }
-  }
 
   async function handleNativeShare() {
     if (typeof navigator !== "undefined" && "share" in navigator) {
@@ -46,13 +36,17 @@ export function ShareButtonsClient({
         // user cancelled
       }
     } else {
-      handleCopy();
+      await copy(url);
     }
   }
 
   return (
     <div className="flex flex-wrap justify-center gap-2">
-      <Button asChild size="sm" className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+      <Button
+        asChild
+        size="sm"
+        className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+      >
         <a href={whatsappShare} target="_blank" rel="noopener noreferrer">
           <MessageCircle className="h-3.5 w-3.5" />
           WhatsApp
@@ -72,7 +66,7 @@ export function ShareButtonsClient({
         type="button"
         variant="outline"
         size="sm"
-        onClick={handleCopy}
+        onClick={() => copy(url)}
         className="gap-1.5"
       >
         {copied ? (

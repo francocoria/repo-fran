@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ShieldCheck, Stethoscope, ChevronRight } from "lucide-react";
 import { Card, CardContent, Badge } from "@pet-app/ui";
 import { prisma } from "@pet-app/db";
@@ -119,13 +120,14 @@ export default async function AdminVerificationsPage({
                         href={req.signedUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block"
+                        className="relative block h-48 w-full overflow-hidden rounded-lg border border-border bg-secondary transition-opacity hover:opacity-90"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                           src={req.signedUrl}
                           alt="Matrícula"
-                          className="h-48 w-full rounded-lg border border-border object-cover bg-secondary hover:opacity-90 transition-opacity"
+                          fill
+                          sizes="(max-width: 640px) 100vw, 256px"
+                          className="object-cover"
                         />
                       </a>
                     ) : (

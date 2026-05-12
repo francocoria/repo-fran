@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button, Card, CardContent } from "@pet-app/ui";
 import { deleteConsultTemplate } from "./actions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface TemplateItem {
   id: string;
@@ -30,13 +31,20 @@ export function TemplatesList({ templates, editable }: Props) {
   const router = useRouter();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<TemplateItem | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleDelete(id: string, name: string) {
-    if (!confirm(`¿Borrar la plantilla "${name}"? No se puede deshacer.`)) return;
-    setDeletingId(id);
+  function requestDelete(t: TemplateItem) {
+    setConfirmTarget(t);
+  }
+
+  function confirmDelete() {
+    if (!confirmTarget) return;
+    const target = confirmTarget;
+    setConfirmTarget(null);
+    setDeletingId(target.id);
     startTransition(async () => {
-      const result = await deleteConsultTemplate(id);
+      const result = await deleteConsultTemplate(target.id);
       setDeletingId(null);
       if (result.success) {
         toast.success("Plantilla eliminada");
@@ -63,8 +71,20 @@ export function TemplatesList({ templates, editable }: Props) {
   }
 
   return (
-    <div className="grid gap-2.5">
-      {templates.map((t) => {
+    <>
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        onClose={() => setConfirmTarget(null)}
+        onConfirm={confirmDelete}
+        title={`Borrar "${confirmTarget?.name ?? ""}"`}
+        description="Esta acción no se puede deshacer."
+        confirmLabel="Borrar"
+        tone="destructive"
+        loading={isPending}
+      />
+
+      <div className="grid gap-2.5">
+        {templates.map((t) => {
         const isOpen = expanded === t.id;
         const fields = [
           { key: "examination", label: "Examen físico" },
@@ -130,7 +150,7 @@ export function TemplatesList({ templates, editable }: Props) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleDelete(t.id, t.name)}
+                        onClick={() => requestDelete(t)}
                         disabled={isPending && deletingId === t.id}
                         className="text-destructive hover:bg-destructive/10"
                       >
@@ -148,7 +168,8 @@ export function TemplatesList({ templates, editable }: Props) {
             </CardContent>
           </Card>
         );
-      })}
-    </div>
+        })}
+      </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   AlertTriangle,
@@ -153,11 +154,13 @@ export default async function LostPetPublicPage({
             />
             <div className="relative aspect-square overflow-hidden rounded-3xl border-4 border-rose/30 bg-surface-2 shadow-2xl shadow-rose/30">
               {animal.photo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={animal.photo_url}
                   alt={animal.name}
-                  className="size-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 90vw, 384px"
+                  priority
+                  className="object-cover"
                 />
               ) : (
                 <div className="flex size-full items-center justify-center">

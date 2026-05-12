@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, X, Loader2, AlertCircle } from "lucide-react";
 import { Button, Textarea } from "@pet-app/ui";
 import { approveVerification, rejectVerification } from "../actions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface Props {
   requestId: string;
@@ -12,14 +13,15 @@ interface Props {
 
 export function VerificationActions({ requestId }: Props) {
   const router = useRouter();
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleApprove() {
+  function confirmApprove() {
     setError(null);
-    if (!confirm("¿Aprobar esta verificación?")) return;
+    setShowApproveConfirm(false);
     startTransition(async () => {
       const result = await approveVerification(requestId);
       if (result.success) {
@@ -49,12 +51,23 @@ export function VerificationActions({ requestId }: Props) {
   }
 
   return (
+    <>
+      <ConfirmDialog
+        open={showApproveConfirm}
+        onClose={() => setShowApproveConfirm(false)}
+        onConfirm={confirmApprove}
+        title="Aprobar verificación"
+        description="El veterinario tendrá su matrícula validada y un badge visible para los dueños."
+        confirmLabel="Aprobar"
+        loading={isPending}
+      />
+
     <div className="mt-4 space-y-3">
       {!showRejectForm ? (
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            onClick={handleApprove}
+            onClick={() => setShowApproveConfirm(true)}
             disabled={isPending}
             size="sm"
             className="gap-1.5"
@@ -128,5 +141,6 @@ export function VerificationActions({ requestId }: Props) {
         </div>
       )}
     </div>
+    </>
   );
 }

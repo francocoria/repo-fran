@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Input, Button, Badge } from "@pet-app/ui";
 import {
   Search,
@@ -148,11 +149,12 @@ function PatientCard({ row }: { row: PatientRow }) {
         <div className="flex gap-3">
           <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-secondary">
             {row.animal.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={row.animal.photo_url}
                 alt={row.animal.name}
-                className="h-full w-full object-cover"
+                fill
+                sizes="64px"
+                className="object-cover"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-muted-foreground">
