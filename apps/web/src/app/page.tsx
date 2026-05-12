@@ -333,7 +333,7 @@ function HeroPreview() {
         <span className="size-2.5 rounded-full bg-[#febc2e]" />
         <span className="size-2.5 rounded-full bg-[#28c840]" />
         <span className="ml-3 inline-block rounded-md border border-border bg-card px-3 py-0.5 font-mono text-[11.5px] text-subtle">
-          petapp.com.ar/luna
+          pet-friendly.fun/luna
         </span>
       </div>
 
