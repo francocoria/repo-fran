@@ -16,6 +16,7 @@ import {
   Palette,
   Microchip,
   CheckCircle2,
+  Download,
 } from "lucide-react";
 import {
   Button,
@@ -203,6 +204,16 @@ export default async function AnimalProfilePage({ params }: { params: { id: stri
                 </Link>
               </Button>
             )}
+            <Button variant="ghost" size="sm" asChild>
+              <a
+                href={`/app/animals/${animal.id}/export`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Download className="size-3.5" />
+                Historial PDF
+              </a>
+            </Button>
           </div>
         </div>
       </div>

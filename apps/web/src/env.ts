@@ -21,7 +21,13 @@ const envSchema = z.object({
 
   // Email
   RESEND_API_KEY: z.string().optional(),
-  RESEND_FROM_EMAIL: z.string().email().optional(),
+  RESEND_FROM_EMAIL: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? v : undefined))
+    .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), {
+      message: "Email inválido",
+    }),
 
   // Google
   GOOGLE_PLACES_API_KEY: z.string().optional(),

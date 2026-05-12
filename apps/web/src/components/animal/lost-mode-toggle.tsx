@@ -11,6 +11,7 @@ import {
   Check,
   MessageCircle,
   CheckCircle2,
+  Download,
 } from "lucide-react";
 import {
   Button,
@@ -167,6 +168,16 @@ export function LostModeToggle({
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
                     Compartir por WhatsApp
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="gap-1.5">
+                  <a
+                    href={`/lost/${activeAlert.public_slug}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Descargar PDF
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="sm" className="gap-1.5">

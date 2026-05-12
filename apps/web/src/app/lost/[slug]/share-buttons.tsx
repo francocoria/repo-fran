@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@pet-app/ui";
-import { MessageCircle, Share2, Copy, Check } from "lucide-react";
+import { MessageCircle, Share2, Copy, Check, Download } from "lucide-react";
 
 interface ShareButtonsClientProps {
   animalName: string;
@@ -86,6 +86,16 @@ export function ShareButtonsClient({
             Copiar link
           </>
         )}
+      </Button>
+      <Button asChild size="sm" variant="outline" className="gap-1.5">
+        <a
+          href={`/lost/${slug}/pdf`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Download className="h-3.5 w-3.5" />
+          PDF para imprimir
+        </a>
       </Button>
     </div>
   );

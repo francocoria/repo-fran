@@ -47,6 +47,7 @@ const roleConfig = {
     navItems: [
       { label: "Pacientes", href: "/vet" },
       { label: "Escanear QR", href: "/vet/scan" },
+      { label: "Plantillas", href: "/vet/templates" },
       { label: "Mi plan", href: "/vet/plan" },
     ],
   },

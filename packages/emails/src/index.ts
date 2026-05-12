@@ -1,7 +1,3 @@
-/**
- * Templates de email transaccionales + helper de envío.
- */
-
 export const EMAIL_TYPES = [
   "premium_activated",
   "premium_expiring_soon",
@@ -10,6 +6,7 @@ export const EMAIL_TYPES = [
   "vet_access_approved",
   "verification_approved",
   "verification_rejected",
+  "vaccine_reminder",
 ] as const;
 
 export type EmailType = (typeof EMAIL_TYPES)[number];
@@ -24,6 +21,7 @@ export {
   verificationApprovedTemplate,
   verificationRejectedTemplate,
   vetAccessApprovedTemplate,
+  vaccineReminderTemplate,
 } from "./templates";
 
 export type {
@@ -33,4 +31,5 @@ export type {
   VerificationApprovedData,
   VerificationRejectedData,
   VetAccessApprovedData,
+  VaccineReminderData,
 } from "./templates";
