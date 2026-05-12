@@ -35,15 +35,15 @@ export function VaccineList({ animalId, vaccines, isOwner, species }: VaccineLis
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await addVaccine(animalId, formData);
       if (result.success) setShowForm(false);
       else setError(result.error ?? "Error");
-    });
+    })(); });
   }
 
   function handleDelete(id: string) {
-    startTransition(async () => { await deleteVaccine(animalId, id); });
+    startTransition(() => { void (async () => { await deleteVaccine(animalId, id); })(); });
   }
 
   const suggestions = SUGGESTED[species] || [];

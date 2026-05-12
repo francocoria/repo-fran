@@ -46,14 +46,14 @@ export default function EditAnimalPage() {
     setError(null);
     const formData = new FormData(e.currentTarget);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await updateAnimal(id, formData);
       if (result.success) {
         router.push(`/app/animals/${id}`);
       } else {
         setError(result.error ?? "Error al actualizar.");
       }
-    });
+    })(); });
   }
 
   if (loading) {

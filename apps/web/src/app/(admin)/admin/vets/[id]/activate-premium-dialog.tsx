@@ -33,7 +33,7 @@ export function ActivatePremiumDialog({
     const formData = new FormData(e.currentTarget);
     formData.set("vetId", vetId);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await activatePremium(formData);
       if (result.success) {
         setOpen(false);
@@ -41,7 +41,7 @@ export function ActivatePremiumDialog({
       } else {
         setError(result.error ?? "Error al activar.");
       }
-    });
+    })(); });
   }
 
   const todayLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)

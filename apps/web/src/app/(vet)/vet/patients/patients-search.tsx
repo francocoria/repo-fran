@@ -128,7 +128,7 @@ function PatientCard({ row }: { row: PatientRow }) {
   function handleArchive(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = row.archived
         ? await unarchivePatient(row.id)
         : await archivePatient(row.id);
@@ -137,7 +137,7 @@ function PatientCard({ row }: { row: PatientRow }) {
       } else {
         toast.error(result.error ?? "No se pudo procesar.");
       }
-    });
+    })(); });
   }
 
   return (

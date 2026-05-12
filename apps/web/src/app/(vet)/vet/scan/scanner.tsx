@@ -108,7 +108,7 @@ export function Scanner() {
   async function confirmRequest() {
     if (!scannedToken) return;
     setPhase("submitting");
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await requestAccessByToken(scannedToken);
       if (result.success) {
         setScannedAnimal({
@@ -126,7 +126,7 @@ export function Scanner() {
         setError(result.error ?? "No se pudo solicitar acceso.");
         setPhase("error");
       }
-    });
+    })(); });
   }
 
   function reset() {

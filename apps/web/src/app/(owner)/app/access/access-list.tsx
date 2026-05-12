@@ -59,7 +59,7 @@ function PendingRow({ request }: { request: AccessRow }) {
 
   function handleApprove() {
     setDecision("approve");
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await approveAccess(request.id);
       if (result.success) {
         toast.success(`Aprobaste a ${request.vet.full_name}.`);
@@ -67,12 +67,12 @@ function PendingRow({ request }: { request: AccessRow }) {
         toast.error(result.error ?? "No se pudo aprobar.");
         setDecision(null);
       }
-    });
+    })(); });
   }
 
   function handleReject() {
     setDecision("reject");
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await rejectAccess(request.id);
       if (result.success) {
         toast.success("Solicitud rechazada.");
@@ -80,7 +80,7 @@ function PendingRow({ request }: { request: AccessRow }) {
         toast.error(result.error ?? "No se pudo rechazar.");
         setDecision(null);
       }
-    });
+    })(); });
   }
 
   return (
@@ -179,7 +179,7 @@ function ApprovedRow({ access }: { access: AccessRow }) {
       setConfirmRevoke(true);
       return;
     }
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await revokeAccess(access.id);
       if (result.success) {
         toast.success("Acceso revocado.");
@@ -187,7 +187,7 @@ function ApprovedRow({ access }: { access: AccessRow }) {
         toast.error(result.error ?? "No se pudo revocar.");
       }
       setConfirmRevoke(false);
-    });
+    })(); });
   }
 
   const approvedDate = access.approved_at

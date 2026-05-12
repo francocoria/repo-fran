@@ -31,15 +31,15 @@ export function StudyList({ animalId, studies, isOwner }: StudyListProps) {
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await uploadStudy(animalId, formData);
       if (result.success) { setShowForm(false); setFileName(""); }
       else setError(result.error ?? "Error");
-    });
+    })(); });
   }
 
   function handleDelete(id: string) {
-    startTransition(async () => { await deleteStudy(animalId, id); });
+    startTransition(() => { void (async () => { await deleteStudy(animalId, id); })(); });
   }
 
   return (

@@ -32,14 +32,14 @@ export default function SignupVetPage() {
 
     const formData = new FormData(e.currentTarget);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await signupVet(formData);
       if (result.success) {
         setSent(true);
       } else {
         setError(result.error ?? "Error al crear la cuenta");
       }
-    });
+    })(); });
   }
 
   if (sent) {

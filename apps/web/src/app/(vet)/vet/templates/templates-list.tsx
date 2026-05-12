@@ -43,7 +43,7 @@ export function TemplatesList({ templates, editable }: Props) {
     const target = confirmTarget;
     setConfirmTarget(null);
     setDeletingId(target.id);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await deleteConsultTemplate(target.id);
       setDeletingId(null);
       if (result.success) {
@@ -52,7 +52,7 @@ export function TemplatesList({ templates, editable }: Props) {
       } else {
         toast.error(result.error ?? "Error al borrar");
       }
-    });
+    })(); });
   }
 
   if (templates.length === 0) {

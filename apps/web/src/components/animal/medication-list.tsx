@@ -31,19 +31,19 @@ export function MedicationList({ animalId, medications, isOwner }: MedicationLis
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await addMedication(animalId, formData);
       if (result.success) setShowForm(false);
       else setError(result.error ?? "Error");
-    });
+    })(); });
   }
 
   function handleToggle(id: string, active: boolean) {
-    startTransition(async () => { await toggleMedication(animalId, id, !active); });
+    startTransition(() => { void (async () => { await toggleMedication(animalId, id, !active); })(); });
   }
 
   function handleDelete(id: string) {
-    startTransition(async () => { await deleteMedication(animalId, id); });
+    startTransition(() => { void (async () => { await deleteMedication(animalId, id); })(); });
   }
 
   const active = medications.filter(m => m.active);

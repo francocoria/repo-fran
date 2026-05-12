@@ -67,7 +67,7 @@ export function LostModeToggle({
     setError(null);
     const formData = new FormData(e.currentTarget);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await activateLostMode(animalId, formData);
       if (result.success) {
         setShowActivateForm(false);
@@ -75,19 +75,19 @@ export function LostModeToggle({
       } else {
         setError(result.error ?? "Error al activar.");
       }
-    });
+    })(); });
   }
 
   function confirmMarkFound() {
     setShowFoundConfirm(false);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await deactivateLostMode(animalId, true);
       if (result.success) {
         router.refresh();
       } else {
         setError(result.error ?? "Error.");
       }
-    });
+    })(); });
   }
 
   async function handleCopy() {

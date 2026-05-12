@@ -22,14 +22,14 @@ export function VerificationActions({ requestId }: Props) {
   function confirmApprove() {
     setError(null);
     setShowApproveConfirm(false);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await approveVerification(requestId);
       if (result.success) {
         router.refresh();
       } else {
         setError(result.error ?? "Error.");
       }
-    });
+    })(); });
   }
 
   function handleReject() {
@@ -38,7 +38,7 @@ export function VerificationActions({ requestId }: Props) {
       setError("Indicá un motivo para el rechazo.");
       return;
     }
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await rejectVerification(requestId, rejectReason);
       if (result.success) {
         setShowRejectForm(false);
@@ -47,7 +47,7 @@ export function VerificationActions({ requestId }: Props) {
       } else {
         setError(result.error ?? "Error.");
       }
-    });
+    })(); });
   }
 
   return (

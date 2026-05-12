@@ -29,15 +29,15 @@ export function DewormingList({ animalId, dewormings, isOwner }: DewormingListPr
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await addDeworming(animalId, formData);
       if (result.success) setShowForm(false);
       else setError(result.error ?? "Error");
-    });
+    })(); });
   }
 
   function handleDelete(id: string) {
-    startTransition(async () => { await deleteDeworming(animalId, id); });
+    startTransition(() => { void (async () => { await deleteDeworming(animalId, id); })(); });
   }
 
   const overdue = dewormings.filter(d => d.next_date && new Date(d.next_date) < new Date());

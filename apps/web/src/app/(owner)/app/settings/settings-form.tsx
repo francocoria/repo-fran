@@ -48,7 +48,7 @@ export function SettingsForm({ email, initialData }: Props) {
     setSaved(false);
     const formData = new FormData(e.currentTarget);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await updateOwnerProfile(formData);
       if (result.success) {
         setSaved(true);
@@ -56,7 +56,7 @@ export function SettingsForm({ email, initialData }: Props) {
       } else {
         setError(result.error ?? "Error al guardar");
       }
-    });
+    })(); });
   }
 
   return (

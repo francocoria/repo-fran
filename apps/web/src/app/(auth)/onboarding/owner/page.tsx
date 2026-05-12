@@ -19,14 +19,14 @@ export default function OnboardingOwnerPage() {
       setError("Ingresá tu nombre (mínimo 2 caracteres).");
       return;
     }
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await createOwnerProfile(fullName.trim());
       if (result.success) {
         router.push("/app");
       } else {
         setError(result.error ?? "Error al crear perfil");
       }
-    });
+    })(); });
   }
 
   return (

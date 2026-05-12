@@ -83,7 +83,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
       formData.set("visitDate", new Date(visitDateLocal).toISOString());
     }
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await createConsult(animalId, formData);
       if (result.success) {
         router.push(`/vet/patients/${animalId}`);
@@ -91,7 +91,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
       } else {
         setError(result.error ?? "Error al crear la consulta.");
       }
-    });
+    })(); });
   }
 
   // Default datetime: ahora

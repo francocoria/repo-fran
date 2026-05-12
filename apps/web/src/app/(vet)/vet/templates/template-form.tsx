@@ -39,7 +39,7 @@ export function TemplateForm({ mode, templateId, initialData }: Props) {
     setError(null);
     const formData = new FormData(e.currentTarget);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result =
         mode === "edit" && templateId
           ? await updateConsultTemplate(templateId, formData)
@@ -51,7 +51,7 @@ export function TemplateForm({ mode, templateId, initialData }: Props) {
       } else {
         setError(result.error ?? "Error al guardar");
       }
-    });
+    })(); });
   }
 
   function update<K extends keyof FormData>(key: K, value: FormData[K]) {

@@ -33,14 +33,14 @@ export default function LoginPage() {
   function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await loginWithMagicLink(email);
       if (result.success) {
         setStep("code");
       } else {
         setError(result.error ?? "Error al enviar el código");
       }
-    });
+    })(); });
   }
 
   function handleCodeSubmit(e: React.FormEvent) {
@@ -50,7 +50,7 @@ export default function LoginPage() {
       setError("Ingresá los 6 dígitos del email");
       return;
     }
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await verifyOtpCode(email, code);
       if (result.success) {
         router.push((result.redirectTo ?? "/app") as never);
@@ -58,7 +58,7 @@ export default function LoginPage() {
       } else {
         setError(result.error ?? "Código incorrecto. Probá de nuevo.");
       }
-    });
+    })(); });
   }
 
   async function handleResend() {

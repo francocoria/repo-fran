@@ -63,14 +63,14 @@ export default function NewAnimalPage() {
       );
     }
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await createAnimal(formData);
       if (result.success && result.animalId) {
         router.push(`/app/animals/${result.animalId}` as `/app/animals/${string}`);
       } else {
         setError(result.error ?? "Error al registrar la mascota");
       }
-    });
+    })(); });
   }
 
   const breedSuggestions = COMMON_BREEDS[species] ?? [];

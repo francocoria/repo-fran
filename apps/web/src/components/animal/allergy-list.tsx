@@ -38,15 +38,15 @@ export function AllergyList({ animalId, allergies, isOwner }: AllergyListProps) 
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await addAllergy(animalId, formData);
       if (result.success) setShowForm(false);
       else setError(result.error ?? "Error");
-    });
+    })(); });
   }
 
   function handleDelete(id: string) {
-    startTransition(async () => { await deleteAllergy(animalId, id); });
+    startTransition(() => { void (async () => { await deleteAllergy(animalId, id); })(); });
   }
 
   const severeCount = allergies.filter(a => a.severity === "severe").length;

@@ -50,7 +50,7 @@ export function VerifyForm() {
     const formData = new FormData();
     formData.append("license", file);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await requestVerification(formData);
       if (result.success) {
         router.push("/vet/plan");
@@ -58,7 +58,7 @@ export function VerifyForm() {
       } else {
         setError(result.error ?? "Error al enviar.");
       }
-    });
+    })(); });
   }
 
   return (

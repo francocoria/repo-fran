@@ -73,9 +73,9 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
   const RoleIcon = config.icon;
 
   function handleLogout() {
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       await logout();
-    });
+    })(); });
   }
 
   return (

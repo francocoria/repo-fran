@@ -29,7 +29,7 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
     setError(null);
     const formData = new FormData(e.currentTarget);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await addWeightEntry(animalId, formData);
       if (result.success) {
         setShowForm(false);
@@ -37,13 +37,13 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
       } else {
         setError(result.error ?? "Error");
       }
-    });
+    })(); });
   }
 
   function handleDelete(entryId: string) {
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       await deleteWeightEntry(animalId, entryId);
-    });
+    })(); });
   }
 
   // Trend: compare last two entries

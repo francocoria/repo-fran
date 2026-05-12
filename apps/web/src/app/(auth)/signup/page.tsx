@@ -28,14 +28,14 @@ export default function SignupOwnerPage() {
 
     const formData = new FormData(e.currentTarget);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await signupOwner(formData);
       if (result.success) {
         setSent(true);
       } else {
         setError(result.error ?? "Error al crear la cuenta");
       }
-    });
+    })(); });
   }
 
   if (sent) {

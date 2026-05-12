@@ -28,7 +28,7 @@ export default function OnboardingVetPage() {
       setError("Ingresá tu nombre (mínimo 2 caracteres).");
       return;
     }
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await createVetProfile({
         fullName: fullName.trim(),
         licenseNumber: licenseNumber.trim() || undefined,
@@ -40,7 +40,7 @@ export default function OnboardingVetPage() {
       } else {
         setError(result.error ?? "Error al crear perfil");
       }
-    });
+    })(); });
   }
 
   return (

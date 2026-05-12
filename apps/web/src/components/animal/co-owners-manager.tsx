@@ -28,7 +28,7 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
     e.preventDefault();
     setError(null);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await inviteCoOwner(animalId, email);
       if (result.success) {
         setEmail("");
@@ -36,16 +36,16 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
       } else {
         setError(result.error ?? "Error");
       }
-    });
+    })(); });
   }
 
   function handleRemove(coOwnerId: string) {
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await removeCoOwner(animalId, coOwnerId);
       if (!result.success) {
         setError(result.error ?? "Error");
       }
-    });
+    })(); });
   }
 
   return (

@@ -51,10 +51,10 @@ export function NotificationList({ notifications }: Props) {
 
   function handleClick(n: NotificationItem) {
     if (!n.read) {
-      startTransition(async () => {
+      startTransition(() => { void (async () => {
         await markNotificationAsRead(n.id);
         router.refresh();
-      });
+      })(); });
     }
     if (n.link) {
       router.push(n.link);
@@ -62,10 +62,10 @@ export function NotificationList({ notifications }: Props) {
   }
 
   function handleMarkAllRead() {
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       await markAllNotificationsAsRead();
       router.refresh();
-    });
+    })(); });
   }
 
   return (

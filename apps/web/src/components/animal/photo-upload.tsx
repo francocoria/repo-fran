@@ -36,7 +36,7 @@ export function PhotoUpload({ animalId, currentPhotoUrl, animalName }: PhotoUplo
     const formData = new FormData();
     formData.append("photo", file);
 
-    startTransition(async () => {
+    startTransition(() => { void (async () => {
       const result = await uploadAnimalPhoto(animalId, formData);
       if (result.success && result.url) {
         setPreview(result.url);
@@ -44,7 +44,7 @@ export function PhotoUpload({ animalId, currentPhotoUrl, animalName }: PhotoUplo
         setError(result.error ?? "Error al subir.");
         setPreview(currentPhotoUrl);
       }
-    });
+    })(); });
   }
 
   return (
