@@ -42,14 +42,19 @@ const speciesLabels: Record<string, string> = {
   rodent: "Roedor", reptile: "Reptil", fish: "Pez", exotic: "Exótico", other: "Otro",
 };
 
-export default async function AnimalProfilePage({ params }: { params: { id: string } }) {
+export default async function AnimalProfilePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const user = await requireUser();
   const profile = await getOwnerProfile(user.id);
 
   if (!profile) return notFound();
 
   const animal = await prisma.animal.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       co_owners: {
         where: { status: "active" },

@@ -25,9 +25,9 @@ export default function LoginPage() {
   const codeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (step === "code") {
-      setTimeout(() => codeInputRef.current?.focus(), 100);
-    }
+    if (step !== "code") return;
+    const t = setTimeout(() => codeInputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
   }, [step]);
 
   function handleEmailSubmit(e: React.FormEvent) {

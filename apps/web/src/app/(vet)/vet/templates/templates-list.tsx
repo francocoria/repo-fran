@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   FileText,
   Pencil,
@@ -38,9 +39,10 @@ export function TemplatesList({ templates, editable }: Props) {
       const result = await deleteConsultTemplate(id);
       setDeletingId(null);
       if (result.success) {
+        toast.success("Plantilla eliminada");
         router.refresh();
       } else {
-        alert(result.error ?? "Error al borrar");
+        toast.error(result.error ?? "Error al borrar");
       }
     });
   }

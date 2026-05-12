@@ -4,9 +4,10 @@ import { prisma } from "@pet-app/db";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { id } = await params;
     const user = await requireUser();
     const profile = await getOwnerProfile(user.id);
 
@@ -15,7 +16,7 @@ export async function GET(
     }
 
     const animal = await prisma.animal.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         co_owners: {
           where: { owner_id: profile.id, status: "active" },

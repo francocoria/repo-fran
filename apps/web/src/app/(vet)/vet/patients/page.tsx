@@ -20,6 +20,7 @@ const speciesLabels: Record<string, string> = {
 };
 
 export const metadata = { title: "Mis pacientes" };
+export const dynamic = "force-dynamic";
 
 export default async function PatientsPage() {
   const user = await requireUser();

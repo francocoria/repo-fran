@@ -9,6 +9,7 @@ import {
 } from "./access-list";
 
 export const metadata = { title: "Accesos" };
+export const dynamic = "force-dynamic";
 
 export default async function AccessPage() {
   const user = await requireUser();
