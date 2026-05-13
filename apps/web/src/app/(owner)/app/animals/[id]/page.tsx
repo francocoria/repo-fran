@@ -125,18 +125,18 @@ export default async function AnimalProfilePage({
       </Link>
 
       {/* ─── HEADER CARD ────────────────────────────────────── */}
-      <div className="mb-5 rounded-2xl border bg-card p-6 shadow-sm md:p-7">
-        <div className="flex flex-wrap items-start gap-5">
+      <div className="mb-5 rounded-2xl border bg-card p-5 shadow-sm md:p-7">
+        <div className="flex flex-col items-center text-center md:flex-row md:items-start md:gap-5 md:text-left">
           <PhotoUpload
             animalId={animal.id}
             currentPhotoUrl={animal.photo_url}
             animalName={animal.name}
           />
 
-          <div className="min-w-0 flex-1">
+          <div className="mt-4 w-full min-w-0 flex-1 md:mt-0">
             {/* Name + status badges */}
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[32px] font-bold leading-tight tracking-tight md:text-[36px]">
+            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+              <h1 className="text-[28px] font-bold leading-tight tracking-tight md:text-[36px]">
                 {animal.name}
               </h1>
               {isLost ? (
@@ -157,8 +157,8 @@ export default async function AnimalProfilePage({
               )}
             </div>
 
-            {/* Spec grid 6 cells */}
-            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {/* Spec grid */}
+            <div className="mt-4 grid grid-cols-2 gap-3 text-left sm:grid-cols-3 md:mt-5 md:gap-4">
               <Spec label="Especie" value={speciesLabels[animal.species] ?? animal.species} />
               {animal.breed && <Spec label="Raza" value={animal.breed} />}
               {ageText && (
@@ -194,8 +194,8 @@ export default async function AnimalProfilePage({
             </div>
           </div>
 
-          {/* Actions stacked */}
-          <div className="flex shrink-0 flex-col gap-2">
+          {/* Actions: horizontal row on mobile, stacked column on desktop */}
+          <div className="mt-4 flex w-full flex-wrap justify-center gap-2 md:mt-0 md:w-auto md:flex-col md:flex-nowrap md:justify-start">
             <QRModal
               animalId={animal.id}
               animalName={animal.name}

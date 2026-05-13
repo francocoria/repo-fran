@@ -71,12 +71,13 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-labelledby="qr-modal-title"
         >
+          <div className="flex min-h-full items-center justify-center py-4">
           <div
             className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-fade-up"
             onClick={(e) => e.stopPropagation()}
@@ -162,6 +163,7 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
                 </Button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}
