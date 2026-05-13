@@ -27,9 +27,11 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  const PERSISTENT_MAX_AGE = 60 * 60 * 24 * 365; // 1 año en segundos
+
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookieOptions: {
-      maxAge: 60 * 60 * 24 * 365,
+      maxAge: PERSISTENT_MAX_AGE,
       sameSite: "lax",
       secure: true,
     },
@@ -44,8 +46,16 @@ export async function middleware(request: NextRequest) {
           request.cookies.set(name, value),
         );
         response = NextResponse.next({ request });
+        // Forzamos maxAge en cada cookie. El Supabase SDK a veces setea
+        // cookies sin Max-Age (cookies de sesión que se borran al cerrar
+        // el navegador / PWA). Con este override garantizamos persistencia.
         cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
+          response.cookies.set(name, value, {
+            ...options,
+            maxAge: PERSISTENT_MAX_AGE,
+            sameSite: "lax",
+            secure: true,
+          }),
         );
       },
     },

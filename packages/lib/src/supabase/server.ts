@@ -14,10 +14,11 @@ export async function createSupabaseServerClient() {
   }
 
   const cookieStore = await cookies();
+  const PERSISTENT_MAX_AGE = 60 * 60 * 24 * 365; // 1 año
 
   return createServerClient(url, anonKey, {
     cookieOptions: {
-      maxAge: 60 * 60 * 24 * 365,
+      maxAge: PERSISTENT_MAX_AGE,
       sameSite: "lax",
       secure: true,
     },
@@ -29,8 +30,15 @@ export async function createSupabaseServerClient() {
         cookiesToSet: { name: string; value: string; options?: CookieOptions }[],
       ) {
         try {
+          // Forzamos maxAge para asegurar cookies persistentes en lugar
+          // de cookies de sesión (que iOS PWA y algunos browsers borran).
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
+            cookieStore.set(name, value, {
+              ...options,
+              maxAge: PERSISTENT_MAX_AGE,
+              sameSite: "lax",
+              secure: true,
+            }),
           );
         } catch {
           // Ignorado: setAll falla en Server Components puros (read-only).
