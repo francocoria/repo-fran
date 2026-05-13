@@ -29,7 +29,7 @@ export default async function OwnerLayout({
         avatarUrl={profile.avatar_url}
       />
       <main className="container py-6 md:py-8">{children}</main>
-      <MobileNav role="owner" fabHref="/app" fabIcon="qr" fabLabel="Mostrar QR" />
+      <MobileNav role="owner" fabHref="/app/qr" fabIcon="qr" fabLabel="Mostrar QR" />
     </div>
   );
 }
