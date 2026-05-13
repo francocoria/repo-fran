@@ -40,14 +40,42 @@ export async function verifyOtpCode(
   token: string,
 ): Promise<AuthResult & { redirectTo?: string }> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.verifyOtp({
-    email: email.trim().toLowerCase(),
-    token: token.trim(),
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanToken = token.trim();
+
+  // Probamos tipo "email" (usuarios existentes con magic link OTP)
+  let { data, error } = await supabase.auth.verifyOtp({
+    email: cleanEmail,
+    token: cleanToken,
     type: "email",
   });
 
+  // Si fallo por token invalido, fallback a tipo "signup"
+  // (Supabase manda OTP "signup" cuando el usuario es nuevo)
   if (error) {
-    return { success: false, error: error.message };
+    console.error("[verifyOtp/email] failed:", {
+      code: (error as { code?: string }).code,
+      status: (error as { status?: number }).status,
+      message: error.message,
+    });
+
+    const signupResult = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanToken,
+      type: "signup",
+    });
+
+    if (signupResult.error) {
+      console.error("[verifyOtp/signup] failed:", {
+        code: (signupResult.error as { code?: string }).code,
+        status: (signupResult.error as { status?: number }).status,
+        message: signupResult.error.message,
+      });
+      return { success: false, error: signupResult.error.message };
+    }
+
+    data = signupResult.data;
+    error = null;
   }
 
   const userId = data.user?.id;
