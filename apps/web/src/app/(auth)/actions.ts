@@ -1,6 +1,6 @@
 "use server";
 
-import { createSupabaseServerClient } from "@pet-app/lib";
+import { createSupabaseServerClient, createSupabaseAdminClient } from "@pet-app/lib";
 import { ownerSignupSchema, vetSignupSchema } from "@pet-app/lib";
 import { prisma } from "@pet-app/db";
 import { redirect } from "next/navigation";
@@ -361,4 +361,66 @@ export async function logout() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+// ─── Eliminar cuenta ──────────────────────────────────────
+// Apple Guideline 5.1.1(v) y Google Play Data deletion policy:
+// debe poder borrarse la cuenta desde la app, sin email ni soporte.
+//
+// Borra el user de Supabase Auth (con admin client). Por las foreign keys
+// con onDelete: Cascade del schema Prisma, eso arrastra owner_profile,
+// vet_profile, animales, vacunas, alergias, accesos, suscripciones, etc.
+
+export async function deleteAccount(
+  confirmation: string,
+): Promise<AuthResult> {
+  if (confirmation !== "ELIMINAR") {
+    return {
+      success: false,
+      error: 'Para confirmar, escribí exactamente "ELIMINAR" (en mayúsculas).',
+    };
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: "No autenticado." };
+    }
+
+    const userId = user.id;
+
+    // Primero borramos los registros propios via Prisma para asegurar la
+    // cascada (Supabase Auth no siempre cascadea hacia public schema).
+    await prisma.ownerProfile.deleteMany({ where: { user_id: userId } });
+    await prisma.vetProfile.deleteMany({ where: { user_id: userId } });
+    await prisma.adminUser.deleteMany({ where: { user_id: userId } });
+
+    // Después borramos el usuario de auth.users con admin key.
+    const admin = createSupabaseAdminClient();
+    const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
+    if (deleteError) {
+      console.error("[deleteAccount] auth.admin.deleteUser failed:", deleteError);
+      return {
+        success: false,
+        error:
+          "No pudimos eliminar la cuenta. Reintentá o escribinos a 1133985163f@gmail.com",
+      };
+    }
+
+    // Cerramos la sesión local.
+    await supabase.auth.signOut();
+
+    return { success: true };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    console.error("[deleteAccount] failed:", msg);
+    return {
+      success: false,
+      error: "Hubo un problema. Reintentá en unos minutos.",
+    };
+  }
 }

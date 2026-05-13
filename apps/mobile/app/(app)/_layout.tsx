@@ -5,7 +5,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Home,
-  Dog,
   Bell,
   User,
   Users,
@@ -25,8 +24,7 @@ interface Tab {
 }
 
 const OWNER_TABS: Tab[] = [
-  { label: "Inicio", icon: Home, href: "/(app)/" },
-  { label: "Mascotas", icon: Dog, href: "/(app)/animals" },
+  { label: "Mascotas", icon: Home, href: "/(app)/" },
   { label: "Avisos", icon: Bell, href: "/(app)/notifications" },
   { label: "Yo", icon: User, href: "/(app)/settings" },
 ];

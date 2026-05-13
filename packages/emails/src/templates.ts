@@ -1,7 +1,7 @@
 import { emailLayout, button, infoBox, escape } from "./layout";
 
 const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://petapp-one.vercel.app";
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://pet-friendly.fun";
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "PetApp";
 
 function fmtDate(d: Date | string): string {

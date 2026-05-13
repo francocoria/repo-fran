@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     locale: "es_AR",
     url: APP_URL,
     siteName: "PetApp",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    // La imagen OG se genera dinámicamente desde opengraph-image.tsx
   },
   robots: {
     index: true,

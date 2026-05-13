@@ -64,7 +64,7 @@ libreta sanitaria, historial médico, QR, modo perdido
 ## Privacy Policy URL
 
 Opciones (elegí una):
-- `https://petapp-one.vercel.app/privacy` (hay que crear esa página en la web)
+- `https://pet-friendly.fun/privacy` (ya está implementada)
 - Notion público con la policy
 - GitHub Pages
 

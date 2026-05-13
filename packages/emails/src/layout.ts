@@ -12,7 +12,7 @@ export function emailLayout({
   title,
   preheader = "",
   appName = "PetApp",
-  appUrl = "https://petapp-one.vercel.app",
+  appUrl = "https://pet-friendly.fun",
   body,
   heroBackground = "linear-gradient(135deg,#5eead4 0%,#06b6d4 60%,#0891b2 100%)",
   heroIcon = "🐾",

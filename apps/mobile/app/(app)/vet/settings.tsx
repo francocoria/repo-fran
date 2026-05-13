@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { Alert, Platform, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LogOut, Mail } from "lucide-react-native";
+import { LogOut, Mail, Trash2 } from "lucide-react-native";
 import { Button } from "../../../src/components/ui/button";
 import { Input } from "../../../src/components/ui/input";
 import { Card } from "../../../src/components/ui/card";
 import { useSession, signOut } from "../../../src/lib/session";
 import { supabase } from "../../../src/lib/supabase";
+import { env } from "../../../src/lib/env";
 
 export default function VetSettingsScreen() {
   const router = useRouter();
@@ -75,6 +76,85 @@ export default function VetSettingsScreen() {
     ]);
   }
 
+  async function performAccountDeletion() {
+    try {
+      const {
+        data: { session: current },
+      } = await supabase.auth.getSession();
+      if (!current?.access_token) {
+        Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
+        return;
+      }
+      const res = await fetch(`${env.APP_URL}/api/account/delete`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${current.access_token}` },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        Alert.alert("Error", body.error ?? "No pudimos eliminar la cuenta.");
+        return;
+      }
+      await signOut();
+      router.replace("/login");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error de red";
+      Alert.alert("Error", msg);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    Alert.alert(
+      "¿Eliminar cuenta?",
+      "Se borrarán tu perfil profesional, suscripción premium y todos los accesos a animales. Esta acción NO se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Continuar",
+          style: "destructive",
+          onPress: () => {
+            if (Platform.OS === "ios") {
+              Alert.prompt(
+                "Última confirmación",
+                'Escribí "ELIMINAR" para confirmar.',
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  {
+                    text: "Eliminar",
+                    style: "destructive",
+                    onPress: (value?: string) => {
+                      if (value?.trim() !== "ELIMINAR") {
+                        Alert.alert(
+                          "No coincide",
+                          'Tenías que escribir "ELIMINAR" exacto.',
+                        );
+                        return;
+                      }
+                      void performAccountDeletion();
+                    },
+                  },
+                ],
+                "plain-text",
+              );
+            } else {
+              Alert.alert(
+                "Última confirmación",
+                "Tocá 'Eliminar' para borrar tu cuenta y todos los datos.",
+                [
+                  { text: "Cancelar", style: "cancel" },
+                  {
+                    text: "Eliminar",
+                    style: "destructive",
+                    onPress: () => void performAccountDeletion(),
+                  },
+                ],
+              );
+            }
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
@@ -126,7 +206,7 @@ export default function VetSettingsScreen() {
           </Card>
         </View>
 
-        <View className="mt-6 px-3">
+        <View className="mt-6 gap-3 px-3">
           <Button
             label="Cerrar sesión"
             onPress={handleSignOut}
@@ -134,6 +214,16 @@ export default function VetSettingsScreen() {
             icon={LogOut}
             fullWidth
           />
+          <Button
+            label="Eliminar mi cuenta"
+            onPress={handleDeleteAccount}
+            variant="rose"
+            icon={Trash2}
+            fullWidth
+          />
+          <Text className="px-1 text-center text-[11px] text-subtle">
+            Esta acción es irreversible.
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>

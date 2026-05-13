@@ -21,6 +21,7 @@ import {
   Share2,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import QRCode from "react-native-qrcode-svg";
 import { PetAvatar } from "../../../src/components/pet-avatar";
 import { Badge } from "../../../src/components/ui/badge";
 import { Button } from "../../../src/components/ui/button";
@@ -349,15 +350,15 @@ function QRSheet({
                 height: 240,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#f5f5f4",
+                backgroundColor: "#ffffff",
                 borderRadius: 12,
+                padding: 12,
               }}
             >
-              <QrCode size={120} color="#0c0a09" strokeWidth={1.2} />
-              <Text className="mt-2 text-[11px] text-subtle">QR generado</Text>
+              <QRCode value={qrUrl} size={216} backgroundColor="#ffffff" color="#0c0a09" />
             </View>
-            <Text className="mt-3 text-center font-mono text-[10px] text-subtle">
-              {qrUrl.substring(0, 50)}...
+            <Text className="mt-3 text-center text-[12px] text-muted">
+              Que el veterinario escanee este código con la cámara de su celular.
             </Text>
           </View>
 

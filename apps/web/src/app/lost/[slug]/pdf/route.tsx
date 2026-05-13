@@ -12,7 +12,7 @@ import {
 import { prisma } from "@pet-app/db";
 
 const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://petapp-one.vercel.app";
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://pet-friendly.fun";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -377,7 +377,7 @@ export async function GET(
         </View>
 
         <Text style={styles.footer}>
-          Generado con PetApp — petapp-one.vercel.app
+          Generado con PetApp — pet-friendly.fun
         </Text>
       </Page>
     </Document>

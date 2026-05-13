@@ -21,6 +21,7 @@ import { Badge } from "../../../../src/components/ui/badge";
 import { Card } from "../../../../src/components/ui/card";
 import { Button } from "../../../../src/components/ui/button";
 import { supabase } from "../../../../src/lib/supabase";
+import { env } from "../../../../src/lib/env";
 import { formatDate, getAge, speciesLabel } from "../../../../src/lib/format";
 
 interface PatientData {
@@ -260,7 +261,7 @@ export default function VetPatientView() {
             size="lg"
             onPress={() =>
               Linking.openURL(
-                `https://petapp-one.vercel.app/vet/patients/${animal.id}/consults/new`,
+                `${env.APP_URL}/vet/patients/${animal.id}/consults/new`,
               )
             }
           />

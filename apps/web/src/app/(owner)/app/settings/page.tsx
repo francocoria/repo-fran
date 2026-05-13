@@ -1,6 +1,7 @@
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { SettingsForm } from "./settings-form";
 import { ThemePicker } from "./theme-picker";
+import { DeleteAccountSection } from "@/components/delete-account-section";
 
 export const metadata = { title: "Configuración" };
 export const dynamic = "force-dynamic";
@@ -31,6 +32,8 @@ export default async function OwnerSettingsPage() {
       />
 
       <ThemePicker />
+
+      <DeleteAccountSection />
     </div>
   );
 }

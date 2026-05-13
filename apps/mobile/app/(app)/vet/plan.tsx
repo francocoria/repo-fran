@@ -1,13 +1,11 @@
-import { ActivityIndicator, Linking, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Check, Crown, MessageCircle, X } from "lucide-react-native";
+import { Check, Crown, X } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Button } from "../../../src/components/ui/button";
 import { Card } from "../../../src/components/ui/card";
 import { Badge } from "../../../src/components/ui/badge";
 import { useVetPlan } from "../../../src/hooks/use-vet-data";
 import { formatDate } from "../../../src/lib/format";
-import { env } from "../../../src/lib/env";
 
 const FEATURES = [
   { label: "Pacientes ilimitados", premium: true },
@@ -34,16 +32,6 @@ export default function VetPlanScreen() {
   const now = new Date();
   const expired = expiresAt && expiresAt < now;
   const isPremium = !expired && (subscription?.plan === "premium" || subscription?.plan === "trial");
-
-  function openWhatsApp() {
-    if (!env.WHATSAPP_NUMBER) {
-      return;
-    }
-    const message = encodeURIComponent(
-      "Hola! Quiero pasar al plan Premium de PetApp.",
-    );
-    Linking.openURL(`https://wa.me/${env.WHATSAPP_NUMBER}?text=${message}`);
-  }
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
@@ -143,20 +131,14 @@ export default function VetPlanScreen() {
             >
               <Crown size={32} color="#fff" />
               <Text className="mt-2 text-[18px] font-bold text-white">
-                Pasate a Premium
+                Plan Premium
               </Text>
               <Text className="mt-1 text-center text-[13px] text-white/90">
-                USD 10/mes — Pacientes ilimitados, certificados y branding.
+                Pacientes ilimitados, certificados profesionales y branding.
               </Text>
-              <View className="mt-4 w-full">
-                <Button
-                  label="Activar por WhatsApp"
-                  variant="dark"
-                  icon={MessageCircle}
-                  onPress={openWhatsApp}
-                  fullWidth
-                />
-              </View>
+              <Text className="mt-3 text-center text-[12px] text-white/75">
+                Las suscripciones se gestionan desde la cuenta web. Próximamente compras dentro de la app.
+              </Text>
             </LinearGradient>
           </View>
         )}

@@ -99,7 +99,7 @@ Editá `app.json` y reemplazá:
 ```bash
 npx eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value "https://TU-PROYECTO.supabase.co"
 npx eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "tu-anon-key"
-npx eas secret:create --scope project --name EXPO_PUBLIC_APP_URL --value "https://petapp-one.vercel.app"
+npx eas secret:create --scope project --name EXPO_PUBLIC_APP_URL --value "https://pet-friendly.fun"
 npx eas secret:create --scope project --name EXPO_PUBLIC_WHATSAPP_NUMBER --value "5491100000000"
 ```
 
@@ -136,7 +136,7 @@ Necesitás tener listos antes de mandar a review:
 - **App icon hi-res 512x512 PNG** → `assets/icon.png` ya está
 - **Feature graphic 1024x500 PNG** → `assets/feature-graphic.png` (a generar a mano)
 - **Mínimo 2 screenshots** del teléfono (1080x1920 o más) — sacalas del emulador con la app andando
-- **Privacy policy URL** — opción A: usá `https://petapp-one.vercel.app/privacy`; opción B: hosteala en Notion/GitHub Pages
+- **Privacy policy URL** — `https://pet-friendly.fun/privacy` (ya implementada)
 - **Descripción corta** (máx 80 chars): "Centro de salud para tu mascota. Vacunas, historial y QR para tu vet."
 - **Descripción larga** (máx 4000 chars) — copy en `docs/play-store-description.md`
 
