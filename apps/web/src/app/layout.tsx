@@ -7,6 +7,7 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeColorProvider } from "@/components/providers/theme-color-provider";
 import { InstallPrompt } from "@/components/install-prompt";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 // Script inline para aplicar el color guardado ANTES de hidratar y evitar flash.
@@ -110,6 +111,7 @@ export default function RootLayout({
             {children}
             <Toaster richColors closeButton position="top-right" />
             <InstallPrompt />
+            <Analytics />
           </QueryProvider>
         </ThemeProvider>
       </body>

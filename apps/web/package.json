@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@vercel/analytics": "^1.4.1",
     "@pet-app/db": "workspace:*",
     "@pet-app/emails": "workspace:*",
     "@pet-app/lib": "workspace:*",
