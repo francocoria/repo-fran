@@ -5,6 +5,7 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeColorProvider } from "@/components/providers/theme-color-provider";
+import { InstallPrompt } from "@/components/install-prompt";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -108,6 +109,7 @@ export default function RootLayout({
           <QueryProvider>
             {children}
             <Toaster richColors closeButton position="top-right" />
+            <InstallPrompt />
           </QueryProvider>
         </ThemeProvider>
       </body>
