@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   FileText,
   QrCode,
@@ -16,6 +17,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button, Badge, Brand, PetAvatar } from "@pet-app/ui";
+import { createSupabaseServerClient } from "@pet-app/lib";
+
+export const dynamic = "force-dynamic";
 
 const features = [
   {
@@ -67,7 +71,51 @@ const vetPlanItems = [
   "Plantillas de consulta",
 ];
 
-export default function LandingPage() {
+/**
+ * Si hay sesión activa, redirige al dashboard del rol correspondiente.
+ * Si no, devuelve la landing pública.
+ */
+async function resolveAuthenticatedRedirect(): Promise<string | null> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Check role en orden: admin → vet → owner
+    const { data: admin } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (admin) return "/admin";
+
+    const { data: vet } = await supabase
+      .from("vet_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (vet) return "/vet";
+
+    const { data: owner } = await supabase
+      .from("owner_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (owner) return "/app";
+
+    // Logueado pero sin perfil → onboarding
+    return "/onboarding";
+  } catch {
+    return null;
+  }
+}
+
+export default async function LandingPage() {
+  const target = await resolveAuthenticatedRedirect();
+  if (target) redirect(target);
+
   return (
     <div className="bg-background">
       {/* Header sticky */}
