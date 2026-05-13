@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,7 +13,7 @@ import {
   ScanLine,
   type LucideIcon,
 } from "lucide-react-native";
-import { useSession, loadProfile, type UserProfile } from "../../src/lib/session";
+import { useSession, useProfile } from "../../src/lib/session";
 
 type Role = "owner" | "vet";
 
@@ -25,7 +25,7 @@ interface Tab {
 
 const OWNER_TABS: Tab[] = [
   { label: "Mascotas", icon: Home, href: "/(app)/" },
-  { label: "Avisos", icon: Bell, href: "/(app)/notifications" },
+  { label: "Recordatorios", icon: Bell, href: "/(app)/notifications" },
   { label: "Yo", icon: User, href: "/(app)/settings" },
 ];
 
@@ -38,19 +38,16 @@ const VET_TABS: Tab[] = [
 
 export default function AppLayout() {
   const { session, loading } = useSession();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const { data: profile, isLoading: profileLoading } = useProfile(
+    session?.user.id,
+  );
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    if (!session) return;
-    loadProfile(session.user.id).then((p) => {
-      setProfile(p);
-      setProfileLoading(false);
-      if (!p) router.replace("/onboarding");
-    });
-  }, [session, router]);
+    if (loading || profileLoading) return;
+    if (session && profile === null) router.replace("/onboarding");
+  }, [session, profile, profileLoading, loading, router]);
 
   if (loading || profileLoading || !profile) {
     return (

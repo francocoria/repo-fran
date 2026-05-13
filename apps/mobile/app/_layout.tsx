@@ -5,7 +5,12 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as SplashScreen from "expo-splash-screen";
 import { useSession } from "../src/lib/session";
+
+// Mantenemos el splash visible hasta que sepamos si hay sesión, así
+// evitamos el flash blanco entre splash y primer screen real.
+void SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
@@ -16,6 +21,11 @@ function AuthGate() {
 
   useEffect(() => {
     if (loading) return;
+
+    // Cuando ya sabemos el estado de auth, escondemos el splash.
+    void SplashScreen.hideAsync().catch(() => {
+      /* el splash ya se ocultó antes — ignoramos */
+    });
 
     const inAuth = segments[0] === "(auth)";
     const inApp = segments[0] === "(app)";

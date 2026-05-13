@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 
@@ -49,6 +50,21 @@ export async function loadProfile(userId: string): Promise<UserProfile | null> {
   if (vet) return { ...vet, role: "vet" };
 
   return null;
+}
+
+/**
+ * Hook que cachea el perfil del usuario por-sesión usando react-query.
+ * Reemplaza llamadas múltiples a loadProfile en index + _layout + tabs
+ * que hacían 3 round-trips por navegación.
+ */
+export function useProfile(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["profile", userId],
+    queryFn: () => (userId ? loadProfile(userId) : Promise.resolve(null)),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 min — se refetchea solo al pasar este tiempo
+    gcTime: 30 * 60 * 1000, // mantenemos en cache 30 min
+  });
 }
 
 export async function signInWithOtp(email: string) {

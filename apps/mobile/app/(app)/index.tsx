@@ -1,6 +1,5 @@
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -13,21 +12,15 @@ import { PetAvatar } from "../../src/components/pet-avatar";
 import { Badge } from "../../src/components/ui/badge";
 import { Button } from "../../src/components/ui/button";
 import { useAnimals, type AnimalListItem } from "../../src/hooks/use-animals";
-import { useSession, loadProfile } from "../../src/lib/session";
+import { useSession, useProfile } from "../../src/lib/session";
 import { getAge, speciesLabel } from "../../src/lib/format";
 
 export default function OwnerHome() {
   const router = useRouter();
   const { session } = useSession();
   const { data: animals = [], isLoading, refetch, isRefetching } = useAnimals();
-  const [firstName, setFirstName] = useState("");
-
-  useEffect(() => {
-    if (!session) return;
-    loadProfile(session.user.id).then((p) => {
-      if (p?.full_name) setFirstName(p.full_name.split(" ")[0] ?? "");
-    });
-  }, [session]);
+  const { data: profile } = useProfile(session?.user.id);
+  const firstName = profile?.full_name?.split(" ")[0] ?? "";
 
   if (isLoading) {
     return (
