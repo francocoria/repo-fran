@@ -1,95 +1,50 @@
-"use client";
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@pet-app/lib";
+import { prisma } from "@pet-app/db";
+import { OwnerOnboardingForm } from "./owner-form";
 
-import { useTransition, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button, Input, Label } from "@pet-app/ui";
-import { createOwnerProfile } from "../../actions";
-import { Dog, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Bienvenido" };
 
-export default function OnboardingOwnerPage() {
-  const router = useRouter();
-  const [fullName, setFullName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+/**
+ * Si tenemos nombre en user_metadata (vino del /signup), creamos el perfil
+ * en silencio y mandamos al dashboard. Solo mostramos el form cuando no
+ * hay nombre disponible (ej: usuario que se logueo con OTP via /login).
+ */
+export default async function OnboardingOwnerPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    if (!fullName.trim() || fullName.trim().length < 2) {
-      setError("Ingresá tu nombre (mínimo 2 caracteres).");
-      return;
-    }
-    startTransition(() => { void (async () => {
-      const result = await createOwnerProfile(fullName.trim());
-      if (result.success) {
-        router.push("/app");
-      } else {
-        setError(result.error ?? "Error al crear perfil");
-      }
-    })(); });
+  if (!user) redirect("/login");
+
+  const existing = await prisma.ownerProfile.findUnique({
+    where: { user_id: user.id },
+    select: { id: true },
+  });
+  if (existing) redirect("/app");
+
+  const metadata = (user.user_metadata ?? {}) as {
+    full_name?: string;
+    name?: string;
+    phone?: string;
+    avatar_url?: string;
+  };
+  const knownName = metadata.full_name?.trim() || metadata.name?.trim() || "";
+
+  if (knownName.length >= 2) {
+    await prisma.ownerProfile.create({
+      data: {
+        user_id: user.id,
+        full_name: knownName,
+        phone: metadata.phone ?? null,
+        avatar_url: metadata.avatar_url ?? null,
+      },
+    });
+    redirect("/app");
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="animate-fade-up text-center">
-      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-        <Dog className="h-10 w-10 text-primary" />
-      </div>
-      <h1 className="text-2xl font-bold tracking-tight">
-        ¡Bienvenido a PetApp!
-      </h1>
-      <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
-        Casi listo. Decinos tu nombre para empezar.
-      </p>
-
-      <div className="mx-auto mt-6 max-w-xs space-y-2 text-left">
-        <Label htmlFor="fullName">
-          Tu nombre <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="fullName"
-          name="fullName"
-          type="text"
-          placeholder="Ej: Franco Coria"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          maxLength={100}
-          autoFocus
-          required
-        />
-      </div>
-
-      <div className="mx-auto mt-6 max-w-xs space-y-3 text-left text-sm">
-        {[
-          "Registrá todas tus mascotas",
-          "Llevá su historial de salud al día",
-          "Compartí con tu veterinario vía QR",
-        ].map((item) => (
-          <div key={item} className="flex items-center gap-2.5">
-            <CheckCircle2 className="size-4 shrink-0 text-primary" />
-            <span>{item}</span>
-          </div>
-        ))}
-      </div>
-
-      {error && (
-        <div className="mx-auto mt-6 flex max-w-xs items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-          <AlertCircle className="size-4 shrink-0" />
-          <span className="text-left">{error}</span>
-        </div>
-      )}
-
-      <Button
-        type="submit"
-        className="mt-8 w-full max-w-xs"
-        size="lg"
-        disabled={isPending}
-      >
-        {isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          "Continuar al dashboard"
-        )}
-      </Button>
-    </form>
-  );
+  // No tenemos nombre → form mínimo (cliente)
+  return <OwnerOnboardingForm />;
 }

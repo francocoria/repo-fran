@@ -1,14 +1,29 @@
-"use client";
-
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Dog, Stethoscope, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@pet-app/ui";
+import { createSupabaseServerClient } from "@pet-app/lib";
+
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Empezar" };
 
 /**
- * Onboarding — elegir tipo de cuenta después del primer login.
- * Solo se muestra si el usuario no tiene perfil creado.
+ * Selector de rol. Sólo se muestra si el usuario no eligió rol durante
+ * el signup (caso típico: login OTP con email nuevo). Si ya hay
+ * metadata.role, saltamos directo al onboarding correspondiente.
  */
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const role = (user.user_metadata as { role?: string } | null)?.role;
+  if (role === "owner") redirect("/onboarding/owner");
+  if (role === "vet") redirect("/onboarding/vet");
+
   return (
     <div className="animate-fade-up">
       <div className="mb-8 text-center">
