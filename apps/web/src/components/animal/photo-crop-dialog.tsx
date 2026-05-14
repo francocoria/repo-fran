@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 import { Button } from "@pet-app/ui";
-import { Check, Loader2, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  Loader2,
+  RotateCcw,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 
 interface PhotoCropDialogProps {
   /** Imagen original que el usuario seleccionó del file picker */
@@ -12,14 +20,19 @@ interface PhotoCropDialogProps {
   onComplete: (blob: Blob) => void;
   /** Cuando el usuario cancela el dialog */
   onCancel: () => void;
-  /** Tamaño en pixeles del blob final (default 1024 — buena resolución para retina + ahorro de bytes) */
+  /** Tamaño en pixeles del blob final (default 1024) */
   outputSize?: number;
 }
 
 /**
- * Modal de crop tipo WhatsApp/Instagram. El usuario arrastra para
- * posicionar y usa pinch (mobile) o el slider (desktop) para zoom.
- * Al confirmar, llama a onComplete con un Blob JPEG cuadrado 1024×1024.
+ * Modal de crop tipo WhatsApp/Instagram. Drag + pinch/slider para zoom.
+ * Aspect lockeado 1:1. Devuelve un JPEG cuadrado al confirmar.
+ *
+ * Robustez:
+ *  - Pre-carga la imagen y muestra spinner hasta que esté lista. Si falla
+ *    (típicamente HEIC en browsers que no soportan), muestra un error claro.
+ *  - Container del Cropper con altura explícita (no aspect-ratio CSS, que
+ *    a veces colapsa en mobile dentro de flex/fixed).
  */
 export function PhotoCropDialog({
   imageSrc,
@@ -29,12 +42,23 @@ export function PhotoCropDialog({
 }: PhotoCropDialogProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(
-    null,
-  );
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  // Bloquear scroll del body mientras el modal está abierto
+  // Pre-cargar la imagen — si HEIC u otro formato falla, lo detectamos acá
+  // en vez de quedar con fondo negro infinito.
+  useEffect(() => {
+    setImageReady(false);
+    setLoadError(false);
+    const img = new Image();
+    img.onload = () => setImageReady(true);
+    img.onerror = () => setLoadError(true);
+    img.src = imageSrc;
+  }, [imageSrc]);
+
+  // Bloquear scroll del body
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -65,6 +89,9 @@ export function PhotoCropDialog({
     try {
       const blob = await getCroppedBlob(imageSrc, croppedAreaPixels, outputSize);
       onComplete(blob);
+    } catch (err) {
+      console.error("[PhotoCropDialog] getCroppedBlob failed:", err);
+      setLoadError(true);
     } finally {
       setProcessing(false);
     }
@@ -99,61 +126,85 @@ export function PhotoCropDialog({
           </button>
         </div>
 
-        {/* Crop area */}
-        <div className="relative aspect-square w-full bg-black">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={1}
-            cropShape="round"
-            showGrid={false}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={onCropComplete}
-            objectFit="cover"
-            style={{
-              containerStyle: { background: "#0c0a09" },
-              cropAreaStyle: { border: "2px solid #ffffff" },
-            }}
-          />
+        {/* Crop area — altura explícita (no aspect-ratio) para evitar colapso */}
+        <div
+          className="relative w-full bg-black"
+          style={{ height: 320 }}
+        >
+          {loadError ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-white">
+              <AlertCircle className="size-8 text-rose-400" />
+              <p className="text-sm font-medium">
+                No pudimos abrir esta foto
+              </p>
+              <p className="text-xs text-white/70">
+                Probá con un JPG o PNG. Si la sacaste con iPhone, en Ajustes →
+                Cámara → Formatos elegí "Compatible".
+              </p>
+            </div>
+          ) : !imageReady ? (
+            <div className="absolute inset-0 flex items-center justify-center text-white">
+              <Loader2 className="size-6 animate-spin" />
+            </div>
+          ) : (
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+              objectFit="cover"
+              style={{
+                containerStyle: { background: "#0c0a09" },
+                cropAreaStyle: { border: "2px solid #ffffff" },
+              }}
+            />
+          )}
         </div>
 
-        {/* Zoom slider */}
-        <div className="border-t border-border bg-surface-2/40 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <ZoomOut className="size-4 shrink-0 text-muted-foreground" />
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.01}
-              value={zoom}
-              onChange={(e) => setZoom(parseFloat(e.target.value))}
-              disabled={processing}
-              className="flex-1 accent-primary"
-              aria-label="Zoom"
-            />
-            <ZoomIn className="size-4 shrink-0 text-muted-foreground" />
+        {/* Zoom slider — sólo si la imagen cargó OK */}
+        {imageReady && !loadError && (
+          <div className="border-t border-border bg-surface-2/40 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <ZoomOut className="size-4 shrink-0 text-muted-foreground" />
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.01}
+                value={zoom}
+                onChange={(e) => setZoom(parseFloat(e.target.value))}
+                disabled={processing}
+                className="flex-1 accent-primary"
+                aria-label="Zoom"
+              />
+              <ZoomIn className="size-4 shrink-0 text-muted-foreground" />
+            </div>
+            <p className="mt-2 text-center text-[11.5px] text-muted-foreground">
+              Arrastrá para mover · Pellizcá o usá el slider para zoom
+            </p>
           </div>
-          <p className="mt-2 text-center text-[11.5px] text-muted-foreground">
-            Arrastrá para mover · Pellizcá o usá el slider para zoom
-          </p>
-        </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-2 border-t border-border bg-background px-4 py-3">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleReset}
-            disabled={processing}
-            className="gap-1.5"
-          >
-            <RotateCcw className="size-3.5" />
-            Reiniciar
-          </Button>
+          {imageReady && !loadError && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              disabled={processing}
+              className="gap-1.5"
+            >
+              <RotateCcw className="size-3.5" />
+              Reiniciar
+            </Button>
+          )}
           <div className="flex-1" />
           <Button
             type="button"
@@ -162,29 +213,31 @@ export function PhotoCropDialog({
             onClick={onCancel}
             disabled={processing}
           >
-            Cancelar
+            {loadError ? "Cerrar" : "Cancelar"}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleConfirm}
-            disabled={!croppedAreaPixels || processing}
-            className="gap-1.5"
-          >
-            {processing ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Check className="size-3.5" />
-            )}
-            Listo
-          </Button>
+          {!loadError && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleConfirm}
+              disabled={!croppedAreaPixels || processing || !imageReady}
+              className="gap-1.5"
+            >
+              {processing ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Check className="size-3.5" />
+              )}
+              Listo
+            </Button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Helper: dado el image src + crop area en pixels, devuelve un Blob recortado ───
+// ─── Helper: dado el image src + crop area en pixels, devuelve un Blob ───
 
 async function getCroppedBlob(
   imageSrc: string,
@@ -226,7 +279,6 @@ async function getCroppedBlob(
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = (err) => reject(err);
     img.src = src;

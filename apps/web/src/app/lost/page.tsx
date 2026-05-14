@@ -12,8 +12,10 @@ import {
   Bird,
   Rabbit,
   PawPrint,
+  ChevronLeft,
 } from "lucide-react";
 import { prisma } from "@pet-app/db";
+import { getUser, getUserRole } from "@/lib/auth";
 
 export const metadata = {
   title: "Mascotas perdidas",
@@ -55,6 +57,13 @@ function formatRelativeDate(d: Date): string {
 }
 
 export default async function LostFeedPage() {
+  // Detectamos si el visitante tiene sesión para adaptar el header
+  // (mostrar "Volver a tu panel" en vez de "Iniciar sesión").
+  const user = await getUser();
+  const role = user ? await getUserRole(user.id) : null;
+  const dashboardHref =
+    role === "vet" ? "/vet" : role === "admin" ? "/admin" : "/app";
+
   const alerts = await prisma.lostPetAlert.findMany({
     where: { status: "active" },
     orderBy: { activated_at: "desc" },
@@ -81,15 +90,25 @@ export default async function LostFeedPage() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" aria-label="Inicio">
+          <Link href={user ? dashboardHref : "/"} aria-label="Inicio">
             <Brand size="md" />
           </Link>
-          <Link
-            href="/login"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            Iniciar sesión
-          </Link>
+          {user ? (
+            <Link
+              href={dashboardHref}
+              className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="size-4" />
+              Volver
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Iniciar sesión
+            </Link>
+          )}
         </div>
       </header>
 
@@ -194,35 +213,61 @@ export default async function LostFeedPage() {
           </ul>
         )}
 
-        <section className="mt-12 rounded-2xl border border-border bg-surface-2/40 p-5">
-          <div className="flex items-start gap-3">
-            <Search className="mt-0.5 size-5 shrink-0 text-primary" />
-            <div>
-              <h2 className="font-semibold">¿Perdiste a tu mascota?</h2>
-              <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">
-                Si tenés una cuenta, entrá a tu mascota y activá el modo
-                perdido. Genera una página pública con tus datos para que
-                cualquiera que la encuentre pueda contactarte. Si todavía no
-                te registraste, podés hacerlo gratis y activar el modo perdido
-                en segundos.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link
-                  href="/login"
-                  className="inline-flex items-center rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Iniciar sesión
-                </Link>
-                <Link
-                  href="/signup"
-                  className="inline-flex items-center rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium hover:bg-secondary"
-                >
-                  Crear cuenta gratis
-                </Link>
+        {user ? (
+          <section className="mt-12 rounded-2xl border border-border bg-surface-2/40 p-5">
+            <div className="flex items-start gap-3">
+              <Search className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div>
+                <h2 className="font-semibold">
+                  ¿Perdiste a una de tus mascotas?
+                </h2>
+                <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">
+                  Andá al perfil de tu mascota y activá el modo perdido.
+                  Genera una página pública con tus datos para que cualquiera
+                  que la encuentre pueda contactarte.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href={dashboardHref}
+                    className="inline-flex items-center rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    Ir a mis mascotas
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : (
+          <section className="mt-12 rounded-2xl border border-border bg-surface-2/40 p-5">
+            <div className="flex items-start gap-3">
+              <Search className="mt-0.5 size-5 shrink-0 text-primary" />
+              <div>
+                <h2 className="font-semibold">¿Perdiste a tu mascota?</h2>
+                <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">
+                  Si tenés una cuenta, entrá a tu mascota y activá el modo
+                  perdido. Genera una página pública con tus datos para que
+                  cualquiera que la encuentre pueda contactarte. Si todavía no
+                  te registraste, podés hacerlo gratis y activar el modo
+                  perdido en segundos.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    Iniciar sesión
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="inline-flex items-center rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium hover:bg-secondary"
+                  >
+                    Crear cuenta gratis
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       <footer className="border-t border-border py-8">
