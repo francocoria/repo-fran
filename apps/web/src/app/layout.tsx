@@ -80,7 +80,12 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
+  // Permitimos zoom IN para accesibilidad (hasta 5x), pero NO permitimos
+  // zoom OUT por debajo del 100% — evita que el usuario vea la app
+  // "alejada" con un tamaño raro y huecos enormes alrededor.
+  minimumScale: 1,
   maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({
