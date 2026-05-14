@@ -104,12 +104,15 @@ export function PhotoCropDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-3 backdrop-blur-md"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-3"
       role="dialog"
       aria-modal="true"
       aria-label="Recortar foto"
     >
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-fade-up">
+      <div
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
+        style={{ minHeight: 480 }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold tracking-tight">
