@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { Button } from "@pet-app/ui";
 import { QrCode, Download, X, Copy, Check, Loader2 } from "lucide-react";
 import { useCopyFeedback } from "@/lib/use-copy-feedback";
+import { ModalPortal } from "@/components/modal-portal";
 
 interface QRModalProps {
   animalId: string;
@@ -70,8 +71,9 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
       </Button>
 
       {open && (
+        <ModalPortal>
         <div
-          className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/60 p-4 backdrop-blur-sm"
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
@@ -79,7 +81,7 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
         >
           <div className="flex min-h-full items-center justify-center py-4">
           <div
-            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-fade-up"
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -166,6 +168,7 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
           </div>
           </div>
         </div>
+        </ModalPortal>
       )}
       {/* Canvas oculto reservado para futuras impresiones */}
       <canvas ref={canvasRef} className="hidden" />

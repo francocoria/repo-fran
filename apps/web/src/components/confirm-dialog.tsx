@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Button } from "@pet-app/ui";
 import { X, AlertTriangle } from "lucide-react";
+import { ModalPortal } from "./modal-portal";
 
 type Tone = "default" | "destructive" | "rose";
 
@@ -56,15 +57,16 @@ export function ConfirmDialog({
     tone === "destructive" || tone === "rose" ? "destructive" : "default";
 
   return (
+    <ModalPortal>
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={loading ? undefined : onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-dialog-title"
     >
       <div
-        className="relative w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-2xl animate-fade-up"
+        className="relative w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -118,5 +120,6 @@ export function ConfirmDialog({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }

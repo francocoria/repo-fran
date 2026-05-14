@@ -12,6 +12,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { ModalPortal } from "@/components/modal-portal";
 
 interface PhotoCropDialogProps {
   /** Imagen original que el usuario seleccionó del file picker */
@@ -103,6 +104,7 @@ export function PhotoCropDialog({
   }
 
   return (
+    <ModalPortal>
     <div
       className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-black/85"
       role="dialog"
@@ -236,6 +238,7 @@ export function PhotoCropDialog({
       </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 
