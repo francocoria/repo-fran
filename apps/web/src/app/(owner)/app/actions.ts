@@ -307,44 +307,212 @@ export async function deleteWeightEntry(animalId: string, entryId: string) {
 // ─── CO-OWNERS ──────────────────────────────────────────────────────
 export async function inviteCoOwner(animalId: string, email: string) {
   try {
-    const { isOwner, profile } = await verifyAnimalAccess(animalId);
+    const { isOwner, profile, animal } = await verifyAnimalAccess(animalId);
     if (!isOwner) {
-      return { success: false, error: "Solo el dueño principal puede invitar co-dueños." };
+      return {
+        success: false,
+        error: "Solo el dueño principal puede invitar co-dueños.",
+      };
     }
 
-    // Find the owner profile by email (lookup in auth.users then owner_profiles)
-    const supabase = await createSupabaseServerClient();
-
-    // Look up user by email through owner_profiles joined with auth
-    // We search by full_name or phone — but the simplest way is through
-    // the owner_profiles table which has the user_id
-    const { data: profiles } = await supabase
-      .from("owner_profiles")
-      .select("id, user_id, full_name")
-      .neq("id", profile.id);
-
-    // For now we'll check if there's a matching user by searching the auth users
-    // This is a simplified approach — in production we'd send an invite email
-    if (!profiles || profiles.length === 0) {
-      return { success: false, error: "No se encontró un usuario con ese email." };
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return { success: false, error: "Email inválido." };
     }
 
-    // Check if already a co-owner
-    const existing = await prisma.coOwner.findFirst({
-      where: { animal_id: animalId, status: "active" },
+    // 1) Buscamos el usuario en auth.users (admin client — bypass RLS).
+    const admin = createSupabaseAdminClient();
+    const { data: usersData, error: listError } =
+      await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+
+    if (listError) {
+      console.error("[inviteCoOwner] listUsers error:", listError);
+      return { success: false, error: "No pudimos buscar el email." };
+    }
+
+    const invitedUser = usersData.users.find(
+      (u) => u.email?.toLowerCase() === cleanEmail,
+    );
+
+    let invitedProfile: { id: string; full_name: string } | null = null;
+    let recipientHasAccount = false;
+
+    if (invitedUser) {
+      // El email existe en Supabase Auth. Buscamos su owner_profile.
+      const op = await prisma.ownerProfile.findUnique({
+        where: { user_id: invitedUser.id },
+        select: { id: true, full_name: true },
+      });
+      if (op) {
+        invitedProfile = op;
+        recipientHasAccount = true;
+
+        // No se puede invitar al dueño principal a su propia mascota
+        if (op.id === profile.id) {
+          return {
+            success: false,
+            error: "No podés invitarte a vos mismo.",
+          };
+        }
+
+        // ¿Ya existe co-dueño activo/pending para este animal?
+        const existing = await prisma.coOwner.findFirst({
+          where: {
+            animal_id: animalId,
+            owner_id: op.id,
+            status: { in: ["active", "pending"] },
+          },
+        });
+        if (existing) {
+          if (existing.status === "active") {
+            return {
+              success: false,
+              error: "Esa persona ya es co-dueña de esta mascota.",
+            };
+          }
+          return {
+            success: false,
+            error: "Ya hay una invitación pendiente para esa persona.",
+          };
+        }
+
+        // Crear el CoOwner pending — al aceptar lo pasamos a active.
+        await prisma.coOwner.create({
+          data: {
+            animal_id: animalId,
+            owner_id: op.id,
+            added_by_owner_id: profile.id,
+            status: "pending",
+          },
+        });
+      }
+    }
+
+    // 2) Mandamos el email branded via Resend, con CTA distinto según
+    //    si la persona ya tiene cuenta o no.
+    const { sendEmail, coOwnerInvitedTemplate } = await import(
+      "@pet-app/emails"
+    );
+    const tmpl = coOwnerInvitedTemplate({
+      inviterName: profile.full_name,
+      animalName: animal.name,
+      animalSpecies: animal.species,
+      animalPhotoUrl: animal.photo_url,
+      inviteeName: invitedProfile?.full_name ?? null,
+      recipientHasAccount,
     });
 
-    // For MVP: create a pending invitation that the other user accepts
-    // We store the email and the co-owner status as "pending"
-    // TODO: implement email-based lookup when Supabase is connected
+    const result = await sendEmail({
+      to: cleanEmail,
+      subject: tmpl.subject,
+      html: tmpl.html,
+    });
+
+    if (!result.success) {
+      console.error("[inviteCoOwner] sendEmail failed:", result.error);
+      // Si creamos el coOwner pending pero falló el mail, lo revertimos
+      // para no dejar invitaciones huérfanas.
+      if (invitedProfile) {
+        await prisma.coOwner.deleteMany({
+          where: {
+            animal_id: animalId,
+            owner_id: invitedProfile.id,
+            status: "pending",
+          },
+        });
+      }
+      return {
+        success: false,
+        error: "No pudimos enviar el email de invitación.",
+      };
+    }
+
+    revalidatePath(`/app/animals/${animalId}`);
     return {
-      success: false,
-      error: "La invitación por email estará disponible cuando se configure Supabase Auth. Por ahora, los co-owners se asignan manualmente.",
+      success: true,
+      recipientHasAccount,
+      message: recipientHasAccount
+        ? "Listo, ya le mandamos el mail. Verá la invitación al iniciar sesión."
+        : "Listo, le mandamos un mail invitándola a registrarse. Cuando lo haga, ya tendrá acceso.",
     };
-  } catch (error: any) {
-    if (error.message === "FORBIDDEN") return { success: false, error: "No tenés permiso." };
-    console.error("Co-owner invite error:", error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    if (msg === "FORBIDDEN")
+      return { success: false, error: "No tenés permiso." };
+    console.error("[inviteCoOwner] failed:", msg, error);
     return { success: false, error: "No se pudo enviar la invitación." };
+  }
+}
+
+// ─── Aceptar invitación de co-dueño ────────────────────────────────
+export async function acceptCoOwnerInvite(coOwnerId: string) {
+  try {
+    const user = await requireUser();
+    const profile = await getOwnerProfile(user.id);
+    if (!profile) return { success: false, error: "No se encontró tu perfil." };
+
+    const invite = await prisma.coOwner.findUnique({
+      where: { id: coOwnerId },
+      select: { id: true, owner_id: true, animal_id: true, status: true },
+    });
+
+    if (!invite || invite.owner_id !== profile.id) {
+      return { success: false, error: "Invitación no encontrada." };
+    }
+    if (invite.status !== "pending") {
+      return {
+        success: false,
+        error: "Esta invitación ya fue procesada.",
+      };
+    }
+
+    await prisma.coOwner.update({
+      where: { id: coOwnerId },
+      data: { status: "active" },
+    });
+
+    revalidatePath("/app/access");
+    revalidatePath("/app");
+    revalidatePath(`/app/animals/${invite.animal_id}`);
+    return { success: true };
+  } catch (error: unknown) {
+    console.error("[acceptCoOwnerInvite] failed:", error);
+    return { success: false, error: "No se pudo aceptar la invitación." };
+  }
+}
+
+// ─── Rechazar invitación de co-dueño ───────────────────────────────
+export async function declineCoOwnerInvite(coOwnerId: string) {
+  try {
+    const user = await requireUser();
+    const profile = await getOwnerProfile(user.id);
+    if (!profile) return { success: false, error: "No se encontró tu perfil." };
+
+    const invite = await prisma.coOwner.findUnique({
+      where: { id: coOwnerId },
+      select: { id: true, owner_id: true, status: true },
+    });
+
+    if (!invite || invite.owner_id !== profile.id) {
+      return { success: false, error: "Invitación no encontrada." };
+    }
+    if (invite.status !== "pending") {
+      return {
+        success: false,
+        error: "Esta invitación ya fue procesada.",
+      };
+    }
+
+    await prisma.coOwner.update({
+      where: { id: coOwnerId },
+      data: { status: "removed" },
+    });
+
+    revalidatePath("/app/access");
+    return { success: true };
+  } catch (error: unknown) {
+    console.error("[declineCoOwnerInvite] failed:", error);
+    return { success: false, error: "No se pudo rechazar la invitación." };
   }
 }
 

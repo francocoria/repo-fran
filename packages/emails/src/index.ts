@@ -7,6 +7,7 @@ export const EMAIL_TYPES = [
   "verification_approved",
   "verification_rejected",
   "vaccine_reminder",
+  "co_owner_invited",
 ] as const;
 
 export type EmailType = (typeof EMAIL_TYPES)[number];
@@ -22,6 +23,7 @@ export {
   verificationRejectedTemplate,
   vetAccessApprovedTemplate,
   vaccineReminderTemplate,
+  coOwnerInvitedTemplate,
 } from "./templates";
 
 export type {
@@ -32,4 +34,5 @@ export type {
   VerificationRejectedData,
   VetAccessApprovedData,
   VaccineReminderData,
+  CoOwnerInvitedData,
 } from "./templates";

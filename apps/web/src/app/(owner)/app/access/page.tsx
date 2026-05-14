@@ -1,12 +1,16 @@
 import { redirect } from "next/navigation";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
-import { ShieldCheck, Stethoscope } from "lucide-react";
+import { ShieldCheck, Stethoscope, UserPlus } from "lucide-react";
 import {
   PendingAccessList,
   ApprovedAccessList,
   type AccessRow,
 } from "./access-list";
+import {
+  CoOwnerInvitesList,
+  type CoOwnerInviteRow,
+} from "./co-owner-invites-list";
 
 export const metadata = { title: "Accesos" };
 export const dynamic = "force-dynamic";
@@ -64,6 +68,37 @@ export default async function AccessPage() {
   const pending = allAccess.filter((a) => a.status === "pending").map(toRow);
   const approved = allAccess.filter((a) => a.status === "approved").map(toRow);
 
+  // Invitaciones a co-dueño donde YO soy el invitado (status: pending).
+  const coOwnerInvitesRaw = await prisma.coOwner.findMany({
+    where: { owner_id: profile.id, status: "pending" },
+    include: {
+      animal: {
+        select: { id: true, name: true, species: true, breed: true, photo_url: true },
+      },
+    },
+    orderBy: { added_at: "desc" },
+  });
+
+  // El schema no tiene relación con nombre para added_by_owner_id, fetcheamos
+  // los perfiles de los que invitaron en una sola query.
+  const inviterIds = [
+    ...new Set(coOwnerInvitesRaw.map((c) => c.added_by_owner_id)),
+  ];
+  const inviters = inviterIds.length
+    ? await prisma.ownerProfile.findMany({
+        where: { id: { in: inviterIds } },
+        select: { id: true, full_name: true },
+      })
+    : [];
+  const inviterMap = new Map(inviters.map((i) => [i.id, i.full_name]));
+
+  const coOwnerInvites: CoOwnerInviteRow[] = coOwnerInvitesRaw.map((c) => ({
+    id: c.id,
+    invitedAt: c.added_at.toISOString(),
+    animal: c.animal,
+    inviter: { full_name: inviterMap.get(c.added_by_owner_id) ?? null },
+  }));
+
   return (
     <div className="animate-fade-up max-w-3xl">
       <div className="mb-8">
@@ -72,6 +107,21 @@ export default async function AccessPage() {
           Aprobá o revocá quién puede ver el historial de tus mascotas.
         </p>
       </div>
+
+      {coOwnerInvites.length > 0 && (
+        <section className="mb-10">
+          <div className="mb-3 flex items-center gap-2">
+            <UserPlus className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Invitaciones a co-dueño
+              <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
+                {coOwnerInvites.length}
+              </span>
+            </h2>
+          </div>
+          <CoOwnerInvitesList invites={coOwnerInvites} />
+        </section>
+      )}
 
       <section className="mb-10">
         <div className="mb-3 flex items-center gap-2">
