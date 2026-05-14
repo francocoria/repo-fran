@@ -23,7 +23,10 @@ export const metadata = {
     "Mascotas reportadas como perdidas. Si viste alguna, contactá al dueño directamente.",
 };
 
-export const dynamic = "force-dynamic";
+// Cacheamos el listado por 60s. Una mascota nueva tarda max 1 min en
+// aparecer en el feed — aceptable y dramaticamente mas rapido que
+// force-dynamic (que hacia hit a Supabase US-East en cada nav, ~3-5s).
+export const revalidate = 60;
 
 const speciesLabels: Record<string, string> = {
   dog: "Perro",
@@ -57,34 +60,36 @@ function formatRelativeDate(d: Date): string {
 }
 
 export default async function LostFeedPage() {
-  // Detectamos si el visitante tiene sesión para adaptar el header
-  // (mostrar "Volver a tu panel" en vez de "Iniciar sesión").
-  const user = await getUser();
+  // Paralelizamos: el fetch de alerts (cacheable 60s) corre en paralelo
+  // con el check de auth del visitante. Antes era secuencial: getUser ->
+  // getUserRole -> alerts (3 round-trips Argentina <-> Supabase).
+  const [user, alerts] = await Promise.all([
+    getUser(),
+    prisma.lostPetAlert.findMany({
+      where: { status: "active" },
+      orderBy: { activated_at: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        public_slug: true,
+        activated_at: true,
+        last_seen_location: true,
+        reward_description: true,
+        animal: {
+          select: {
+            name: true,
+            species: true,
+            breed: true,
+            photo_url: true,
+          },
+        },
+      },
+    }),
+  ]);
+
   const role = user ? await getUserRole(user.id) : null;
   const dashboardHref =
     role === "vet" ? "/vet" : role === "admin" ? "/admin" : "/app";
-
-  const alerts = await prisma.lostPetAlert.findMany({
-    where: { status: "active" },
-    orderBy: { activated_at: "desc" },
-    take: 100,
-    select: {
-      id: true,
-      public_slug: true,
-      activated_at: true,
-      last_seen_location: true,
-      contact_name: true,
-      reward_description: true,
-      animal: {
-        select: {
-          name: true,
-          species: true,
-          breed: true,
-          photo_url: true,
-        },
-      },
-    },
-  });
 
   return (
     <div className="min-h-screen bg-background">
