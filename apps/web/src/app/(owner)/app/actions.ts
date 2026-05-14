@@ -5,7 +5,7 @@ import { animalCreateSchema, animalUpdateSchema, weightEntrySchema } from "@pet-
 import { validatePhoto, sanitizeFilename } from "@pet-app/lib/utils/files";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
-import { createSupabaseServerClient } from "@pet-app/lib";
+import { createSupabaseServerClient, createSupabaseAdminClient } from "@pet-app/lib";
 
 // ─── Helper: verify that current user owns or co-owns the animal ───
 async function verifyAnimalAccess(animalId: string) {
@@ -178,7 +178,7 @@ export async function uploadAnimalPhoto(animalId: string, formData: FormData) {
   try {
     await verifyAnimalAccess(animalId);
 
-    const file = formData.get("photo") as File;
+    const file = formData.get("photo") as File | null;
     if (!file || file.size === 0) {
       return { success: false, error: "No se seleccionó ninguna foto." };
     }
@@ -188,28 +188,51 @@ export async function uploadAnimalPhoto(animalId: string, formData: FormData) {
       return { success: false, error: validation.message };
     }
 
-    const supabase = await createSupabaseServerClient();
+    console.log("[uploadAnimalPhoto] file received", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
+
+    // Convertimos a Buffer explicitamente: en Server Actions el File de FormData
+    // a veces no se streaming-uploadea bien a Supabase Storage y queda colgado.
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const safeName = sanitizeFilename(`${animalId}_${Date.now()}.${ext}`);
     const storagePath = `animals/${animalId}/${safeName}`;
 
-    const { error: uploadError } = await supabase.storage
+    // Usamos admin client (service role) para evitar problemas de RLS en
+    // el bucket cuando el cookie de auth no se propaga al call de Storage.
+    const admin = createSupabaseAdminClient();
+
+    console.log("[uploadAnimalPhoto] uploading to bucket", { storagePath });
+
+    const { error: uploadError } = await admin.storage
       .from("animal-photos")
-      .upload(storagePath, file, {
-        contentType: file.type,
+      .upload(storagePath, buffer, {
+        contentType: file.type || "image/jpeg",
         upsert: false,
+        cacheControl: "3600",
       });
 
     if (uploadError) {
-      console.error("Storage upload error:", uploadError);
-      return { success: false, error: "Error al subir la foto." };
+      console.error("[uploadAnimalPhoto] storage upload error:", uploadError);
+      return {
+        success: false,
+        error: `Error al subir la foto: ${uploadError.message}`,
+      };
     }
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = admin.storage
       .from("animal-photos")
       .getPublicUrl(storagePath);
 
-    // Update animal photo_url
+    console.log("[uploadAnimalPhoto] uploaded, updating db", {
+      url: urlData.publicUrl,
+    });
+
     await prisma.animal.update({
       where: { id: animalId },
       data: { photo_url: urlData.publicUrl },
@@ -218,10 +241,11 @@ export async function uploadAnimalPhoto(animalId: string, formData: FormData) {
     revalidatePath(`/app/animals/${animalId}`);
     revalidatePath("/app");
     return { success: true, url: urlData.publicUrl };
-  } catch (error: any) {
-    if (error.message === "FORBIDDEN") return { success: false, error: "No tenés permiso." };
-    console.error("Photo upload error:", error);
-    return { success: false, error: "No se pudo subir la foto." };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Error desconocido";
+    if (msg === "FORBIDDEN") return { success: false, error: "No tenés permiso." };
+    console.error("[uploadAnimalPhoto] failed:", msg, error);
+    return { success: false, error: `No se pudo subir la foto: ${msg}` };
   }
 }
 

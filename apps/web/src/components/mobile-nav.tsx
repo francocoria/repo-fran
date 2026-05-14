@@ -4,16 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home,
-  Dog,
   Bell,
   User,
   Users,
   Crown,
   QrCode,
   ScanLine,
-  Shield,
   ShieldCheck,
   CreditCard,
+  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@pet-app/lib/client";
@@ -28,9 +27,9 @@ interface NavItem {
 
 const OWNER_TABS: NavItem[] = [
   { label: "Inicio", href: "/app", icon: Home },
-  { label: "Mascotas", href: "/app", icon: Dog },
+  { label: "Perdidas", href: "/lost", icon: AlertTriangle },
   // [FAB QR] va acá en el medio visual
-  { label: "Avisos", href: "/app/notifications", icon: Bell },
+  { label: "Recordatorios", href: "/app/notifications", icon: Bell },
   { label: "Yo", href: "/app/settings", icon: User },
 ];
 
