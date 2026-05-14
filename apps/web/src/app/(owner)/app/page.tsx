@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   PlusCircle,
   Calendar,
@@ -424,31 +425,41 @@ function PetCard({ animal }: { animal: PetCardData }) {
       className="group block focus-ring rounded-2xl"
     >
       <Card className="overflow-hidden transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-        <CardContent className="p-4">
-          <div className="relative">
-            <div className="mb-3 flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-surface-2">
-              <PetAvatar
-                name={animal.name}
-                species={animal.species}
-                photoUrl={animal.photoUrl}
-                size={160}
-                radius={0}
-                lost={isLost}
-                className="size-full"
+        <CardContent className="p-0">
+          {/* Photo hero — full bleed top of card */}
+          <div className="relative aspect-square w-full overflow-hidden bg-surface-2">
+            {animal.photoUrl ? (
+              <Image
+                src={animal.photoUrl}
+                alt={animal.name}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover"
               />
-            </div>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center">
+                <PetAvatar
+                  name={animal.name}
+                  species={animal.species}
+                  size={120}
+                  lost={isLost}
+                />
+              </div>
+            )}
             {isLost && (
-              <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-md bg-rose px-2 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white animate-pulse-rose">
+              <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-rose px-2 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow animate-pulse-rose">
                 ● Perdida
               </span>
             )}
             {animal.isCoOwned && (
-              <span className="absolute right-2.5 top-2.5 inline-block rounded-md border border-border bg-background/85 px-2 py-0.5 text-[11px] font-medium backdrop-blur-sm">
+              <span className="absolute right-3 top-3 inline-block rounded-md border border-border bg-background/85 px-2 py-0.5 text-[11px] font-medium shadow-sm backdrop-blur-sm">
                 Compartida
               </span>
             )}
           </div>
 
+          {/* Info block */}
+          <div className="p-4">
           <div className="flex items-baseline justify-between gap-2">
             <h3 className="truncate text-base font-semibold">{animal.name}</h3>
             {ageText && (
@@ -478,6 +489,7 @@ function PetCard({ animal }: { animal: PetCardData }) {
               )}
               <ChevronRight className="size-4 text-subtle transition-transform group-hover:translate-x-0.5" />
             </div>
+          </div>
           </div>
         </CardContent>
       </Card>
