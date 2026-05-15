@@ -93,11 +93,22 @@ function InviteCard({ invite }: { invite: CoOwnerInviteRow }) {
     startTransition(() => {
       void (async () => {
         const fn = kind === "accept" ? acceptCoOwnerInvite : declineCoOwnerInvite;
-        const result = await fn(invite.id);
-        if (result.success) {
-          router.refresh();
-        } else {
-          setError(result.error ?? "Error.");
+        try {
+          const result = await fn(invite.id);
+          if (result.success) {
+            router.refresh();
+          } else {
+            setError(result.error ?? "Error.");
+            setAction(null);
+          }
+        } catch (err) {
+          // Típico cuando la Server Action ID quedó desactualizada en el
+          // bundle cliente (PWA cacheada vs deploy nuevo). Antes esto se
+          // tragaba silencioso y daba la sensación de "no hace nada".
+          console.error("[CoOwnerInvite] action call failed:", err);
+          setError(
+            "No pudimos procesar la acción. Cerrá la app, esperá unos segundos, y volvé a abrirla.",
+          );
           setAction(null);
         }
       })();
