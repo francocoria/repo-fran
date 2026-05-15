@@ -58,10 +58,17 @@ const ALL_FEATURES = [
   },
 ] as const;
 
-export default async function VetPlanPage() {
+export default async function VetPlanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
   const user = await requireUser();
   const profile = await getVetProfile(user.id);
   if (!profile) redirect("/onboarding/vet");
+
+  const params = await searchParams;
+  const checkoutFlash = params.checkout;
 
   const subscription = await prisma.subscription.findUnique({
     where: { vet_id: profile.id },
@@ -113,6 +120,51 @@ export default async function VetPlanPage() {
           Gestioná tu plan, beneficios y pagos.
         </p>
       </div>
+
+      {checkoutFlash === "success" && (
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-300/60 bg-emerald-50/60 dark:bg-emerald-950/20 dark:border-emerald-900/40 p-4 text-sm">
+          <Check className="size-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
+          <div>
+            <p className="font-semibold text-emerald-900 dark:text-emerald-200">
+              ¡Pago aprobado!
+            </p>
+            <p className="mt-0.5 text-emerald-900/80 dark:text-emerald-100/80">
+              Tu suscripción Premium queda activa en cuanto recibimos la
+              confirmación de Mercado Pago (en menos de 1 minuto).
+            </p>
+          </div>
+        </div>
+      )}
+
+      {checkoutFlash === "failure" && (
+        <div className="flex items-center gap-3 rounded-xl border border-rose-300/60 bg-rose-50/60 dark:bg-rose-950/20 dark:border-rose-900/40 p-4 text-sm">
+          <X className="size-5 shrink-0 text-rose-700 dark:text-rose-400" />
+          <div>
+            <p className="font-semibold text-rose-900 dark:text-rose-200">
+              Pago rechazado
+            </p>
+            <p className="mt-0.5 text-rose-900/80 dark:text-rose-100/80">
+              Mercado Pago no aprobó la operación. Probá con otra tarjeta o
+              método de pago.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {checkoutFlash === "pending" && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-900/40 p-4 text-sm">
+          <CalendarClock className="size-5 shrink-0 text-amber-700 dark:text-amber-400" />
+          <div>
+            <p className="font-semibold text-amber-900 dark:text-amber-200">
+              Pago pendiente
+            </p>
+            <p className="mt-0.5 text-amber-900/80 dark:text-amber-100/80">
+              Mercado Pago está procesando tu pago. Te avisamos por email
+              cuando se confirme (hasta 24hs).
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ─── ESTADO ACTUAL ───────────────────────────────────── */}
       <Card>

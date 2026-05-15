@@ -6,14 +6,17 @@ import {
   Sparkles,
   X,
   Check,
-  MessageCircle,
   Crown,
   Infinity as InfinityIcon,
   ShieldCheck,
   FileText,
   TrendingUp,
   Palette,
+  CreditCard,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import { ModalPortal } from "@/components/modal-portal";
 
 interface UpgradeModalProps {
   triggerLabel?: string;
@@ -24,13 +27,9 @@ interface UpgradeModalProps {
   onExternalClose?: () => void;
 }
 
-const PRICE_MONTHLY = Number(
-  process.env.NEXT_PUBLIC_PREMIUM_PRICE_USD_MONTHLY ?? 10,
+const PRICE_MONTHLY_ARS = Number(
+  process.env.NEXT_PUBLIC_PREMIUM_PRICE_ARS_MONTHLY ?? 9990,
 );
-const PRICE_YEARLY = Number(
-  process.env.NEXT_PUBLIC_PREMIUM_PRICE_USD_YEARLY ?? 100,
-);
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_PREMIUM_WHATSAPP ?? "";
 
 const FEATURES = [
   {
@@ -73,18 +72,39 @@ export function UpgradeModal({
   onExternalClose,
 }: UpgradeModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const open = externalOpen ?? internalOpen;
   const close = onExternalClose ?? (() => setInternalOpen(false));
 
-  const annualSavings = PRICE_MONTHLY * 12 - PRICE_YEARLY;
+  async function handleMercadoPagoCheckout() {
+    setError(null);
+    setPaying(true);
+    try {
+      const res = await fetch("/api/checkout/create", { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.error ?? "No pudimos generar el checkout.");
+        setPaying(false);
+        return;
+      }
+      // Redirigimos al checkout de MP. Si estamos en sandbox usamos
+      // sandbox_init_point para que las compras de prueba funcionen.
+      const target = body.initPoint ?? body.sandboxInitPoint;
+      if (!target) {
+        setError("Respuesta inesperada del checkout.");
+        setPaying(false);
+        return;
+      }
+      window.location.href = target;
+    } catch (err) {
+      console.error("[checkout] failed:", err);
+      setError("Error de red. Reintentá.");
+      setPaying(false);
+    }
+  }
 
-  // Mensaje pre-armado para WhatsApp
-  const whatsappMessage = encodeURIComponent(
-    "Hola! Soy veterinario/a y quiero pasar al plan Premium de PetApp. ¿Me podés mandar los datos para pagar?",
-  );
-  const whatsappUrl = WHATSAPP_NUMBER
-    ? `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}?text=${whatsappMessage}`
-    : null;
+  const priceMonthly = PRICE_MONTHLY_ARS.toLocaleString("es-AR");
 
   const trigger =
     variant === "button" ? (
@@ -111,15 +131,17 @@ export function UpgradeModal({
       {externalOpen === undefined && trigger}
 
       {open && (
+        <ModalPortal>
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/60 p-4 backdrop-blur-sm"
           onClick={close}
           role="dialog"
           aria-modal="true"
           aria-labelledby="upgrade-modal-title"
         >
+          <div className="flex min-h-full items-center justify-center py-4">
           <div
-            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl animate-fade-up"
+            className="relative w-full max-w-2xl rounded-2xl border border-border bg-background shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -153,32 +175,17 @@ export function UpgradeModal({
             </div>
 
             {/* Pricing */}
-            <div className="grid sm:grid-cols-2 gap-3 px-8 py-6 border-b border-border">
-              <div className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                  Mensual
+            <div className="px-8 py-6 border-b border-border">
+              <div className="rounded-xl border-2 border-primary bg-primary/5 p-5 relative max-w-sm">
+                <p className="text-xs text-primary font-medium uppercase tracking-wide">
+                  Plan mensual
                 </p>
                 <p className="mt-1">
-                  <span className="text-3xl font-bold">USD {PRICE_MONTHLY}</span>
+                  <span className="text-3xl font-bold">ARS {priceMonthly}</span>
                   <span className="text-sm text-muted-foreground"> /mes</span>
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Sin compromiso. Cancelás cuando quieras.
-                </p>
-              </div>
-              <div className="rounded-xl border-2 border-primary bg-primary/5 p-4 relative">
-                <Badge className="absolute -top-2.5 left-4 text-[10px]">
-                  Más elegido
-                </Badge>
-                <p className="text-xs text-primary font-medium uppercase tracking-wide">
-                  Anual
-                </p>
-                <p className="mt-1">
-                  <span className="text-3xl font-bold">USD {PRICE_YEARLY}</span>
-                  <span className="text-sm text-muted-foreground"> /año</span>
-                </p>
-                <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                  Ahorrás USD {annualSavings} (2 meses gratis)
+                  Sin compromiso. Cancelás cuando quieras desde Mercado Pago.
                 </p>
               </div>
             </div>
@@ -204,36 +211,37 @@ export function UpgradeModal({
             </div>
 
             {/* CTA */}
-            <div className="border-t border-border bg-secondary/30 px-8 py-5">
-              {whatsappUrl ? (
-                <>
-                  <Button asChild className="w-full gap-2 h-11">
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      Activar Premium por WhatsApp
-                    </a>
-                  </Button>
-                  <p className="mt-2 text-xs text-center text-muted-foreground">
-                    Te respondemos en menos de 24hs con los datos para pagar.
-                    Activación al instante.
-                  </p>
-                </>
-              ) : (
-                <p className="text-center text-sm text-muted-foreground">
-                  WhatsApp de contacto no configurado. Configurá{" "}
-                  <code className="font-mono text-xs">
-                    NEXT_PUBLIC_PREMIUM_WHATSAPP
-                  </code>{" "}
-                  en tu .env.local
-                </p>
+            <div className="border-t border-border bg-secondary/30 px-8 py-5 space-y-3">
+              <Button
+                type="button"
+                onClick={handleMercadoPagoCheckout}
+                disabled={paying}
+                className="w-full gap-2 h-11"
+              >
+                {paying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CreditCard className="h-4 w-4" />
+                )}
+                Pagar con Mercado Pago
+              </Button>
+
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
               )}
+
+              <p className="text-xs text-center text-muted-foreground">
+                Pagás con tarjeta (crédito o débito), dinero en cuenta MP o
+                transferencia. Activación automática al confirmar el pago.
+              </p>
             </div>
           </div>
+          </div>
         </div>
+        </ModalPortal>
       )}
     </>
   );
