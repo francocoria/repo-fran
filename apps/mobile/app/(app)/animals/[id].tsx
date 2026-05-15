@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -12,7 +14,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   AlertTriangle,
+  Camera,
   ChevronLeft,
+  Image as ImageIcon,
   QrCode,
   Syringe,
   Pill,
@@ -21,6 +25,7 @@ import {
   Share2,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useQueryClient } from "@tanstack/react-query";
 import QRCode from "react-native-qrcode-svg";
 import { PetAvatar } from "../../../src/components/pet-avatar";
 import { Badge } from "../../../src/components/ui/badge";
@@ -30,6 +35,11 @@ import { useAnimal } from "../../../src/hooks/use-animals";
 import { supabase } from "../../../src/lib/supabase";
 import { getAge, speciesLabel } from "../../../src/lib/format";
 import { env } from "../../../src/lib/env";
+import {
+  pickAnimalPhoto,
+  takeAnimalPhoto,
+  uploadAnimalPhoto,
+} from "../../../src/lib/photo-upload";
 
 interface HealthCounts {
   vaccines: number;
@@ -42,10 +52,110 @@ interface HealthCounts {
 
 export default function AnimalProfileScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: animal, isLoading } = useAnimal(id ?? "");
   const [counts, setCounts] = useState<HealthCounts | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [invitingCoOwner, setInvitingCoOwner] = useState(false);
+
+  async function handlePhotoChange() {
+    if (!id || uploadingPhoto) return;
+    Alert.alert("Foto de la mascota", "¿De dónde querés sacarla?", [
+      {
+        text: "Galería",
+        onPress: async () => {
+          const picked = await pickAnimalPhoto();
+          if (!picked) return;
+          await doUpload(picked.uri);
+        },
+      },
+      {
+        text: "Cámara",
+        onPress: async () => {
+          const picked = await takeAnimalPhoto();
+          if (!picked) return;
+          await doUpload(picked.uri);
+        },
+      },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  }
+
+  async function doUpload(photoUri: string) {
+    setUploadingPhoto(true);
+    const result = await uploadAnimalPhoto(id ?? "", photoUri);
+    setUploadingPhoto(false);
+    if (result.success) {
+      // Invalidar la cache de react-query para que vuelva a fetchear con la nueva foto
+      await queryClient.invalidateQueries({ queryKey: ["animal", id] });
+      await queryClient.invalidateQueries({ queryKey: ["animals"] });
+    } else {
+      Alert.alert("Error", result.error ?? "No pudimos subir la foto.");
+    }
+  }
+
+  function handleInviteCoOwner() {
+    if (Platform.OS === "ios") {
+      Alert.prompt(
+        "Invitar co-dueño",
+        "Ingresá el email de la persona. Le va a llegar una invitación que tiene que aceptar.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Enviar",
+            onPress: (email) => {
+              if (!email?.trim()) return;
+              void doInviteCoOwner(email.trim());
+            },
+          },
+        ],
+        "plain-text",
+        "",
+        "email-address",
+      );
+    } else {
+      // Android no soporta Alert.prompt — redirigimos a la web (workaround temporal)
+      Alert.alert(
+        "Invitar co-dueño",
+        "En Android, por ahora invitá co-dueños desde pet-friendly.fun. Pronto agregamos un form aquí.",
+      );
+    }
+  }
+
+  async function doInviteCoOwner(email: string) {
+    if (!id) return;
+    setInvitingCoOwner(true);
+    try {
+      const {
+        data: { session: current },
+      } = await supabase.auth.getSession();
+      if (!current?.access_token) {
+        Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
+        return;
+      }
+      const res = await fetch(`${env.APP_URL}/api/co-owner/invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${current.access_token}`,
+        },
+        body: JSON.stringify({ animalId: id, email }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        Alert.alert("Error", body.error ?? "No pudimos enviar la invitación.");
+        return;
+      }
+      Alert.alert("Listo", body.message ?? "Invitación enviada.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error de red";
+      Alert.alert("Error", msg);
+    } finally {
+      setInvitingCoOwner(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -101,14 +211,43 @@ export default function AnimalProfileScreen() {
 
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="flex-row items-center gap-4 px-5 pt-2">
-          <PetAvatar
-            name={animal.name}
-            species={animal.species}
-            photoUrl={animal.photo_url}
-            size={88}
-            radius={22}
-            lost={isLost}
-          />
+          <Pressable
+            onPress={handlePhotoChange}
+            disabled={uploadingPhoto}
+            style={{ position: "relative" }}
+          >
+            <PetAvatar
+              name={animal.name}
+              species={animal.species}
+              photoUrl={animal.photo_url}
+              size={88}
+              radius={22}
+              lost={isLost}
+            />
+            <View
+              style={{
+                position: "absolute",
+                right: -2,
+                bottom: -2,
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: "#7c3aed",
+                borderWidth: 2,
+                borderColor: "#ffffff",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {uploadingPhoto ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : animal.photo_url ? (
+                <Camera size={14} color="#ffffff" />
+              ) : (
+                <ImageIcon size={14} color="#ffffff" />
+              )}
+            </View>
+          </Pressable>
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
               <Text className="text-[24px] font-bold tracking-tight text-foreground">
@@ -186,6 +325,27 @@ export default function AnimalProfileScreen() {
                 Sin datos adicionales. Editá desde la web para agregar más.
               </Text>
             )}
+          </Card>
+        </View>
+
+        {/* Co-dueños */}
+        <View className="mt-6 px-3">
+          <Text className="mb-2 px-2 text-[11px] uppercase tracking-wider text-subtle">
+            Co-dueños
+          </Text>
+          <Card className="gap-2">
+            <Text className="text-[13px] text-muted">
+              Invitá a tu pareja o familia para que vean el historial y
+              puedan agregar info.
+            </Text>
+            <Button
+              label="Invitar por email"
+              variant="outline"
+              icon={Share2}
+              fullWidth
+              onPress={handleInviteCoOwner}
+              loading={invitingCoOwner}
+            />
           </Card>
         </View>
       </ScrollView>

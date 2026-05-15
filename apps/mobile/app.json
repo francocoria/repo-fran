@@ -20,7 +20,9 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "NSCameraUsageDescription": "Necesitamos acceso a la cámara para escanear los códigos QR de las mascotas."
+        "NSCameraUsageDescription": "Necesitamos acceso a la cámara para escanear los códigos QR y tomar fotos de tus mascotas.",
+        "NSPhotoLibraryUsageDescription": "Necesitamos acceso a tu galería para que puedas elegir la foto de tu mascota.",
+        "NSPhotoLibraryAddUsageDescription": "Permitinos guardar el QR de tu mascota en tu galería."
       }
     },
     "android": {
@@ -38,6 +40,13 @@
         "expo-camera",
         {
           "cameraPermission": "Necesitamos acceso a la cámara para escanear los QR de las mascotas."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitinos elegir la foto de tu mascota desde tu galería.",
+          "cameraPermission": "Necesitamos acceso a la cámara para que puedas sacar la foto de tu mascota."
         }
       ],
       "expo-secure-store"
