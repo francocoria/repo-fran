@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -40,6 +39,7 @@ import {
   takeAnimalPhoto,
   uploadAnimalPhoto,
 } from "../../../src/lib/photo-upload";
+import { InviteCoOwnerModal } from "../../../src/components/invite-co-owner-modal";
 
 interface HealthCounts {
   vaccines: number;
@@ -58,7 +58,7 @@ export default function AnimalProfileScreen() {
   const [counts, setCounts] = useState<HealthCounts | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [invitingCoOwner, setInvitingCoOwner] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   async function handlePhotoChange() {
     if (!id || uploadingPhoto) return;
@@ -96,66 +96,6 @@ export default function AnimalProfileScreen() {
     }
   }
 
-  function handleInviteCoOwner() {
-    if (Platform.OS === "ios") {
-      Alert.prompt(
-        "Invitar co-dueño",
-        "Ingresá el email de la persona. Le va a llegar una invitación que tiene que aceptar.",
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Enviar",
-            onPress: (email) => {
-              if (!email?.trim()) return;
-              void doInviteCoOwner(email.trim());
-            },
-          },
-        ],
-        "plain-text",
-        "",
-        "email-address",
-      );
-    } else {
-      // Android no soporta Alert.prompt — redirigimos a la web (workaround temporal)
-      Alert.alert(
-        "Invitar co-dueño",
-        "En Android, por ahora invitá co-dueños desde pet-friendly.fun. Pronto agregamos un form aquí.",
-      );
-    }
-  }
-
-  async function doInviteCoOwner(email: string) {
-    if (!id) return;
-    setInvitingCoOwner(true);
-    try {
-      const {
-        data: { session: current },
-      } = await supabase.auth.getSession();
-      if (!current?.access_token) {
-        Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
-        return;
-      }
-      const res = await fetch(`${env.APP_URL}/api/co-owner/invite`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${current.access_token}`,
-        },
-        body: JSON.stringify({ animalId: id, email }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        Alert.alert("Error", body.error ?? "No pudimos enviar la invitación.");
-        return;
-      }
-      Alert.alert("Listo", body.message ?? "Invitación enviada.");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error de red";
-      Alert.alert("Error", msg);
-    } finally {
-      setInvitingCoOwner(false);
-    }
-  }
 
   useEffect(() => {
     if (!id) return;
@@ -343,8 +283,7 @@ export default function AnimalProfileScreen() {
               variant="outline"
               icon={Share2}
               fullWidth
-              onPress={handleInviteCoOwner}
-              loading={invitingCoOwner}
+              onPress={() => setInviteModalOpen(true)}
             />
           </Card>
         </View>
@@ -357,6 +296,13 @@ export default function AnimalProfileScreen() {
         species={animal.species}
         photoUrl={animal.photo_url}
         qrUrl={qrUrl}
+      />
+
+      <InviteCoOwnerModal
+        visible={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        animalId={animal.id}
+        animalName={animal.name}
       />
     </SafeAreaView>
   );

@@ -7,12 +7,14 @@ import {
   Pill,
   Plus,
   PlusCircle,
+  UserPlus,
 } from "lucide-react-native";
 import { PetAvatar } from "../../src/components/pet-avatar";
 import { Badge } from "../../src/components/ui/badge";
 import { Button } from "../../src/components/ui/button";
 import { useAnimals, type AnimalListItem } from "../../src/hooks/use-animals";
 import { useSession, useProfile } from "../../src/lib/session";
+import { usePendingCoOwnerInvites } from "../../src/hooks/use-co-owner-invites";
 import { getAge, speciesLabel } from "../../src/lib/format";
 
 export default function OwnerHome() {
@@ -20,6 +22,8 @@ export default function OwnerHome() {
   const { session } = useSession();
   const { data: animals = [], isLoading, refetch, isRefetching } = useAnimals();
   const { data: profile } = useProfile(session?.user.id);
+  const { data: invitesData } = usePendingCoOwnerInvites();
+  const pendingInvitesCount = invitesData?.count ?? 0;
   const firstName = profile?.full_name?.split(" ")[0] ?? "";
 
   if (isLoading) {
@@ -36,16 +40,49 @@ export default function OwnerHome() {
       keyExtractor={(item) => item.id}
       contentContainerStyle={{ paddingBottom: 120 }}
       ListHeaderComponent={
-        <View className="px-5 pt-2 pb-3">
-          <Text className="text-[13px] text-muted">Hola de nuevo,</Text>
-          <Text className="text-[28px] font-bold tracking-tight text-foreground">
-            {firstName || "👋"}
-          </Text>
-          <Text className="mt-1.5 text-[14px] text-muted">
-            {animals.length === 0
-              ? "Empezá registrando tu primera mascota."
-              : `Tenés ${animals.length} ${animals.length === 1 ? "mascota" : "mascotas"} registrada${animals.length === 1 ? "" : "s"}.`}
-          </Text>
+        <View>
+          <View className="px-5 pt-2 pb-3">
+            <Text className="text-[13px] text-muted">Hola de nuevo,</Text>
+            <Text className="text-[28px] font-bold tracking-tight text-foreground">
+              {firstName || "👋"}
+            </Text>
+            <Text className="mt-1.5 text-[14px] text-muted">
+              {animals.length === 0
+                ? "Empezá registrando tu primera mascota."
+                : `Tenés ${animals.length} ${animals.length === 1 ? "mascota" : "mascotas"} registrada${animals.length === 1 ? "" : "s"}.`}
+            </Text>
+          </View>
+
+          {pendingInvitesCount > 0 && (
+            <Pressable
+              onPress={() => router.push("/(app)/invites" as never)}
+              className="mx-3 mb-3 flex-row items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3"
+            >
+              <View
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  backgroundColor: "#7c3aed",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <UserPlus size={18} color="#ffffff" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[14px] font-semibold text-foreground">
+                  {pendingInvitesCount === 1
+                    ? "Tenés 1 invitación pendiente"
+                    : `Tenés ${pendingInvitesCount} invitaciones pendientes`}
+                </Text>
+                <Text className="mt-0.5 text-[12px] text-muted">
+                  Co-dueño · Tocá para ver y responder
+                </Text>
+              </View>
+              <ChevronRight size={18} color="#78716c" />
+            </Pressable>
+          )}
         </View>
       }
       renderItem={({ item }) => (
