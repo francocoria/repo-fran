@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@pet-app/ui";
 import { Input } from "@pet-app/ui";
 import { Label } from "@pet-app/ui";
-import { signupVet } from "../../actions";
+import { signupVet, verifyOtpCode } from "../../actions";
 import {
   Stethoscope,
   User,
@@ -13,44 +14,104 @@ import {
   Phone,
   Building2,
   Hash,
-  CheckCircle2,
   AlertCircle,
   Loader2,
   ArrowRight,
   Sparkles,
+  KeyRound,
+  ChevronLeft,
 } from "lucide-react";
 
 export default function SignupVetPage() {
-  const [sent, setSent] = useState(false);
+  const router = useRouter();
+  const [step, setStep] = useState<"form" | "code">("form");
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const codeInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (step !== "code") return;
+    const t = setTimeout(() => codeInputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
+  }, [step]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    const emailValue = String(formData.get("email") ?? "");
+    setEmail(emailValue);
 
-    startTransition(() => { void (async () => {
-      const result = await signupVet(formData);
-      if (result.success) {
-        setSent(true);
-      } else {
-        setError(result.error ?? "Error al crear la cuenta");
-      }
-    })(); });
+    startTransition(() => {
+      void (async () => {
+        const result = await signupVet(formData);
+        if (result.success) {
+          setStep("code");
+        } else {
+          setError(result.error ?? "Error al crear la cuenta");
+        }
+      })();
+    });
   }
 
-  if (sent) {
+  function handleCodeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (code.trim().length < 6) {
+      setError("Ingresá los 6 dígitos del email.");
+      return;
+    }
+    startTransition(() => {
+      void (async () => {
+        const result = await verifyOtpCode(email, code);
+        if (result.success) {
+          // El vet redirect default es /vet (manejado por verifyOtpCode segun rol)
+          router.push((result.redirectTo ?? "/vet") as never);
+          router.refresh();
+        } else {
+          setError(result.error ?? "Código incorrecto. Probá de nuevo.");
+        }
+      })();
+    });
+  }
+
+  async function handleResend() {
+    setResending(true);
+    setError(null);
+    const { loginWithMagicLink } = await import("../../actions");
+    const result = await loginWithMagicLink(email);
+    setResending(false);
+    if (!result.success) {
+      setError(result.error ?? "No pudimos reenviar.");
+    }
+  }
+
+  if (step === "code") {
     return (
-      <div className="text-center animate-fade-up">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <CheckCircle2 className="h-8 w-8 text-primary" />
+      <div className="animate-fade-up">
+        <button
+          type="button"
+          onClick={() => {
+            setStep("form");
+            setCode("");
+            setError(null);
+          }}
+          className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="size-4" />
+          Cambiar datos
+        </button>
+
+        <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-accent/10">
+          <KeyRound className="size-6 text-accent" />
         </div>
-        <h1 className="text-2xl font-bold">¡Revisá tu email!</h1>
-        <p className="mt-3 text-muted-foreground">
-          Te enviamos un enlace a{" "}
+        <h1 className="text-2xl font-bold tracking-tight">Revisá tu email</h1>
+        <p className="mt-2 text-muted-foreground">
+          Te mandamos un código de 6 dígitos a{" "}
           <span className="font-medium text-foreground">{email}</span> para
           activar tu cuenta profesional.
         </p>
@@ -58,6 +119,60 @@ export default function SignupVetPage() {
           <Sparkles className="h-4 w-4" />
           Incluye 30 días premium gratis
         </div>
+
+        <form onSubmit={handleCodeSubmit} className="mt-6 space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="code">Código</Label>
+            <Input
+              ref={codeInputRef}
+              id="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="123456"
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              className="text-center font-mono text-2xl tracking-[0.5em]"
+            />
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+              <AlertCircle className="size-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={isPending || code.length < 6}
+          >
+            {isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <>
+                Confirmar y entrar
+                <ArrowRight className="size-4" />
+              </>
+            )}
+          </Button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resending || isPending}
+              className="text-sm font-medium text-accent hover:underline disabled:opacity-50"
+            >
+              {resending ? "Reenviando..." : "No me llegó, reenviar"}
+            </button>
+          </div>
+        </form>
       </div>
     );
   }
