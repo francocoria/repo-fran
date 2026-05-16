@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Button,
   Input,
@@ -37,6 +38,7 @@ interface Props {
 
 export function SettingsForm({ email, initialData }: Props) {
   const router = useRouter();
+  const t = useTranslations("ownerSettings");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -54,7 +56,7 @@ export function SettingsForm({ email, initialData }: Props) {
         setSaved(true);
         router.refresh();
       } else {
-        setError(result.error ?? "Error al guardar");
+        setError(result.error ?? t("errorSave"));
       }
     })(); });
   }
@@ -63,23 +65,22 @@ export function SettingsForm({ email, initialData }: Props) {
     <form onSubmit={handleSubmit}>
       <Card>
         <CardHeader>
-          <CardTitle>Perfil</CardTitle>
+          <CardTitle>{t("profileTitle")}</CardTitle>
           <CardDescription>
-            Esta información se comparte con los veterinarios que tengan acceso
-            a tus mascotas.
+            {t("profileDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="fullName">
-              Nombre completo <span className="text-destructive">*</span>
+              {t("fullName")} <span className="text-destructive">*</span>
             </Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="fullName"
                 name="fullName"
-                placeholder="Tu nombre"
+                placeholder={t("fullNamePlaceholder")}
                 className="pl-10"
                 defaultValue={initialData.fullName}
                 required
@@ -89,7 +90,7 @@ export function SettingsForm({ email, initialData }: Props) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -101,19 +102,19 @@ export function SettingsForm({ email, initialData }: Props) {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              El email no se puede cambiar.
+              {t("emailHint")}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
+            <Label htmlFor="phone">{t("phone")}</Label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="phone"
                 name="phone"
                 type="tel"
-                placeholder="+54 11 1234-5678"
+                placeholder={t("phonePlaceholder")}
                 className="pl-10"
                 defaultValue={initialData.phone ?? ""}
                 maxLength={30}
@@ -123,13 +124,13 @@ export function SettingsForm({ email, initialData }: Props) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="city">Ciudad</Label>
+              <Label htmlFor="city">{t("city")}</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="city"
                   name="city"
-                  placeholder="Buenos Aires"
+                  placeholder={t("cityPlaceholder")}
                   className="pl-10"
                   defaultValue={initialData.city ?? ""}
                   maxLength={100}
@@ -137,11 +138,11 @@ export function SettingsForm({ email, initialData }: Props) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address">Dirección</Label>
+              <Label htmlFor="address">{t("address")}</Label>
               <Input
                 id="address"
                 name="address"
-                placeholder="Calle 123 (opcional)"
+                placeholder={t("addressPlaceholder")}
                 defaultValue={initialData.address ?? ""}
                 maxLength={200}
               />
@@ -162,13 +163,13 @@ export function SettingsForm({ email, initialData }: Props) {
               ) : (
                 <Save className="size-4" />
               )}
-              Guardar cambios
+              {t("saveChanges")}
             </Button>
 
             {saved && (
               <span className="flex items-center gap-1.5 text-sm text-emerald animate-fade-in">
                 <CheckCircle2 className="size-4" />
-                Guardado
+                {t("saved")}
               </span>
             )}
           </div>

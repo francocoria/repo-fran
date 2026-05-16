@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import {
 } from "@/components/providers/theme-color-provider";
 
 export function ThemePicker() {
+  const t = useTranslations("ownerSettings");
   const [active, setActive] = useState<string>(DEFAULT_THEME);
 
   useEffect(() => {
@@ -33,11 +35,10 @@ export function ThemePicker() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Palette className="size-4 text-primary" />
-          Personalización
+          {t("themeTitle")}
         </CardTitle>
         <CardDescription>
-          Elegí el color principal de tu app. Los cambios se aplican al instante
-          en tu navegador.
+          {t("themeDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -49,7 +50,7 @@ export function ThemePicker() {
                 key={p.key}
                 type="button"
                 onClick={() => handlePick(p.key)}
-                aria-label={`Tema ${p.label}`}
+                aria-label={t("themeAria", { label: p.label })}
                 className={`group relative flex aspect-square items-center justify-center rounded-xl border-2 transition-all hover:scale-105 ${
                   selected
                     ? "border-foreground shadow-md"
@@ -70,9 +71,10 @@ export function ThemePicker() {
 
         <div className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2.5">
           <p className="text-xs text-muted-foreground">
-            Activo:{" "}
+            {t("themeActive")}{" "}
             <span className="font-medium text-foreground">
-              {THEME_PALETTES.find((p) => p.key === active)?.label ?? "Violeta"}
+              {THEME_PALETTES.find((p) => p.key === active)?.label ??
+                t("themeDefaultLabel")}
             </span>
           </p>
           {active !== DEFAULT_THEME && (
@@ -81,14 +83,13 @@ export function ThemePicker() {
               onClick={() => handlePick(DEFAULT_THEME)}
               className="text-xs font-medium text-primary hover:underline"
             >
-              Restablecer
+              {t("themeReset")}
             </button>
           )}
         </div>
 
         <p className="text-[11px] text-muted-foreground">
-          La preferencia se guarda en este navegador. Al loguearte en otro
-          dispositivo verás el color por defecto.
+          {t("themeStorageHint")}
         </p>
       </CardContent>
     </Card>

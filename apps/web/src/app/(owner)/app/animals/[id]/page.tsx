@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import {
@@ -37,9 +38,16 @@ import { QRModal } from "@/components/animal/qr-modal";
 import { MedicalHistoryList } from "@/components/animal/medical-history-list";
 import { LostModeToggle } from "@/components/animal/lost-mode-toggle";
 
-const speciesLabels: Record<string, string> = {
-  dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo",
-  rodent: "Roedor", reptile: "Reptil", fish: "Pez", exotic: "Exótico", other: "Otro",
+const SPECIES_KEYS: Record<string, string> = {
+  dog: "speciesDog",
+  cat: "speciesCat",
+  bird: "speciesBird",
+  rabbit: "speciesRabbit",
+  rodent: "speciesRodent",
+  reptile: "speciesReptile",
+  fish: "speciesFish",
+  exotic: "speciesExotic",
+  other: "speciesOther",
 };
 
 export default async function AnimalProfilePage({
@@ -50,6 +58,8 @@ export default async function AnimalProfilePage({
   const { id } = await params;
   const user = await requireUser();
   const profile = await getOwnerProfile(user.id);
+  const t = await getTranslations("animalDetail");
+  const tc = await getTranslations("ownerCommon");
 
   if (!profile) return notFound();
 
@@ -121,7 +131,7 @@ export default async function AnimalProfilePage({
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" />
-        Mis mascotas
+        {t("breadcrumb")}
       </Link>
 
       {/* ─── HEADER CARD ────────────────────────────────────── */}
@@ -142,40 +152,59 @@ export default async function AnimalProfilePage({
               {isLost ? (
                 <Badge variant="rose" size="md">
                   <AlertTriangle className="size-3" />
-                  MODO PERDIDO
+                  {t("badgeLost")}
                 </Badge>
               ) : (
                 <Badge variant="emerald" size="md">
                   <CheckCircle2 className="size-3" />
-                  Activa
+                  {t("badgeActive")}
                 </Badge>
               )}
               {!isOwner && (
                 <Badge variant="secondary" size="md">
-                  Co-dueño
+                  {t("badgeCoOwner")}
                 </Badge>
               )}
             </div>
 
             {/* Spec grid */}
             <div className="mt-4 grid grid-cols-2 gap-3 text-left sm:grid-cols-3 md:mt-5 md:gap-4">
-              <Spec label="Especie" value={speciesLabels[animal.species] ?? animal.species} />
-              {animal.breed && <Spec label="Raza" value={animal.breed} />}
+              <Spec
+                label={t("specSpecies")}
+                value={
+                  SPECIES_KEYS[animal.species]
+                    ? tc(
+                        SPECIES_KEYS[animal.species] as Parameters<
+                          typeof tc
+                        >[0],
+                      )
+                    : animal.species
+                }
+              />
+              {animal.breed && <Spec label={t("specBreed")} value={animal.breed} />}
               {ageText && (
                 <Spec
-                  label="Edad"
-                  value={`${ageText}${animal.birth_date_approx ? " (aprox.)" : ""}`}
+                  label={t("specAge")}
+                  value={
+                    animal.birth_date_approx
+                      ? t("specAgeApprox", { age: ageText })
+                      : ageText
+                  }
                 />
               )}
               {animal.sex !== "unknown" && (
                 <Spec
-                  label="Sexo"
-                  value={animal.sex === "male" ? "♂ Macho" : "♀ Hembra"}
+                  label={t("specSex")}
+                  value={
+                    animal.sex === "male"
+                      ? t("specSexMale")
+                      : t("specSexFemale")
+                  }
                 />
               )}
               {animal.weight_kg && (
                 <Spec
-                  label="Peso actual"
+                  label={t("specWeight")}
                   value={
                     <span className="font-mono">
                       {Number(animal.weight_kg).toFixed(1)} kg
@@ -185,7 +214,7 @@ export default async function AnimalProfilePage({
               )}
               {animal.microchip && (
                 <Spec
-                  label="Microchip"
+                  label={t("specMicrochip")}
                   value={
                     <span className="font-mono text-xs">{animal.microchip}</span>
                   }
@@ -205,7 +234,7 @@ export default async function AnimalProfilePage({
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/app/animals/${animal.id}/edit`}>
                   <Pencil className="size-3.5" />
-                  Editar
+                  {t("edit")}
                 </Link>
               </Button>
             )}
@@ -216,7 +245,7 @@ export default async function AnimalProfilePage({
                 rel="noopener noreferrer"
               >
                 <Download className="size-3.5" />
-                Historial PDF
+                {t("historyPdf")}
               </a>
             </Button>
           </div>
@@ -227,10 +256,14 @@ export default async function AnimalProfilePage({
       {severeAllergies.length > 0 && (
         <Banner
           tone="rose"
-          title="Alergias severas"
+          title={t("severeAllergiesTitle")}
           className="mb-5"
         >
-          {severeAllergies.map((a: any) => a.allergen).join(" · ")} — informá esto siempre al vet.
+          {t("severeAllergiesText", {
+            allergens: severeAllergies
+              .map((a: any) => a.allergen)
+              .join(" · "),
+          })}
         </Banner>
       )}
 
@@ -238,17 +271,17 @@ export default async function AnimalProfilePage({
       {(animal.color || animal.distinctive_marks || animal.notes) && (
         <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {animal.color && (
-            <InfoChip icon={Palette} label="Color" value={animal.color} />
+            <InfoChip icon={Palette} label={t("chipColor")} value={animal.color} />
           )}
           {animal.distinctive_marks && (
             <InfoChip
               icon={Sparkles}
-              label="Marcas"
+              label={t("chipMarks")}
               value={animal.distinctive_marks}
             />
           )}
           {animal.notes && (
-            <InfoChip icon={Bookmark} label="Notas" value={animal.notes} />
+            <InfoChip icon={Bookmark} label={t("chipNotes")} value={animal.notes} />
           )}
         </div>
       )}
@@ -352,15 +385,14 @@ export default async function AnimalProfilePage({
             <Crown className="size-5" strokeWidth={2} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold">¿Sos veterinario?</p>
+            <p className="font-semibold">{t("upgradeTitle")}</p>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              Probá Premium 30 días gratis — recetas, certificados, pacientes
-              ilimitados.
+              {t("upgradeText")}
             </p>
           </div>
           <Button variant="dark" size="default" asChild>
             <Link href="/signup/vet">
-              Ver Premium
+              {t("upgradeCta")}
               <ArrowRight className="size-4" />
             </Link>
           </Button>

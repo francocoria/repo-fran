@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import {
   Check,
@@ -33,18 +34,6 @@ export interface CoOwnerInviteRow {
   inviter: { full_name: string | null };
 }
 
-const speciesLabels: Record<string, string> = {
-  dog: "Perro",
-  cat: "Gato",
-  bird: "Ave",
-  rabbit: "Conejo",
-  rodent: "Roedor",
-  reptile: "Reptil",
-  fish: "Pez",
-  exotic: "Exótico",
-  other: "Otro",
-};
-
 const speciesIcons: Record<string, React.ComponentType<{ className?: string }>> =
   {
     dog: Dog,
@@ -58,13 +47,14 @@ export function CoOwnerInvitesList({
 }: {
   invites: CoOwnerInviteRow[];
 }) {
+  const t = useTranslations("ownerAccess");
   if (invites.length === 0) {
     return (
       <Card>
         <CardContent className="px-5 py-6 text-center">
           <PawPrint className="mx-auto size-6 text-muted-foreground/40" />
           <p className="mt-2 text-sm text-muted-foreground">
-            No tenés invitaciones pendientes.
+            {t("noInvites")}
           </p>
         </CardContent>
       </Card>
@@ -80,12 +70,30 @@ export function CoOwnerInvitesList({
   );
 }
 
+const SPECIES_KEYS: Record<string, string> = {
+  dog: "speciesDog",
+  cat: "speciesCat",
+  bird: "speciesBird",
+  rabbit: "speciesRabbit",
+  rodent: "speciesRodent",
+  reptile: "speciesReptile",
+  fish: "speciesFish",
+  exotic: "speciesExotic",
+  other: "speciesOther",
+};
+
 function InviteCard({ invite }: { invite: CoOwnerInviteRow }) {
   const router = useRouter();
+  const t = useTranslations("ownerAccess");
+  const tc = useTranslations("ownerCommon");
   const [isPending, startTransition] = useTransition();
   const [action, setAction] = useState<"accept" | "decline" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const Icon = speciesIcons[invite.animal.species] ?? PawPrint;
+  const speciesKey = SPECIES_KEYS[invite.animal.species];
+  const speciesLabel = speciesKey
+    ? tc(speciesKey as Parameters<typeof tc>[0])
+    : invite.animal.species;
 
   function handle(kind: "accept" | "decline") {
     setError(null);
@@ -98,7 +106,7 @@ function InviteCard({ invite }: { invite: CoOwnerInviteRow }) {
           if (result.success) {
             router.refresh();
           } else {
-            setError(result.error ?? "Error.");
+            setError(result.error ?? t("inviteGenericError"));
             setAction(null);
           }
         } catch (err) {
@@ -106,9 +114,7 @@ function InviteCard({ invite }: { invite: CoOwnerInviteRow }) {
           // bundle cliente (PWA cacheada vs deploy nuevo). Antes esto se
           // tragaba silencioso y daba la sensación de "no hace nada".
           console.error("[CoOwnerInvite] action call failed:", err);
-          setError(
-            "No pudimos procesar la acción. Cerrá la app, esperá unos segundos, y volvé a abrirla.",
-          );
+          setError(t("inviteStaleError"));
           setAction(null);
         }
       })();
@@ -139,14 +145,16 @@ function InviteCard({ invite }: { invite: CoOwnerInviteRow }) {
             <div className="flex items-center gap-1.5">
               <UserPlus className="size-3.5 shrink-0 text-primary" />
               <p className="truncate text-[12.5px] font-medium text-primary">
-                {invite.inviter.full_name ?? "Alguien"} te invitó
+                {t("invitedYou", {
+                  name: invite.inviter.full_name ?? t("inviteFallbackName"),
+                })}
               </p>
             </div>
             <p className="mt-0.5 truncate text-base font-semibold">
               {invite.animal.name}
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              {speciesLabels[invite.animal.species] ?? invite.animal.species}
+              {speciesLabel}
               {invite.animal.breed && ` · ${invite.animal.breed}`}
             </p>
           </div>
@@ -169,7 +177,7 @@ function InviteCard({ invite }: { invite: CoOwnerInviteRow }) {
             ) : (
               <Check className="size-3.5" />
             )}
-            Aceptar
+            {t("accept")}
           </Button>
           <Button
             type="button"
@@ -184,7 +192,7 @@ function InviteCard({ invite }: { invite: CoOwnerInviteRow }) {
             ) : (
               <X className="size-3.5" />
             )}
-            Rechazar
+            {t("rejectInvite")}
           </Button>
         </div>
       </CardContent>

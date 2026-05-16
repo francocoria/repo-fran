@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { uploadAnimalPhoto } from "@/app/(owner)/app/actions";
 import { Camera, Loader2, X } from "lucide-react";
 import { PhotoCropDialog } from "./photo-crop-dialog";
@@ -25,6 +26,7 @@ export function PhotoUpload({
   currentPhotoUrl,
   animalName,
 }: PhotoUploadProps) {
+  const t = useTranslations("photoUpload");
   const [preview, setPreview] = useState<string | null>(currentPhotoUrl);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -38,7 +40,7 @@ export function PhotoUpload({
 
     // Validación temprana del tamaño original (antes del crop)
     if (file.size > 20 * 1024 * 1024) {
-      setError("La foto es muy grande (máx 20 MB).");
+      setError(t("errorTooLarge"));
       e.target.value = "";
       return;
     }
@@ -75,7 +77,7 @@ export function PhotoUpload({
         if (result.success && result.url) {
           setPreview(result.url);
         } else {
-          setError(result.error ?? "Error al subir.");
+          setError(result.error ?? t("errorUpload"));
           setPreview(currentPhotoUrl);
         }
       })();
@@ -99,7 +101,7 @@ export function PhotoUpload({
           onClick={() => fileRef.current?.click()}
           disabled={isPending}
           className="h-24 w-24 md:h-32 md:w-32 bg-secondary rounded-full flex items-center justify-center text-muted-foreground border-4 border-background shrink-0 shadow-sm relative overflow-hidden cursor-pointer transition-transform hover:scale-105 disabled:opacity-50"
-          aria-label={preview ? "Cambiar foto" : "Agregar foto"}
+          aria-label={preview ? t("changePhoto") : t("addPhoto")}
         >
           {isPending ? (
             <Loader2 className="h-8 w-8 animate-spin" />

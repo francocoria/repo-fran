@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { inviteCoOwner, removeCoOwner } from "@/app/(owner)/app/actions";
 import { Button, Input, Label, Card, CardContent } from "@pet-app/ui";
 import { UserPlus, X, Loader2, AlertCircle, Users, Mail } from "lucide-react";
@@ -19,6 +20,7 @@ interface CoOwnersManagerProps {
 }
 
 export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManagerProps) {
+  const t = useTranslations("coOwnersManager");
   const [showInvite, setShowInvite] = useState(false);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
         setEmail("");
         setShowInvite(false);
       } else {
-        setError(result.error ?? "Error");
+        setError(result.error ?? t("error"));
       }
     })(); });
   }
@@ -43,7 +45,7 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
     startTransition(() => { void (async () => {
       const result = await removeCoOwner(animalId, coOwnerId);
       if (!result.success) {
-        setError(result.error ?? "Error");
+        setError(result.error ?? t("error"));
       }
     })(); });
   }
@@ -54,7 +56,7 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-muted-foreground" />
-            <h3 className="font-semibold text-lg">Co-dueños</h3>
+            <h3 className="font-semibold text-lg">{t("title")}</h3>
           </div>
           {isOwner && (
             <Button
@@ -64,7 +66,7 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
               className="gap-1.5"
             >
               <UserPlus className="h-3.5 w-3.5" />
-              Invitar
+              {t("invite")}
             </Button>
           )}
         </div>
@@ -72,7 +74,7 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
         {showInvite && (
           <form onSubmit={handleInvite} className="mb-4 p-4 rounded-lg bg-secondary/50 border border-border space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="coOwnerEmail" className="text-xs">Email del co-dueño</Label>
+              <Label htmlFor="coOwnerEmail" className="text-xs">{t("emailLabel")}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -81,7 +83,7 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="otro@email.com"
+                  placeholder={t("emailPlaceholder")}
                   className="h-9 text-sm pl-9"
                 />
               </div>
@@ -94,11 +96,11 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
             )}
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="ghost" size="sm" onClick={() => { setShowInvite(false); setError(null); }}>
-                Cancelar
+                {t("cancel")}
               </Button>
               <Button type="submit" size="sm" disabled={isPending}>
                 {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-                Enviar invitación
+                {t("sendInvite")}
               </Button>
             </div>
           </form>
@@ -115,14 +117,14 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
                     {co.owner_profile?.full_name?.charAt(0)?.toUpperCase() || "?"}
                   </div>
-                  <span className="font-medium">{co.owner_profile?.full_name || "Usuario"}</span>
+                  <span className="font-medium">{co.owner_profile?.full_name || t("userFallback")}</span>
                 </div>
                 {isOwner && (
                   <button
                     type="button"
                     onClick={() => handleRemove(co.id)}
                     className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                    aria-label="Remover co-dueño"
+                    aria-label={t("removeAria")}
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -132,9 +134,7 @@ export function CoOwnersManager({ animalId, coOwners, isOwner }: CoOwnersManager
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            {isOwner
-              ? "Invitá a alguien para que también pueda ver y gestionar a esta mascota."
-              : "No hay co-dueños registrados."}
+            {isOwner ? t("emptyOwner") : t("emptyCoOwner")}
           </p>
         )}
       </CardContent>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   AlertTriangle,
   X,
@@ -49,6 +50,7 @@ export function LostModeToggle({
   activeAlert,
 }: LostModeToggleProps) {
   const router = useRouter();
+  const t = useTranslations("lostModeToggle");
   const [showActivateForm, setShowActivateForm] = useState(false);
   const [showFoundConfirm, setShowFoundConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function LostModeToggle({
         setShowActivateForm(false);
         router.refresh();
       } else {
-        setError(result.error ?? "Error al activar.");
+        setError(result.error ?? t("errorActivate"));
       }
     })(); });
   }
@@ -85,7 +87,7 @@ export function LostModeToggle({
       if (result.success) {
         router.refresh();
       } else {
-        setError(result.error ?? "Error.");
+        setError(result.error ?? t("errorGeneric"));
       }
     })(); });
   }
@@ -97,7 +99,10 @@ export function LostModeToggle({
 
   const whatsappShare = activeAlert
     ? `https://wa.me/?text=${encodeURIComponent(
-        `🚨 SE PERDIÓ ${animalName.toUpperCase()} 🚨\n\nAyudanos a encontrarla. Toda la info acá:\n${publicUrl}\n\nPor favor compartí 🙏`,
+        t("shareWhatsappMessage", {
+          name: animalName.toUpperCase(),
+          url: publicUrl,
+        }),
       )}`
     : "";
 
@@ -109,9 +114,9 @@ export function LostModeToggle({
           open={showFoundConfirm}
           onClose={() => setShowFoundConfirm(false)}
           onConfirm={confirmMarkFound}
-          title={`Marcar a ${animalName} como encontrada`}
-          description="Se desactiva la alerta y la página pública deja de estar disponible."
-          confirmLabel="Sí, apareció"
+          title={t("markFoundTitle", { name: animalName })}
+          description={t("markFoundDescription")}
+          confirmLabel={t("markFoundConfirm")}
           loading={isPending}
         />
       <Card className="border-rose-300/60 dark:border-rose-800/50 bg-rose-50/50 dark:bg-rose-950/20">
@@ -122,21 +127,22 @@ export function LostModeToggle({
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-rose-700 dark:text-rose-400">
-                {animalName} está marcada como perdida
+                {t("activeTitle", { name: animalName })}
               </h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Activada el{" "}
-                {new Date(activeAlert.activated_at).toLocaleDateString(
-                  "es-AR",
-                )}
+                {t("activatedOn", {
+                  date: new Date(
+                    activeAlert.activated_at,
+                  ).toLocaleDateString("es-AR"),
+                })}
                 {activeAlert.last_seen_location &&
-                  ` · Última ubicación: ${activeAlert.last_seen_location}`}
+                  ` · ${t("lastLocation", { location: activeAlert.last_seen_location })}`}
               </p>
 
               {/* Public URL */}
               <div className="mt-4 rounded-lg border border-rose-200 dark:border-rose-900/40 bg-background p-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                  Página pública
+                  {t("publicPage")}
                 </p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 text-xs font-mono truncate text-foreground">
@@ -152,12 +158,12 @@ export function LostModeToggle({
                     {copied ? (
                       <>
                         <Check className="h-3 w-3" />
-                        Copiado
+                        {t("copied")}
                       </>
                     ) : (
                       <>
                         <Copy className="h-3 w-3" />
-                        Copiar
+                        {t("copy")}
                       </>
                     )}
                   </Button>
@@ -173,7 +179,7 @@ export function LostModeToggle({
                     rel="noopener noreferrer"
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
-                    Compartir por WhatsApp
+                    {t("shareWhatsapp")}
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="sm" className="gap-1.5">
@@ -183,7 +189,7 @@ export function LostModeToggle({
                     rel="noopener noreferrer"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    Descargar PDF
+                    {t("downloadPdf")}
                   </a>
                 </Button>
                 <Button asChild variant="outline" size="sm" className="gap-1.5">
@@ -193,7 +199,7 @@ export function LostModeToggle({
                     rel="noopener noreferrer"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Ver página pública
+                    {t("viewPublicPage")}
                   </a>
                 </Button>
                 <Button
@@ -209,7 +215,7 @@ export function LostModeToggle({
                   ) : (
                     <CheckCircle2 className="h-3.5 w-3.5" />
                   )}
-                  Apareció
+                  {t("found")}
                 </Button>
               </div>
 
@@ -233,10 +239,9 @@ export function LostModeToggle({
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold">Modo perdido</h3>
+            <h3 className="font-semibold">{t("inactiveTitle")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Si {animalName} se pierde, activá el modo perdido y compartí la
-              página pública con los datos de contacto. La activás en segundos.
+              {t("inactiveText", { name: animalName })}
             </p>
 
             {!showActivateForm ? (
@@ -248,7 +253,7 @@ export function LostModeToggle({
                 onClick={() => setShowActivateForm(true)}
               >
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Activar modo perdido
+                {t("activateButton")}
               </Button>
             ) : (
               <form
@@ -258,53 +263,53 @@ export function LostModeToggle({
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="contactName">
-                      Nombre de contacto{" "}
+                      {t("contactName")}{" "}
                       <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="contactName"
                       name="contactName"
                       type="text"
-                      placeholder="Tu nombre"
+                      placeholder={t("contactNamePlaceholder")}
                       required
                       maxLength={100}
                     />
                   </div>
                   <div>
                     <Label htmlFor="contactPhone">
-                      Teléfono <span className="text-destructive">*</span>
+                      {t("contactPhone")} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="contactPhone"
                       name="contactPhone"
                       type="tel"
-                      placeholder="+54 9 11 1234 5678"
+                      placeholder={t("contactPhonePlaceholder")}
                       required
                       maxLength={30}
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label htmlFor="contactEmail">Email (opcional)</Label>
+                    <Label htmlFor="contactEmail">{t("contactEmail")}</Label>
                     <Input
                       id="contactEmail"
                       name="contactEmail"
                       type="email"
-                      placeholder="email@ejemplo.com"
+                      placeholder={t("contactEmailPlaceholder")}
                       maxLength={100}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="lastSeenLocation">Última ubicación</Label>
+                    <Label htmlFor="lastSeenLocation">{t("lastSeenLocation")}</Label>
                     <Input
                       id="lastSeenLocation"
                       name="lastSeenLocation"
                       type="text"
-                      placeholder="Ej: Plaza de Almagro, CABA"
+                      placeholder={t("lastSeenLocationPlaceholder")}
                       maxLength={300}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="lastSeenAt">¿Cuándo?</Label>
+                    <Label htmlFor="lastSeenAt">{t("lastSeenAt")}</Label>
                     <Input
                       id="lastSeenAt"
                       name="lastSeenAt"
@@ -313,23 +318,23 @@ export function LostModeToggle({
                   </div>
                   <div className="sm:col-span-2">
                     <Label htmlFor="rewardDescription">
-                      Recompensa (opcional)
+                      {t("reward")}
                     </Label>
                     <Input
                       id="rewardDescription"
                       name="rewardDescription"
                       type="text"
-                      placeholder="Ej: Recompensa al que lo encuentre"
+                      placeholder={t("rewardPlaceholder")}
                       maxLength={300}
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <Label htmlFor="additionalInfo">Info extra</Label>
+                    <Label htmlFor="additionalInfo">{t("additionalInfo")}</Label>
                     <Textarea
                       id="additionalInfo"
                       name="additionalInfo"
                       rows={2}
-                      placeholder="Características que no estén en la foto, lugares que frecuenta, etc."
+                      placeholder={t("additionalInfoPlaceholder")}
                       maxLength={1000}
                     />
                   </div>
@@ -350,7 +355,7 @@ export function LostModeToggle({
                     }}
                     disabled={isPending}
                   >
-                    Cancelar
+                    {t("cancel")}
                   </Button>
                   <Button
                     type="submit"
@@ -364,7 +369,7 @@ export function LostModeToggle({
                     ) : (
                       <AlertTriangle className="h-3.5 w-3.5" />
                     )}
-                    Activar y publicar
+                    {t("activateAndPublish")}
                   </Button>
                 </div>
               </form>

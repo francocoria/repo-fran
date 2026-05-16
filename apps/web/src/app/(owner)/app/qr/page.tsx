@@ -1,29 +1,36 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { QrCode, PlusCircle } from "lucide-react";
 import { Button, Card, CardContent, PetAvatar } from "@pet-app/ui";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { QRModal } from "@/components/animal/qr-modal";
 
-export const metadata = { title: "Mostrar QR" };
 export const dynamic = "force-dynamic";
 
-const speciesLabels: Record<string, string> = {
-  dog: "Perro",
-  cat: "Gato",
-  bird: "Ave",
-  rabbit: "Conejo",
-  rodent: "Roedor",
-  reptile: "Reptil",
-  fish: "Pez",
-  exotic: "Exótico",
-  other: "Otro",
+export async function generateMetadata() {
+  const t = await getTranslations("ownerQr");
+  return { title: t("metaTitle") };
+}
+
+const SPECIES_KEYS: Record<string, string> = {
+  dog: "speciesDog",
+  cat: "speciesCat",
+  bird: "speciesBird",
+  rabbit: "speciesRabbit",
+  rodent: "speciesRodent",
+  reptile: "speciesReptile",
+  fish: "speciesFish",
+  exotic: "speciesExotic",
+  other: "speciesOther",
 };
 
 export default async function QrPickerPage() {
   const user = await requireUser();
   const profile = await getOwnerProfile(user.id);
+  const t = await getTranslations("ownerQr");
+  const tc = await getTranslations("ownerCommon");
   if (!profile) redirect("/onboarding");
 
   const animals = await prisma.animal.findMany({
@@ -45,14 +52,14 @@ export default async function QrPickerPage() {
         <div className="mx-auto mb-4 inline-flex size-14 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
           <QrCode className="size-7" />
         </div>
-        <h1 className="text-xl font-semibold">Todavía no tenés mascotas</h1>
+        <h1 className="text-xl font-semibold">{t("emptyTitle")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Agregá una para generar su QR y compartirlo con tu veterinario.
+          {t("emptyText")}
         </p>
         <Button asChild className="mt-6">
           <Link href="/app/animals/new">
             <PlusCircle className="size-4" />
-            Agregar mascota
+            {t("addPet")}
           </Link>
         </Button>
       </div>
@@ -62,10 +69,9 @@ export default async function QrPickerPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Mostrar QR</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Elegí la mascota y mostrale el código al veterinario para que lo
-          escanee con su cámara.
+          {t("subtitle")}
         </p>
       </div>
 
@@ -86,7 +92,13 @@ export default async function QrPickerPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{animal.name}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {speciesLabels[animal.species] ?? animal.species}
+                    {SPECIES_KEYS[animal.species]
+                      ? tc(
+                          SPECIES_KEYS[animal.species] as Parameters<
+                            typeof tc
+                          >[0],
+                        )
+                      : animal.species}
                     {animal.breed && ` · ${animal.breed}`}
                   </p>
                 </div>
@@ -102,11 +114,11 @@ export default async function QrPickerPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-surface-2/40 p-4 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground">¿Cómo funciona?</p>
+        <p className="font-medium text-foreground">{t("howTitle")}</p>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-[13px] leading-relaxed">
-          <li>Tocá "Mostrar QR" en la mascota que querés compartir.</li>
-          <li>El veterinario escanea el QR con la cámara de su celular.</li>
-          <li>Aprobás la solicitud desde la pestaña "Accesos".</li>
+          <li>{t("howStep1")}</li>
+          <li>{t("howStep2")}</li>
+          <li>{t("howStep3")}</li>
         </ol>
       </div>
     </div>

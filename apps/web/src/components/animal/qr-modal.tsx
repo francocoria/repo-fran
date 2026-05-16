@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import QRCode from "qrcode";
 import { Button } from "@pet-app/ui";
 import { QrCode, Download, X, Copy, Check, Loader2 } from "lucide-react";
@@ -17,6 +18,7 @@ interface QRModalProps {
 /// El QR codifica una URL del tipo `${origin}/vet/scan?token=${url_token}`.
 /// Al escanear con cámara común redirige al vet a confirmar la solicitud.
 export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
+  const t = useTranslations("qrModal");
   const [open, setOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const { copied, copy } = useCopyFeedback();
@@ -67,7 +69,7 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
         className="gap-1.5"
       >
         <QrCode className="h-3.5 w-3.5" />
-        Mostrar QR
+        {t("showQr")}
       </Button>
 
       {open && (
@@ -88,7 +90,7 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
               type="button"
               onClick={() => setOpen(false)}
               className="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-lg bg-surface-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              aria-label="Cerrar"
+              aria-label={t("close")}
             >
               <X className="size-4" />
             </button>
@@ -102,10 +104,10 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
                 id="qr-modal-title"
                 className="text-xl font-semibold tracking-tight"
               >
-                QR de {animalName}
+                {t("title", { name: animalName })}
               </h2>
               <p className="mt-1 text-sm text-white/85">
-                Mostralo al veterinario para que solicite acceso.
+                {t("subtitle")}
               </p>
             </div>
 
@@ -115,7 +117,7 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
                 {qrDataUrl ? (
                   <img
                     src={qrDataUrl}
-                    alt="QR del animal"
+                    alt={t("imageAlt")}
                     className="size-64"
                   />
                 ) : (
@@ -128,9 +130,11 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
 
             <div className="px-6 pb-6 pt-4">
               <p className="rounded-lg bg-surface-2 px-3 py-2 text-center text-xs text-muted-foreground">
-                El veterinario escanea con la cámara de su celu. Después
-                aprobás desde{" "}
-                <span className="font-semibold text-foreground">Accesos</span>.
+                {t.rich("hint", {
+                  b: (c) => (
+                    <span className="font-semibold text-foreground">{c}</span>
+                  ),
+                })}
               </p>
 
               <div className="mt-4 flex gap-2">
@@ -144,12 +148,12 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
                   {copied ? (
                     <>
                       <Check className="size-4" />
-                      Copiado
+                      {t("copied")}
                     </>
                   ) : (
                     <>
                       <Copy className="size-4" />
-                      Copiar link
+                      {t("copyLink")}
                     </>
                   )}
                 </Button>
@@ -161,7 +165,7 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
                   className="flex-1"
                 >
                   <Download className="size-4" />
-                  Descargar
+                  {t("download")}
                 </Button>
               </div>
             </div>

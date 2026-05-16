@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import Link from "next/link";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Bell,
   CheckCheck,
@@ -46,6 +46,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 
 export function NotificationList({ notifications }: Props) {
   const router = useRouter();
+  const t = useTranslations("ownerNotifications");
   const [isPending, startTransition] = useTransition();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -72,13 +73,13 @@ export function NotificationList({ notifications }: Props) {
     <div className="animate-fade-up max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Notificaciones</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {notifications.length === 0
-              ? "Sin notificaciones"
+              ? t("none")
               : unreadCount > 0
-                ? `${unreadCount} sin leer`
-                : "Todas leídas"}
+                ? t("unreadCount", { count: unreadCount })
+                : t("allRead")}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -95,7 +96,7 @@ export function NotificationList({ notifications }: Props) {
             ) : (
               <CheckCheck className="h-3.5 w-3.5" />
             )}
-            Marcar todas como leídas
+            {t("markAllRead")}
           </Button>
         )}
       </div>
@@ -105,7 +106,7 @@ export function NotificationList({ notifications }: Props) {
           <CardContent className="py-12 text-center">
             <Bell className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm text-muted-foreground">
-              Cuando haya algo nuevo, va a aparecer acá.
+              {t("emptyText")}
             </p>
           </CardContent>
         </Card>

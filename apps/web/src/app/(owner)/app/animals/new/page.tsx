@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button, Input, Label, Card, CardContent } from "@pet-app/ui";
 import { createAnimal } from "../../actions";
 import {
@@ -22,23 +23,32 @@ import { COMMON_BREEDS, SPECIES_LABELS } from "@pet-app/lib/constants";
 
 interface SpeciesOption {
   value: string;
-  label: string;
+  labelKey:
+    | "speciesDog"
+    | "speciesCat"
+    | "speciesBird"
+    | "speciesRabbit"
+    | "speciesRodent"
+    | "speciesReptile"
+    | "speciesFish"
+    | "speciesOther";
   icon: LucideIcon;
 }
 
 const SPECIES_GRID: SpeciesOption[] = [
-  { value: "dog", label: "Perro", icon: Dog },
-  { value: "cat", label: "Gato", icon: Cat },
-  { value: "bird", label: "Ave", icon: Bird },
-  { value: "rabbit", label: "Conejo", icon: Rabbit },
-  { value: "rodent", label: "Roedor", icon: PawPrint },
-  { value: "reptile", label: "Reptil", icon: PawPrint },
-  { value: "fish", label: "Pez", icon: Fish },
-  { value: "other", label: "Otra", icon: Plus },
+  { value: "dog", labelKey: "speciesDog", icon: Dog },
+  { value: "cat", labelKey: "speciesCat", icon: Cat },
+  { value: "bird", labelKey: "speciesBird", icon: Bird },
+  { value: "rabbit", labelKey: "speciesRabbit", icon: Rabbit },
+  { value: "rodent", labelKey: "speciesRodent", icon: PawPrint },
+  { value: "reptile", labelKey: "speciesReptile", icon: PawPrint },
+  { value: "fish", labelKey: "speciesFish", icon: Fish },
+  { value: "other", labelKey: "speciesOther", icon: Plus },
 ];
 
 export default function NewAnimalPage() {
   const router = useRouter();
+  const t = useTranslations("animalNew");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [species, setSpecies] = useState<string>("dog");
@@ -68,7 +78,7 @@ export default function NewAnimalPage() {
       if (result.success && result.animalId) {
         router.push(`/app/animals/${result.animalId}` as `/app/animals/${string}`);
       } else {
-        setError(result.error ?? "Error al registrar la mascota");
+        setError(result.error ?? t("errorCreate"));
       }
     })(); });
   }
@@ -78,9 +88,9 @@ export default function NewAnimalPage() {
   return (
     <div className="animate-fade-up mx-auto max-w-2xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Nueva mascota</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-muted-foreground">
-          Ingresá los datos básicos para crear su perfil de salud.
+          {t("subtitle")}
         </p>
       </div>
 
@@ -89,7 +99,7 @@ export default function NewAnimalPage() {
           <CardContent className="space-y-6 pt-6">
             {/* ─── Especie selector visual ─── */}
             <div className="space-y-3">
-              <Label>¿Qué especie es?</Label>
+              <Label>{t("whichSpecies")}</Label>
               <div className="grid grid-cols-4 gap-2.5">
                 {SPECIES_GRID.map((sp) => {
                   const Icon = sp.icon;
@@ -107,7 +117,7 @@ export default function NewAnimalPage() {
                     >
                       <Icon className="size-5" />
                       <span className="text-[12.5px] font-medium">
-                        {sp.label}
+                        {t(sp.labelKey)}
                       </span>
                     </button>
                   );
@@ -118,17 +128,17 @@ export default function NewAnimalPage() {
               {species === "other" && (
                 <div className="space-y-1.5 pt-1">
                   <Label htmlFor="customSpecies" className="text-xs">
-                    Especificá la especie
+                    {t("specifySpecies")}
                   </Label>
                   <Input
                     id="customSpecies"
-                    placeholder="Ej: Hurón, Tortuga, Erizo africano..."
+                    placeholder={t("specifySpeciesPlaceholder")}
                     value={customSpecies}
                     onChange={(e) => setCustomSpecies(e.target.value)}
                     maxLength={50}
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Lo guardamos en el campo Raza para que quede registrado.
+                    {t("specifySpeciesHint")}
                   </p>
                 </div>
               )}
@@ -140,21 +150,28 @@ export default function NewAnimalPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  Nombre <span className="text-destructive">*</span>
+                  {t("name")} <span className="text-destructive">*</span>
                 </Label>
-                <Input id="name" name="name" required placeholder="Firu" />
+                <Input
+                  id="name"
+                  name="name"
+                  required
+                  placeholder={t("namePlaceholder")}
+                />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="breed">Raza</Label>
+                <Label htmlFor="breed">{t("breed")}</Label>
                 <Input
                   id="breed"
                   name="breed"
                   list={`breeds-${species}`}
                   placeholder={
                     breedSuggestions.length > 0
-                      ? `Ej: ${breedSuggestions[0]}`
-                      : "Escribí libremente"
+                      ? t("breedPlaceholderSuggestion", {
+                          breed: breedSuggestions[0],
+                        })
+                      : t("breedPlaceholderFree")
                   }
                   maxLength={80}
                 />
@@ -167,40 +184,39 @@ export default function NewAnimalPage() {
                 )}
                 {breedSuggestions.length > 0 && (
                   <p className="text-[11px] text-muted-foreground">
-                    Empezá a escribir para ver sugerencias. Si no está, podés
-                    escribirla a mano.
+                    {t("breedHint")}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sex">Sexo</Label>
+                <Label htmlFor="sex">{t("sex")}</Label>
                 <select
                   id="sex"
                   name="sex"
                   defaultValue="unknown"
                   className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <option value="male">Macho</option>
-                  <option value="female">Hembra</option>
-                  <option value="unknown">Desconocido</option>
+                  <option value="male">{t("sexMale")}</option>
+                  <option value="female">{t("sexFemale")}</option>
+                  <option value="unknown">{t("sexUnknown")}</option>
                 </select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="weightKg">Peso (kg)</Label>
+                <Label htmlFor="weightKg">{t("weight")}</Label>
                 <Input
                   id="weightKg"
                   name="weightKg"
                   type="number"
                   step="0.1"
                   min="0"
-                  placeholder="Ej: 12.5"
+                  placeholder={t("weightPlaceholder")}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
+                <Label htmlFor="birthDate">{t("birthDate")}</Label>
                 <Input id="birthDate" name="birthDate" type="date" />
               </div>
 
@@ -216,27 +232,27 @@ export default function NewAnimalPage() {
                   htmlFor="birthDateApprox"
                   className="text-sm font-normal text-muted-foreground"
                 >
-                  Es una fecha aproximada
+                  {t("birthDateApprox")}
                 </Label>
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="color">Color principal</Label>
+                <Label htmlFor="color">{t("color")}</Label>
                 <Input
                   id="color"
                   name="color"
-                  placeholder="Negro y blanco, atigrado..."
+                  placeholder={t("colorPlaceholder")}
                   maxLength={60}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="microchip">Número de Microchip</Label>
+                <Label htmlFor="microchip">{t("microchip")}</Label>
                 <Input
                   id="microchip"
                   name="microchip"
-                  placeholder="Opcional"
+                  placeholder={t("microchipPlaceholder")}
                   maxLength={20}
                 />
               </div>
@@ -245,8 +261,7 @@ export default function NewAnimalPage() {
             <div className="mt-4 flex items-start gap-3 rounded-lg border border-border bg-secondary/50 p-4">
               <Info className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Podrás agregar historial médico, vacunas e invitar a otros
-                dueños después de crear el perfil.
+                {t("infoHint")}
               </p>
             </div>
 
@@ -263,13 +278,13 @@ export default function NewAnimalPage() {
                 variant="outline"
                 onClick={() => router.back()}
               >
-                Cancelar
+                {t("cancel")}
               </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending ? (
                   <Loader2 className="mr-2 size-4 animate-spin" />
                 ) : null}
-                Crear perfil
+                {t("createProfile")}
               </Button>
             </div>
           </CardContent>

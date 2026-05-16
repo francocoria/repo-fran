@@ -24,16 +24,23 @@ import {
   PetAvatar,
   StatCard,
 } from "@pet-app/ui";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { getAge, formatDateLong } from "@pet-app/lib/utils/format";
 
-export const metadata = { title: "Mis mascotas" };
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  const t = await getTranslations("ownerHome");
+  return { title: t("metaTitle") };
+}
 
 export default async function OwnerDashboardPage() {
   const user = await requireUser();
   const profile = await getOwnerProfile(user.id);
+  const t = await getTranslations("ownerHome");
+  const tc = await getTranslations("ownerCommon");
 
   if (!profile) return null;
 
@@ -165,7 +172,7 @@ export default async function OwnerDashboardPage() {
         icon: overdue ? AlertTriangle : Syringe,
         tone: overdue ? "rose" : "primary",
         title: `${a.name} — ${v.name}`,
-        subtitle: overdue ? "Vacuna vencida" : "Próxima dosis",
+        subtitle: overdue ? t("vaccineOverdue") : t("vaccineNextDose"),
         date: d,
         overdue,
       });
@@ -181,8 +188,8 @@ export default async function OwnerDashboardPage() {
         tone: overdue ? "amber" : "primary",
         title: `${a.name} — ${dw.product}`,
         subtitle: overdue
-          ? "Desparasitación vencida"
-          : "Próxima desparasitación",
+          ? t("dewormingOverdue")
+          : t("dewormingNext"),
         date: d,
         overdue,
       });
@@ -197,24 +204,31 @@ export default async function OwnerDashboardPage() {
       {/* ─── HEADER GREETING ──────────────────────────────────── */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[13px] text-muted-foreground">Hola de nuevo,</p>
+          <p className="text-[13px] text-muted-foreground">{t("greeting")}</p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight md:text-[32px]">
             {profile.full_name.split(" ")[0]} 👋
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             {allAnimals.length === 0
-              ? "Empezá registrando tu primera mascota."
-              : `Tenés ${allAnimals.length} ${allAnimals.length === 1 ? "mascota" : "mascotas"} registrada${allAnimals.length === 1 ? "" : "s"}.`}
+              ? t("subtitleEmpty")
+              : t(
+                  allAnimals.length === 1
+                    ? "subtitleCountOne"
+                    : "subtitleCountOther",
+                  { count: allAnimals.length },
+                )}
             {lostCount > 0 && (
               <>
                 {" "}
                 <span className="font-medium text-rose">
-                  Hay {lostCount === 1 ? "una" : `${lostCount}`} en modo perdido.
+                  {t(lostCount === 1 ? "lostOne" : "lostOther", {
+                    count: lostCount,
+                  })}
                 </span>
               </>
             )}
             {lostCount === 0 && allAnimals.length > 0 && (
-              <> Todo en orden.</>
+              <> {t("allInOrder")}</>
             )}
           </p>
         </div>
@@ -223,14 +237,14 @@ export default async function OwnerDashboardPage() {
             <Button variant="outline" size="default" asChild>
               <Link href="/app/notifications">
                 <Calendar className="size-4" />
-                Avisos
+                {t("notices")}
               </Link>
             </Button>
             <Button asChild>
               <Link href="/app/animals/new">
                 <PlusCircle className="size-4" />
-                <span className="hidden sm:inline">Agregar mascota</span>
-                <span className="sm:hidden">Nueva</span>
+                <span className="hidden sm:inline">{t("addPet")}</span>
+                <span className="sm:hidden">{t("addPetShort")}</span>
               </Link>
             </Button>
           </div>
@@ -241,37 +255,37 @@ export default async function OwnerDashboardPage() {
       {allAnimals.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            label="Mascotas"
+            label={t("statPets")}
             value={allAnimals.length}
             icon={PawPrint}
             accent="primary"
           />
           <StatCard
-            label="Próxima vacuna"
+            label={t("statNextVaccine")}
             value={nextVaccine ? nextVaccine.animal : "—"}
             sublabel={
               nextVaccine
                 ? `${nextVaccine.name} · ${formatDateLong(nextVaccine.date)}`
-                : "Nada agendado"
+                : t("statNothingScheduled")
             }
             icon={Syringe}
             accent={nextVaccine ? "primary" : "muted"}
           />
           <StatCard
-            label="Pesajes"
+            label={t("statWeighings")}
             value={totalWeightEntries}
             sublabel={
               totalWeightEntries === 0
-                ? "Sin registros"
-                : `${totalWeightEntries} entradas`
+                ? t("statNoRecords")
+                : t("statEntries", { count: totalWeightEntries })
             }
             icon={Scale}
             accent="accent"
           />
           <StatCard
-            label="Co-dueños"
+            label={t("statCoOwners")}
             value={totalCoOwners}
-            sublabel={firstCoOwner ?? "Sin co-dueños"}
+            sublabel={firstCoOwner ?? t("statNoCoOwners")}
             icon={Users}
             accent="muted"
           />
@@ -283,14 +297,16 @@ export default async function OwnerDashboardPage() {
         <div>
           <div className="mb-4 flex items-baseline justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Mis mascotas</h2>
+              <h2 className="text-lg font-semibold">{t("myPetsTitle")}</h2>
               <p className="text-xs text-muted-foreground">
-                Tocá una para ver el perfil completo.
+                {t("myPetsSubtitle")}
               </p>
             </div>
             <span className="font-mono text-xs text-subtle">
               {allAnimals.length} ·{" "}
-              <span className="text-emerald">{allDoneCount} al día</span>
+              <span className="text-emerald">
+                {t("upToDateCount", { count: allDoneCount })}
+              </span>
             </span>
           </div>
 
@@ -298,6 +314,8 @@ export default async function OwnerDashboardPage() {
             {allAnimals.map((animal) => (
               <PetCard
                 key={animal.id}
+                t={t}
+                tc={tc}
                 animal={{
                   id: animal.id,
                   name: animal.name,
@@ -322,7 +340,7 @@ export default async function OwnerDashboardPage() {
               className="group flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border-strong p-5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
             >
               <PlusCircle className="size-7" strokeWidth={1.5} />
-              <span className="font-medium">Agregar mascota</span>
+              <span className="font-medium">{t("addPet")}</span>
             </Link>
           </div>
         </div>
@@ -333,16 +351,16 @@ export default async function OwnerDashboardPage() {
         <div>
           <div className="mb-4 flex items-baseline gap-2">
             <Calendar className="size-4 text-primary" />
-            <h2 className="text-lg font-semibold">Próximamente</h2>
+            <h2 className="text-lg font-semibold">{t("upcomingTitle")}</h2>
             <span className="text-xs text-muted-foreground">
-              Lo que se viene
+              {t("upcomingSubtitle")}
             </span>
           </div>
           <Card>
             <CardContent className="p-0">
               <ul className="divide-y divide-border/60">
                 {upcomingTop.map((event) => (
-                  <UpcomingRow key={event.id} event={event} />
+                  <UpcomingRow key={event.id} event={event} t={t} />
                 ))}
               </ul>
             </CardContent>
@@ -357,16 +375,15 @@ export default async function OwnerDashboardPage() {
             <Dog className="size-8 text-primary" />
           </div>
           <h2 className="text-lg font-semibold">
-            Todavía no registraste mascotas
+            {t("emptyTitle")}
           </h2>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Empezá registrando a tu primera mascota para llevar el control de
-            sus vacunas, turnos e historial médico.
+            {t("emptyText")}
           </p>
           <Button asChild className="mt-6">
             <Link href="/app/animals/new">
               <PlusCircle className="size-4" />
-              Registrar mi primera mascota
+              {t("emptyCta")}
             </Link>
           </Button>
         </div>
@@ -393,28 +410,36 @@ interface PetCardData {
   activeMedsCount: number;
 }
 
-function PetCard({ animal }: { animal: PetCardData }) {
+function PetCard({
+  animal,
+  t,
+  tc,
+}: {
+  animal: PetCardData;
+  t: Awaited<ReturnType<typeof getTranslations<"ownerHome">>>;
+  tc: Awaited<ReturnType<typeof getTranslations<"ownerCommon">>>;
+}) {
   const ageText = animal.birthDate ? getAge(animal.birthDate) : null;
   const isLost = animal.status === "lost";
 
   const stateBadge = isLost
-    ? { variant: "rose" as const, icon: AlertTriangle, label: "PERDIDA" }
+    ? { variant: "rose" as const, icon: AlertTriangle, label: t("petBadgeLost") }
     : animal.severeAllergiesCount > 0
       ? {
           variant: "amber" as const,
           icon: AlertTriangle,
-          label: "Alergia severa",
+          label: t("petBadgeSevereAllergy"),
         }
       : animal.overdueVaccinesCount > 0
         ? {
             variant: "rose" as const,
             icon: AlertTriangle,
-            label: "Vacuna vencida",
+            label: t("petBadgeOverdueVaccine"),
           }
         : {
             variant: "emerald" as const,
             icon: CheckCircle2,
-            label: "Todo al día",
+            label: t("petBadgeAllGood"),
           };
 
   const StateIcon = stateBadge.icon;
@@ -448,12 +473,12 @@ function PetCard({ animal }: { animal: PetCardData }) {
             )}
             {isLost && (
               <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-rose px-2 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow animate-pulse-rose">
-                ● Perdida
+                ● {t("petLost")}
               </span>
             )}
             {animal.isCoOwned && (
               <span className="absolute right-3 top-3 inline-block rounded-md border border-border bg-background/85 px-2 py-0.5 text-[11px] font-medium shadow-sm backdrop-blur-sm">
-                Compartida
+                {t("petShared")}
               </span>
             )}
           </div>
@@ -467,7 +492,7 @@ function PetCard({ animal }: { animal: PetCardData }) {
             )}
           </div>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            {animal.breed ?? speciesLabel(animal.species)}
+            {animal.breed ?? speciesLabel(animal.species, tc)}
             {animal.sex !== "unknown" && (
               <> · {animal.sex === "male" ? "♂" : "♀"}</>
             )}
@@ -482,7 +507,12 @@ function PetCard({ animal }: { animal: PetCardData }) {
               {animal.activeMedsCount > 0 && (
                 <span
                   className="inline-flex items-center text-subtle"
-                  title={`${animal.activeMedsCount} medicación${animal.activeMedsCount !== 1 ? "es" : ""} activa${animal.activeMedsCount !== 1 ? "s" : ""}`}
+                  title={t(
+                    animal.activeMedsCount === 1
+                      ? "medsActiveOne"
+                      : "medsActiveOther",
+                    { count: animal.activeMedsCount },
+                  )}
                 >
                   <Pill className="size-3.5" />
                 </span>
@@ -502,6 +532,7 @@ function PetCard({ animal }: { animal: PetCardData }) {
 /* ─────────────────────────────────────────────────────────── */
 function UpcomingRow({
   event,
+  t,
 }: {
   event: {
     icon: LucideIcon;
@@ -511,6 +542,7 @@ function UpcomingRow({
     date: Date;
     overdue: boolean;
   };
+  t: Awaited<ReturnType<typeof getTranslations<"ownerHome">>>;
 }) {
   const Icon = event.icon;
   const toneBg = {
@@ -532,7 +564,7 @@ function UpcomingRow({
       </div>
       {event.overdue ? (
         <Badge variant="rose" size="xs">
-          VENCIDA
+          {t("badgeOverdue")}
         </Badge>
       ) : (
         <span className="shrink-0 whitespace-nowrap font-mono text-xs font-medium text-muted-foreground">
@@ -543,18 +575,21 @@ function UpcomingRow({
   );
 }
 
-function speciesLabel(s: string): string {
+function speciesLabel(
+  s: string,
+  tc: Awaited<ReturnType<typeof getTranslations<"ownerCommon">>>,
+): string {
   return (
     {
-      dog: "Perro",
-      cat: "Gato",
-      bird: "Ave",
-      rabbit: "Conejo",
-      rodent: "Roedor",
-      reptile: "Reptil",
-      fish: "Pez",
-      exotic: "Exótico",
-      other: "Otro",
+      dog: tc("speciesDog"),
+      cat: tc("speciesCat"),
+      bird: tc("speciesBird"),
+      rabbit: tc("speciesRabbit"),
+      rodent: tc("speciesRodent"),
+      reptile: tc("speciesReptile"),
+      fish: tc("speciesFish"),
+      exotic: tc("speciesExotic"),
+      other: tc("speciesOther"),
     }[s] ?? s
   );
 }

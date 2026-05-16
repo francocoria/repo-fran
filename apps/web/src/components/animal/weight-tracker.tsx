@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { addWeightEntry, deleteWeightEntry } from "@/app/(owner)/app/actions";
 import { Button, Input, Label, Card, CardContent } from "@pet-app/ui";
 import { Plus, Trash2, Loader2, TrendingUp, TrendingDown, Minus, AlertCircle } from "lucide-react";
@@ -20,6 +21,7 @@ interface WeightTrackerProps {
 }
 
 export function WeightTracker({ animalId, currentWeight, entries, isOwner }: WeightTrackerProps) {
+  const t = useTranslations("weightTracker");
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,7 +37,7 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
         setShowForm(false);
         // Page will revalidate
       } else {
-        setError(result.error ?? "Error");
+        setError(result.error ?? t("error"));
       }
     })(); });
   }
@@ -63,7 +65,7 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
       <CardContent className="pt-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-semibold text-lg">Peso</h3>
+            <h3 className="font-semibold text-lg">{t("title")}</h3>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-2xl font-bold tabular-nums">
                 {currentWeight ? `${currentWeight} kg` : "—"}
@@ -80,7 +82,7 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
             className="gap-1.5"
           >
             <Plus className="h-3.5 w-3.5" />
-            Registrar
+            {t("record")}
           </Button>
         </div>
 
@@ -88,24 +90,24 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
           <form onSubmit={handleAdd} className="mb-4 p-4 rounded-lg bg-secondary/50 border border-border space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="weightKg" className="text-xs">Peso (kg)</Label>
+                <Label htmlFor="weightKg" className="text-xs">{t("weight")}</Label>
                 <Input
                   id="weightKg"
                   name="weightKg"
                   type="number"
                   step="0.1"
                   required
-                  placeholder="12.5"
+                  placeholder={t("weightPlaceholder")}
                   defaultValue={currentWeight || ""}
                   className="h-9 text-sm"
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="notes" className="text-xs">Nota (opcional)</Label>
+                <Label htmlFor="notes" className="text-xs">{t("note")}</Label>
                 <Input
                   id="notes"
                   name="notes"
-                  placeholder="Control mensual"
+                  placeholder={t("notePlaceholder")}
                   className="h-9 text-sm"
                 />
               </div>
@@ -118,11 +120,11 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
             )}
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="ghost" size="sm" onClick={() => setShowForm(false)}>
-                Cancelar
+                {t("cancel")}
               </Button>
               <Button type="submit" size="sm" disabled={isPending}>
                 {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
-                Guardar
+                {t("save")}
               </Button>
             </div>
           </form>
@@ -130,7 +132,7 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
 
         {entries.length > 0 ? (
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Historial</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">{t("history")}</p>
             <div className="max-h-[200px] overflow-y-auto space-y-1.5 pr-1">
               {entries.map((entry, i) => {
                 const date = new Date(entry.recorded_at);
@@ -161,7 +163,7 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
                         type="button"
                         onClick={() => handleDelete(entry.id)}
                         className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-destructive transition-all"
-                        aria-label="Eliminar"
+                        aria-label={t("delete")}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -173,7 +175,7 @@ export function WeightTracker({ animalId, currentWeight, entries, isOwner }: Wei
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Sin registros de peso. Registrá el primero para llevar un seguimiento.
+            {t("empty")}
           </p>
         )}
       </CardContent>

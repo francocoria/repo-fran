@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import Cropper, { type Area } from "react-easy-crop";
 import { Button } from "@pet-app/ui";
 import {
@@ -41,6 +42,7 @@ export function PhotoCropDialog({
   onCancel,
   outputSize = 1024,
 }: PhotoCropDialogProps) {
+  const t = useTranslations("photoUpload");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -109,21 +111,21 @@ export function PhotoCropDialog({
       className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-black/85"
       role="dialog"
       aria-modal="true"
-      aria-label="Recortar foto"
+      aria-label={t("cropAria")}
     >
       <div className="flex min-h-full items-center justify-center p-3">
       <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold tracking-tight">
-            Encuadrá la foto
+            {t("cropTitle")}
           </h2>
           <button
             type="button"
             onClick={onCancel}
             disabled={processing}
             className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary disabled:opacity-50"
-            aria-label="Cancelar"
+            aria-label={t("cropCancel")}
           >
             <X className="size-4" />
           </button>
@@ -138,11 +140,10 @@ export function PhotoCropDialog({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center text-white">
               <AlertCircle className="size-8 text-rose-400" />
               <p className="text-sm font-medium">
-                No pudimos abrir esta foto
+                {t("cropLoadErrorTitle")}
               </p>
               <p className="text-xs text-white/70">
-                Probá con un JPG o PNG. Si la sacaste con iPhone, en Ajustes →
-                Cámara → Formatos elegí "Compatible".
+                {t("cropLoadErrorText")}
               </p>
             </div>
           ) : !imageReady ? (
@@ -188,7 +189,7 @@ export function PhotoCropDialog({
               <ZoomIn className="size-4 shrink-0 text-muted-foreground" />
             </div>
             <p className="mt-2 text-center text-[11.5px] text-muted-foreground">
-              Arrastrá para mover · Pellizcá o usá el slider para zoom
+              {t("cropDragHint")}
             </p>
           </div>
         )}
@@ -205,7 +206,7 @@ export function PhotoCropDialog({
               className="gap-1.5"
             >
               <RotateCcw className="size-3.5" />
-              Reiniciar
+              {t("cropReset")}
             </Button>
           )}
           <div className="flex-1" />
@@ -216,7 +217,7 @@ export function PhotoCropDialog({
             onClick={onCancel}
             disabled={processing}
           >
-            {loadError ? "Cerrar" : "Cancelar"}
+            {loadError ? t("cropClose") : t("cropCancel")}
           </Button>
           {!loadError && (
             <Button
@@ -231,7 +232,7 @@ export function PhotoCropDialog({
               ) : (
                 <Check className="size-3.5" />
               )}
-              Listo
+              {t("cropDone")}
             </Button>
           )}
         </div>

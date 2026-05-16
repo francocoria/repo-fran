@@ -1,9 +1,14 @@
+import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { NotificationList } from "@/components/notifications/notification-list";
 
-export const metadata = { title: "Notificaciones" };
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  const t = await getTranslations("ownerNotifications");
+  return { title: t("metaTitle") };
+}
 
 export default async function OwnerNotificationsPage() {
   const user = await requireUser();

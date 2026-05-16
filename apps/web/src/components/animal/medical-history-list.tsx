@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, Badge } from "@pet-app/ui";
 import {
   Stethoscope,
@@ -33,6 +34,7 @@ interface MedicalHistoryListProps {
 }
 
 export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
+  const t = useTranslations("medicalHistory");
   const [expandedId, setExpandedId] = useState<string | null>(
     records[0]?.id ?? null,
   );
@@ -46,7 +48,7 @@ export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
       <CardContent className="pt-6">
         <div className="mb-4 flex items-center gap-2">
           <Stethoscope className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          <h3 className="font-semibold text-lg">Historial veterinario</h3>
+          <h3 className="font-semibold text-lg">{t("title")}</h3>
           <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
             {records.length}
           </span>
@@ -56,11 +58,10 @@ export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
           <div className="rounded-lg border border-dashed border-border/60 px-4 py-8 text-center">
             <CheckCircle2 className="mx-auto h-7 w-7 text-muted-foreground/50" />
             <p className="mt-2 text-sm text-muted-foreground">
-              Sin consultas registradas todavía.
+              {t("emptyTitle")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground/70">
-              Cuando un veterinario te atienda y registre la consulta, va a
-              aparecer acá.
+              {t("emptyHint")}
             </p>
           </div>
         ) : (
@@ -89,14 +90,14 @@ export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
                             className="gap-1 text-[10px] py-0 px-1.5 h-4"
                           >
                             <ShieldCheck className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" />
-                            Verificado
+                            {t("verified")}
                           </Badge>
                         )}
                       </div>
                       <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3 shrink-0" />
-                        {formatDateLong(r.visit_date)} · Dr/a.{" "}
-                        {r.vet.full_name}
+                        {formatDateLong(r.visit_date)} ·{" "}
+                        {t("vetPrefix", { name: r.vet.full_name })}
                         {r.vet.clinic_name && (
                           <span className="opacity-70">
                             · {r.vet.clinic_name}
@@ -116,7 +117,7 @@ export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
                       {r.examination && (
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            Examen físico
+                            {t("examination")}
                           </p>
                           <p className="mt-0.5 whitespace-pre-wrap">
                             {r.examination}
@@ -127,7 +128,7 @@ export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
                       {r.diagnosis && (
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            Diagnóstico
+                            {t("diagnosis")}
                           </p>
                           <p className="mt-0.5 whitespace-pre-wrap">
                             {r.diagnosis}
@@ -138,7 +139,7 @@ export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
                       {r.treatment && (
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            Tratamiento
+                            {t("treatment")}
                           </p>
                           <p className="mt-0.5 whitespace-pre-wrap">
                             {r.treatment}
@@ -149,7 +150,7 @@ export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
                       {r.next_steps && (
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            Próximos pasos
+                            {t("nextSteps")}
                           </p>
                           <p className="mt-0.5 whitespace-pre-wrap">
                             {r.next_steps}
@@ -160,7 +161,7 @@ export function MedicalHistoryList({ records }: MedicalHistoryListProps) {
                       {r.public_notes && (
                         <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-900/40 p-2.5">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-                            Notas para vos
+                            {t("publicNotes")}
                           </p>
                           <p className="mt-0.5 whitespace-pre-wrap text-emerald-900 dark:text-emerald-200">
                             {r.public_notes}

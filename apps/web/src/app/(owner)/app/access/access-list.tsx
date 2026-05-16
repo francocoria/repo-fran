@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@pet-app/ui";
 import {
   CheckCircle2,
@@ -33,12 +34,13 @@ export interface AccessRow {
 }
 
 export function PendingAccessList({ requests }: { requests: AccessRow[] }) {
+  const t = useTranslations("ownerAccess");
   if (requests.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
         <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground/50" />
         <p className="mt-3 text-sm text-muted-foreground">
-          No tenés solicitudes pendientes.
+          {t("noPending")}
         </p>
       </div>
     );
@@ -54,6 +56,7 @@ export function PendingAccessList({ requests }: { requests: AccessRow[] }) {
 }
 
 function PendingRow({ request }: { request: AccessRow }) {
+  const t = useTranslations("ownerAccess");
   const [isPending, startTransition] = useTransition();
   const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
 
@@ -62,9 +65,9 @@ function PendingRow({ request }: { request: AccessRow }) {
     startTransition(() => { void (async () => {
       const result = await approveAccess(request.id);
       if (result.success) {
-        toast.success(`Aprobaste a ${request.vet.full_name}.`);
+        toast.success(t("toastApproved", { name: request.vet.full_name }));
       } else {
-        toast.error(result.error ?? "No se pudo aprobar.");
+        toast.error(result.error ?? t("toastApproveError"));
         setDecision(null);
       }
     })(); });
@@ -75,9 +78,9 @@ function PendingRow({ request }: { request: AccessRow }) {
     startTransition(() => { void (async () => {
       const result = await rejectAccess(request.id);
       if (result.success) {
-        toast.success("Solicitud rechazada.");
+        toast.success(t("toastRejected"));
       } else {
-        toast.error(result.error ?? "No se pudo rechazar.");
+        toast.error(result.error ?? t("toastRejectError"));
         setDecision(null);
       }
     })(); });
@@ -94,7 +97,7 @@ function PendingRow({ request }: { request: AccessRow }) {
             <div className="flex items-center gap-1.5">
               <p className="font-semibold truncate">{request.vet.full_name}</p>
               {request.vet.verified && (
-                <ShieldCheck className="h-4 w-4 text-primary shrink-0" aria-label="Verificado" />
+                <ShieldCheck className="h-4 w-4 text-primary shrink-0" aria-label={t("verified")} />
               )}
             </div>
             {request.vet.clinic_name && (
@@ -103,7 +106,7 @@ function PendingRow({ request }: { request: AccessRow }) {
               </p>
             )}
             <p className="mt-1 text-xs text-muted-foreground">
-              Solicita acceso a{" "}
+              {t("requestsAccessTo")}{" "}
               <span className="font-medium text-foreground">
                 {request.animal.name}
               </span>
@@ -125,7 +128,7 @@ function PendingRow({ request }: { request: AccessRow }) {
           ) : (
             <XCircle className="h-3.5 w-3.5" />
           )}
-          Rechazar
+          {t("reject")}
         </Button>
         <Button
           size="sm"
@@ -138,7 +141,7 @@ function PendingRow({ request }: { request: AccessRow }) {
           ) : (
             <CheckCircle2 className="h-3.5 w-3.5" />
           )}
-          Aprobar
+          {t("approve")}
         </Button>
       </div>
     </div>
@@ -146,15 +149,16 @@ function PendingRow({ request }: { request: AccessRow }) {
 }
 
 export function ApprovedAccessList({ accesses }: { accesses: AccessRow[] }) {
+  const t = useTranslations("ownerAccess");
   if (accesses.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
         <Stethoscope className="mx-auto h-8 w-8 text-muted-foreground/50" />
         <p className="mt-3 text-sm text-muted-foreground">
-          Todavía no aprobaste a ningún veterinario.
+          {t("noApproved")}
         </p>
         <p className="mt-1 text-xs text-muted-foreground/80">
-          Cuando tu vet escanee el QR de tu mascota, vas a poder aprobarlo desde acá.
+          {t("noApprovedHint")}
         </p>
       </div>
     );
@@ -170,6 +174,7 @@ export function ApprovedAccessList({ accesses }: { accesses: AccessRow[] }) {
 }
 
 function ApprovedRow({ access }: { access: AccessRow }) {
+  const t = useTranslations("ownerAccess");
   const [isPending, startTransition] = useTransition();
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   useAutoReset(confirmRevoke, setConfirmRevoke, 4000);
@@ -182,9 +187,9 @@ function ApprovedRow({ access }: { access: AccessRow }) {
     startTransition(() => { void (async () => {
       const result = await revokeAccess(access.id);
       if (result.success) {
-        toast.success("Acceso revocado.");
+        toast.success(t("toastRevoked"));
       } else {
-        toast.error(result.error ?? "No se pudo revocar.");
+        toast.error(result.error ?? t("toastRevokeError"));
       }
       setConfirmRevoke(false);
     })(); });
@@ -218,7 +223,7 @@ function ApprovedRow({ access }: { access: AccessRow }) {
               </p>
             )}
             <p className="mt-1 text-xs text-muted-foreground">
-              {access.animal.name} · aprobado {approvedDate}
+              {t("approvedOn", { name: access.animal.name, date: approvedDate })}
             </p>
           </div>
         </div>
@@ -234,10 +239,10 @@ function ApprovedRow({ access }: { access: AccessRow }) {
           ) : confirmRevoke ? (
             <>
               <AlertCircle className="h-3.5 w-3.5" />
-              Confirmar
+              {t("confirm")}
             </>
           ) : (
-            "Revocar"
+            t("revoke")
           )}
         </Button>
       </div>

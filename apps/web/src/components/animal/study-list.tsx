@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { uploadStudy, deleteStudy } from "@/app/(owner)/app/animals/[id]/health-actions";
 import { Button, Input, Label, Card, CardContent } from "@pet-app/ui";
-import { FileText, Plus, Trash2, Loader2, AlertCircle, Download, ExternalLink } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 
 interface Study {
   id: string;
@@ -21,6 +22,7 @@ interface StudyListProps {
 }
 
 export function StudyList({ animalId, studies, isOwner }: StudyListProps) {
+  const t = useTranslations("studyList");
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -34,7 +36,7 @@ export function StudyList({ animalId, studies, isOwner }: StudyListProps) {
     startTransition(() => { void (async () => {
       const result = await uploadStudy(animalId, formData);
       if (result.success) { setShowForm(false); setFileName(""); }
-      else setError(result.error ?? "Error");
+      else setError(result.error ?? t("error"));
     })(); });
   }
 
@@ -48,11 +50,11 @@ export function StudyList({ animalId, studies, isOwner }: StudyListProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="font-semibold text-lg">Estudios</h3>
+            <h3 className="font-semibold text-lg">{t("title")}</h3>
             <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">{studies.length}</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => setShowForm(!showForm)} className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" />Subir
+            <Plus className="h-3.5 w-3.5" />{t("upload")}
           </Button>
         </div>
 
@@ -60,16 +62,16 @@ export function StudyList({ animalId, studies, isOwner }: StudyListProps) {
           <form onSubmit={handleAdd} className="mb-4 p-4 rounded-lg bg-secondary/50 border border-border space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1 col-span-2 sm:col-span-1">
-                <Label className="text-xs">Título *</Label>
-                <Input name="title" required placeholder="Análisis de sangre" className="h-9 text-sm" />
+                <Label className="text-xs">{t("name")}</Label>
+                <Input name="title" required placeholder={t("namePlaceholder")} className="h-9 text-sm" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Fecha</Label>
+                <Label className="text-xs">{t("date")}</Label>
                 <Input name="studyDate" type="date" className="h-9 text-sm" defaultValue={new Date().toISOString().split("T")[0]} />
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Archivo * (PDF o imagen, máx 15 MB)</Label>
+              <Label className="text-xs">{t("file")}</Label>
               <div
                 onClick={() => fileRef.current?.click()}
                 className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 hover:bg-secondary/30 transition-all"
@@ -86,19 +88,19 @@ export function StudyList({ animalId, studies, isOwner }: StudyListProps) {
                 {fileName ? (
                   <p className="text-sm font-medium text-foreground">{fileName}</p>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Hacé click para seleccionar</p>
+                  <p className="text-sm text-muted-foreground">{t("fileSelect")}</p>
                 )}
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Notas</Label>
-              <Input name="notes" placeholder="Resultados, observaciones..." className="h-9 text-sm" />
+              <Label className="text-xs">{t("notes")}</Label>
+              <Input name="notes" placeholder={t("notesPlaceholder")} className="h-9 text-sm" />
             </div>
             {error && <div className="flex items-center gap-1.5 text-xs text-destructive"><AlertCircle className="h-3 w-3" />{error}</div>}
             <div className="flex gap-2 justify-end">
-              <Button type="button" variant="ghost" size="sm" onClick={() => { setShowForm(false); setFileName(""); }}>Cancelar</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setShowForm(false); setFileName(""); }}>{t("cancel")}</Button>
               <Button type="submit" size="sm" disabled={isPending}>
-                {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}Subir
+                {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}{t("upload")}
               </Button>
             </div>
           </form>
@@ -123,11 +125,11 @@ export function StudyList({ animalId, studies, isOwner }: StudyListProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <a href={s.file_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-muted-foreground hover:text-primary transition-colors" title="Abrir">
+                    <a href={s.file_url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-muted-foreground hover:text-primary transition-colors" title={t("open")}>
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                     {isOwner && (
-                      <button type="button" onClick={() => handleDelete(s.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive transition-all" aria-label="Eliminar">
+                      <button type="button" onClick={() => handleDelete(s.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive transition-all" aria-label={t("delete")}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     )}
@@ -137,7 +139,7 @@ export function StudyList({ animalId, studies, isOwner }: StudyListProps) {
             })}
           </div>
         ) : (
-          <p className="text-sm text-center text-muted-foreground py-4">Sin estudios subidos. Subí análisis, radiografías y más.</p>
+          <p className="text-sm text-center text-muted-foreground py-4">{t("empty")}</p>
         )}
       </CardContent>
     </Card>

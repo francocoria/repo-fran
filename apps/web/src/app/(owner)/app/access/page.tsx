@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { ShieldCheck, Stethoscope, UserPlus } from "lucide-react";
@@ -12,12 +13,17 @@ import {
   type CoOwnerInviteRow,
 } from "./co-owner-invites-list";
 
-export const metadata = { title: "Accesos" };
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  const t = await getTranslations("ownerAccess");
+  return { title: t("metaTitle") };
+}
 
 export default async function AccessPage() {
   const user = await requireUser();
   const profile = await getOwnerProfile(user.id);
+  const t = await getTranslations("ownerAccess");
 
   if (!profile) redirect("/onboarding/owner");
 
@@ -102,9 +108,9 @@ export default async function AccessPage() {
   return (
     <div className="animate-fade-up max-w-3xl">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Accesos veterinarios</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Aprobá o revocá quién puede ver el historial de tus mascotas.
+          {t("subtitle")}
         </p>
       </div>
 
@@ -113,7 +119,7 @@ export default async function AccessPage() {
           <div className="mb-3 flex items-center gap-2">
             <UserPlus className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Invitaciones a co-dueño
+              {t("coOwnerInvitesTitle")}
               <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
                 {coOwnerInvites.length}
               </span>
@@ -127,7 +133,7 @@ export default async function AccessPage() {
         <div className="mb-3 flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-warning" />
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Solicitudes pendientes
+            {t("pendingTitle")}
             {pending.length > 0 && (
               <span className="ml-2 rounded-full bg-warning/15 px-2 py-0.5 text-xs text-warning">
                 {pending.length}
@@ -142,7 +148,7 @@ export default async function AccessPage() {
         <div className="mb-3 flex items-center gap-2">
           <Stethoscope className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Veterinarios con acceso
+            {t("vetsWithAccessTitle")}
             {approved.length > 0 && (
               <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs text-primary">
                 {approved.length}
