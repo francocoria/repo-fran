@@ -6,6 +6,7 @@ import {
   PREMIUM_CURRENCY,
   PREMIUM_PLAN_TITLE,
   APP_URL,
+  isMpSandbox,
 } from "@/lib/mercadopago";
 
 export const runtime = "nodejs";
@@ -69,11 +70,18 @@ export async function POST(_request: NextRequest) {
       },
     });
 
+    // En sandbox usamos sandbox_init_point (las tarjetas de prueba sólo
+    // funcionan ahí). En producción, init_point.
+    const sandbox = isMpSandbox();
+    const checkoutUrl = sandbox
+      ? (result.sandbox_init_point ?? result.init_point)
+      : (result.init_point ?? result.sandbox_init_point);
+
     return NextResponse.json({
       success: true,
       preferenceId: result.id,
-      initPoint: result.init_point,
-      sandboxInitPoint: result.sandbox_init_point,
+      checkoutUrl,
+      sandbox,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Error desconocido";

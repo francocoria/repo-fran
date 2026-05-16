@@ -88,9 +88,8 @@ export function UpgradeModal({
         setPaying(false);
         return;
       }
-      // Redirigimos al checkout de MP. Si estamos en sandbox usamos
-      // sandbox_init_point para que las compras de prueba funcionen.
-      const target = body.initPoint ?? body.sandboxInitPoint;
+      // El backend ya nos devuelve la URL correcta (sandbox o prod).
+      const target = body.checkoutUrl;
       if (!target) {
         setError("Respuesta inesperada del checkout.");
         setPaying(false);
