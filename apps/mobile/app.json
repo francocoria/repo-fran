@@ -49,6 +49,12 @@
           "cameraPermission": "Necesitamos acceso a la cámara para que puedas sacar la foto de tu mascota."
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "color": "#7c3aed"
+        }
+      ],
       "expo-secure-store"
     ],
     "experiments": {

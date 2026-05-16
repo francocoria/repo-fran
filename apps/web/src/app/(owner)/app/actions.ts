@@ -427,6 +427,16 @@ export async function inviteCoOwner(animalId: string, email: string) {
       };
     }
 
+    // Si el invitado ya tiene cuenta, mandamos también push notification.
+    if (invitedUser) {
+      const { sendPushToUser } = await import("@/lib/push");
+      void sendPushToUser(invitedUser.id, {
+        title: `${profile.full_name} te invitó a cuidar a ${animal.name}`,
+        body: "Tocá para ver la invitación y aceptarla.",
+        data: { screen: "invites" },
+      });
+    }
+
     revalidatePath(`/app/animals/${animalId}`);
     return {
       success: true,

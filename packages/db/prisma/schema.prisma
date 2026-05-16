@@ -778,3 +778,21 @@ model EmailLog {
   @@map("email_logs")
   @@schema("public")
 }
+
+// ============= PUSH NOTIFICATIONS =============
+
+/// Tokens de Expo Push para mandar notificaciones a la app nativa.
+/// Un user puede tener varios (un device cada uno). El token es único.
+model PushToken {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  token        String   @unique
+  platform     String   @default("unknown") // ios | android
+  device_name  String?
+  created_at   DateTime @default(now())
+  last_used_at DateTime @default(now())
+
+  @@index([user_id])
+  @@map("push_tokens")
+  @@schema("public")
+}

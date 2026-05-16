@@ -198,6 +198,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Push notification si el invitado ya tiene cuenta
+    if (invitedUser) {
+      const { sendPushToUser } = await import("@/lib/push");
+      void sendPushToUser(invitedUser.id, {
+        title: `${profile.full_name} te invitó a cuidar a ${animal.name}`,
+        body: "Tocá para ver la invitación y aceptarla.",
+        data: { screen: "invites" },
+      });
+    }
+
     return NextResponse.json({
       success: true,
       recipientHasAccount,
