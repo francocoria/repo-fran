@@ -208,7 +208,13 @@ export default async function VetPlanPage({
               </p>
             </div>
 
-            {!isPremium && <UpgradeModal triggerLabel="Pasar a Premium" />}
+            {plan === "free" || plan === "expired" ? (
+              <UpgradeModal triggerLabel="Pasar a Premium" />
+            ) : plan === "trial" ? (
+              <UpgradeModal triggerLabel="Activar Premium ahora" />
+            ) : (
+              <UpgradeModal triggerLabel="Renovar 1 mes" />
+            )}
           </div>
         </CardContent>
       </Card>
@@ -342,19 +348,28 @@ export default async function VetPlanPage({
       )}
 
       {/* ─── CTA FINAL ───────────────────────────────────────── */}
-      {!isPremium && (
+      {plan !== "premium" && (
         <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-transparent to-accent/5">
           <CardContent className="p-6 text-center">
             <Crown className="mx-auto h-10 w-10 text-amber-500" />
             <h3 className="mt-3 text-lg font-semibold">
-              Llevá tu práctica al siguiente nivel
+              {plan === "trial"
+                ? "Activá Premium antes de que termine tu prueba"
+                : "Llevá tu práctica al siguiente nivel"}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-              Premium te permite atender a todos tus pacientes sin restricciones
-              y emitir documentos profesionales.
+              {plan === "trial"
+                ? "Cuando se acabe la prueba gratis perdés el acceso a pacientes ilimitados, certificados y branding. Activalo ahora y seguís sin interrupciones."
+                : "Premium te permite atender a todos tus pacientes sin restricciones y emitir documentos profesionales."}
             </p>
             <div className="mt-4">
-              <UpgradeModal triggerLabel="Quiero pasarme a Premium" />
+              <UpgradeModal
+                triggerLabel={
+                  plan === "trial"
+                    ? "Activar Premium ahora"
+                    : "Quiero pasarme a Premium"
+                }
+              />
             </div>
           </CardContent>
         </Card>

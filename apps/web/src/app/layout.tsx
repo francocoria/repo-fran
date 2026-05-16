@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeColorProvider } from "@/components/providers/theme-color-provider";
 import { InstallPrompt } from "@/components/install-prompt";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -116,6 +117,7 @@ export default function RootLayout({
             {children}
             <Toaster richColors closeButton position="top-right" />
             <InstallPrompt />
+            <ServiceWorkerRegister />
             <Analytics />
           </QueryProvider>
         </ThemeProvider>
