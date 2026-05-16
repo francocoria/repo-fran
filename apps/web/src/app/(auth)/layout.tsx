@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 /**
  * Layout de auth — pantalla limpia con branding mínimo.
@@ -34,7 +35,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* Panel derecho: formulario */}
-      <div className="flex items-center justify-center p-6 sm:p-8">
+      <div className="relative flex items-center justify-center p-6 sm:p-8">
+        <div className="absolute right-6 top-6 z-10">
+          <LanguageSwitcher variant="icon" />
+        </div>
         <div className="w-full max-w-[420px]">
           {/* Logo mobile */}
           <div className="mb-8 lg:hidden text-center">

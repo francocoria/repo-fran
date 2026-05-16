@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { Button, Input, Label } from "@pet-app/ui";
 import { loginWithMagicLink, verifyOtpCode } from "../actions";
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 export default function LoginPage() {
+  const t = useTranslations("login");
   const router = useRouter();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
@@ -38,7 +40,7 @@ export default function LoginPage() {
       if (result.success) {
         setStep("code");
       } else {
-        setError(result.error ?? "Error al enviar el código");
+        setError(result.error ?? t("errorSendCode"));
       }
     })(); });
   }
@@ -47,7 +49,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     if (code.trim().length < 6) {
-      setError("Ingresá los 6 dígitos del email");
+      setError(t("errorCodeIncomplete"));
       return;
     }
     startTransition(() => { void (async () => {
@@ -56,7 +58,7 @@ export default function LoginPage() {
         router.push((result.redirectTo ?? "/app") as never);
         router.refresh();
       } else {
-        setError(result.error ?? "Código incorrecto. Probá de nuevo.");
+        setError(result.error ?? t("errorCodeWrong"));
       }
     })(); });
   }
@@ -67,7 +69,7 @@ export default function LoginPage() {
     const result = await loginWithMagicLink(email);
     setResending(false);
     if (!result.success) {
-      setError(result.error ?? "No pudimos reenviar.");
+      setError(result.error ?? t("errorResend"));
     }
   }
 
@@ -84,21 +86,27 @@ export default function LoginPage() {
           className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="size-4" />
-          Cambiar email
+          {t("changeEmail")}
         </button>
 
         <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
           <KeyRound className="size-6 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Revisá tu email</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("codeStepTitle")}
+        </h1>
         <p className="mt-2 text-muted-foreground">
-          Te mandamos un código de 6 dígitos a{" "}
-          <span className="font-medium text-foreground">{email}</span>.
+          {t.rich("codeStepSubtitle", {
+            email,
+            strong: (chunks) => (
+              <span className="font-medium text-foreground">{chunks}</span>
+            ),
+          })}
         </p>
 
         <form onSubmit={handleCodeSubmit} className="mt-6 space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="code">Código</Label>
+            <Label htmlFor="code">{t("codeLabel")}</Label>
             <Input
               ref={codeInputRef}
               id="code"
@@ -106,7 +114,7 @@ export default function LoginPage() {
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
-              placeholder="123456"
+              placeholder={t("codePlaceholder")}
               value={code}
               onChange={(e) =>
                 setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
@@ -132,7 +140,7 @@ export default function LoginPage() {
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <>
-                Verificar y entrar
+                {t("verifyAndEnter")}
                 <ArrowRight className="size-4" />
               </>
             )}
@@ -145,16 +153,17 @@ export default function LoginPage() {
               disabled={resending || isPending}
               className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
             >
-              {resending ? "Reenviando..." : "No me llegó, reenviar"}
+              {resending ? t("resending") : t("resend")}
             </button>
           </div>
         </form>
 
         <div className="mt-8 rounded-lg border border-border bg-surface-2 p-3">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            <strong className="text-foreground">¿Instalaste la app?</strong> Usá
-            el código numérico que viene en el email — así te quedás dentro de
-            la app instalada y no se abre el navegador.
+            <strong className="text-foreground">
+              {t("installedHintTitle")}
+            </strong>{" "}
+            {t("installedHint")}
           </p>
         </div>
       </div>
@@ -164,21 +173,19 @@ export default function LoginPage() {
   return (
     <div className="animate-fade-up">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Iniciar sesión</h1>
-        <p className="mt-2 text-muted-foreground">
-          Ingresá tu email y te mandamos un código de 6 dígitos.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <form onSubmit={handleEmailSubmit} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("emailLabel")}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="email"
               type="email"
-              placeholder="tu@email.com"
+              placeholder={t("emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -205,7 +212,7 @@ export default function LoginPage() {
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <>
-              Enviar código
+              {t("sendCode")}
               <ArrowRight className="size-4" />
             </>
           )}
@@ -218,21 +225,21 @@ export default function LoginPage() {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            ¿No tenés cuenta?
+            {t("noAccount")}
           </span>
         </div>
       </div>
 
       <div className="flex flex-col gap-3">
         <Button variant="outline" asChild className="w-full">
-          <Link href="/signup">Crear cuenta como dueño</Link>
+          <Link href="/signup">{t("createOwner")}</Link>
         </Button>
         <Button
           variant="ghost"
           asChild
           className="w-full text-muted-foreground"
         >
-          <Link href="/signup/vet">Soy veterinario →</Link>
+          <Link href="/signup/vet">{t("isVet")}</Link>
         </Button>
       </div>
     </div>

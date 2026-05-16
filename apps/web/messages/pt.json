@@ -1,0 +1,49 @@
+{
+  "common": {
+    "appName": "PetApp",
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "continue": "Continuar",
+    "close": "Fechar",
+    "confirm": "Confirmar",
+    "search": "Buscar",
+    "error": "Ocorreu um erro",
+    "retry": "Tentar de novo",
+    "required": "Obrigatório"
+  },
+  "language": {
+    "label": "Idioma",
+    "es": "Español",
+    "en": "English",
+    "pt": "Português"
+  },
+  "login": {
+    "title": "Entrar",
+    "subtitle": "Digite seu e-mail e enviaremos um código de 6 dígitos.",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "voce@email.com",
+    "sendCode": "Enviar código",
+    "noAccount": "Não tem uma conta?",
+    "createOwner": "Criar conta como tutor",
+    "isVet": "Sou veterinário →",
+    "codeStepTitle": "Confira seu e-mail",
+    "codeStepSubtitle": "Enviamos um código de 6 dígitos para <strong>{email}</strong>.",
+    "codeLabel": "Código",
+    "codePlaceholder": "123456",
+    "verifyAndEnter": "Verificar e entrar",
+    "changeEmail": "Trocar e-mail",
+    "resend": "Não recebi, reenviar",
+    "resending": "Reenviando...",
+    "errorSendCode": "Erro ao enviar o código",
+    "errorResend": "Não conseguimos reenviar.",
+    "errorCodeIncomplete": "Digite os 6 dígitos do e-mail",
+    "errorCodeWrong": "Código incorreto. Tente de novo.",
+    "installedHintTitle": "Instalou o app?",
+    "installedHint": "Use o código numérico do e-mail — assim você permanece dentro do app instalado e o navegador não abre."
+  }
+}
