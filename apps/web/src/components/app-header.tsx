@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { logout } from "@/app/(auth)/actions";
 import { useState, useTransition } from "react";
+import { VetSearch } from "@/components/vet/vet-search";
 
 type UserRole = "owner" | "vet" | "admin";
 
@@ -109,6 +110,9 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          {/* Buscador global — solo vet */}
+          {userRole === "vet" && <VetSearch />}
+
           {/* Role badge */}
           <Badge
             variant="secondary"
