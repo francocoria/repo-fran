@@ -21,6 +21,7 @@ import {
 } from "@pet-app/lib/utils/subscription";
 import { formatDateLong } from "@pet-app/lib/utils/format";
 import { UpgradeModal } from "@/components/vet/upgrade-modal";
+import { activatePremiumFromPayment } from "@/lib/premium-activation";
 
 export const metadata = { title: "Mi plan" };
 export const dynamic = "force-dynamic";
@@ -61,14 +62,38 @@ const ALL_FEATURES = [
 export default async function VetPlanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{
+    checkout?: string;
+    payment_id?: string;
+    status?: string;
+    collection_status?: string;
+  }>;
 }) {
   const user = await requireUser();
   const profile = await getVetProfile(user.id);
   if (!profile) redirect("/onboarding/vet");
 
   const params = await searchParams;
-  const checkoutFlash = params.checkout;
+  let checkoutFlash = params.checkout;
+
+  // Al volver del checkout, MP agrega `payment_id` al redirect. Activamos
+  // Premium acá mismo — así no dependemos de que el webhook llegue.
+  const paymentId = params.payment_id;
+  if (paymentId && paymentId !== "null") {
+    const activation = await activatePremiumFromPayment(paymentId);
+    if (activation.ok) {
+      checkoutFlash = "success";
+    } else if (
+      activation.status === "not_approved" &&
+      activation.detail !== "approved"
+    ) {
+      // pago rechazado o pendiente
+      checkoutFlash =
+        params.status === "pending" || params.collection_status === "pending"
+          ? "pending"
+          : "failure";
+    }
+  }
 
   const subscription = await prisma.subscription.findUnique({
     where: { vet_id: profile.id },
@@ -126,11 +151,11 @@ export default async function VetPlanPage({
           <Check className="size-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
           <div>
             <p className="font-semibold text-emerald-900 dark:text-emerald-200">
-              ¡Pago aprobado!
+              ¡Pago aprobado! Premium activado.
             </p>
             <p className="mt-0.5 text-emerald-900/80 dark:text-emerald-100/80">
-              Tu suscripción Premium queda activa en cuanto recibimos la
-              confirmación de Mercado Pago (en menos de 1 minuto).
+              Ya tenés acceso a todos los beneficios. Te mandamos el
+              comprobante por email.
             </p>
           </div>
         </div>
