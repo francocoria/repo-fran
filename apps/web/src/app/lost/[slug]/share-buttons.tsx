@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@pet-app/ui";
 import { MessageCircle, Share2, Copy, Check, Download } from "lucide-react";
 import { useCopyFeedback } from "@/lib/use-copy-feedback";
@@ -13,6 +14,7 @@ export function ShareButtonsClient({
   animalName,
   slug,
 }: ShareButtonsClientProps) {
+  const t = useTranslations("lostDetail");
   const { copied, copy } = useCopyFeedback();
 
   const url =
@@ -20,7 +22,10 @@ export function ShareButtonsClient({
       ? `${window.location.origin}/lost/${slug}`
       : `/lost/${slug}`;
 
-  const message = `🚨 SE PERDIÓ ${animalName.toUpperCase()} 🚨\n\nAyudanos a encontrarla. Toda la info acá:\n${url}\n\nPor favor compartí 🙏`;
+  const message = t("shareWhatsappMessage", {
+    name: animalName.toUpperCase(),
+    url,
+  });
 
   const whatsappShare = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
@@ -28,7 +33,7 @@ export function ShareButtonsClient({
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await navigator.share({
-          title: `🚨 Se perdió ${animalName}`,
+          title: t("shareNativeTitle", { name: animalName }),
           text: message,
           url,
         });
@@ -49,7 +54,7 @@ export function ShareButtonsClient({
       >
         <a href={whatsappShare} target="_blank" rel="noopener noreferrer">
           <MessageCircle className="h-3.5 w-3.5" />
-          WhatsApp
+          {t("shareWhatsapp")}
         </a>
       </Button>
       <Button
@@ -60,7 +65,7 @@ export function ShareButtonsClient({
         className="gap-1.5"
       >
         <Share2 className="h-3.5 w-3.5" />
-        Compartir
+        {t("shareShare")}
       </Button>
       <Button
         type="button"
@@ -72,12 +77,12 @@ export function ShareButtonsClient({
         {copied ? (
           <>
             <Check className="h-3.5 w-3.5" />
-            Copiado
+            {t("shareCopied")}
           </>
         ) : (
           <>
             <Copy className="h-3.5 w-3.5" />
-            Copiar link
+            {t("shareCopyLink")}
           </>
         )}
       </Button>
@@ -88,7 +93,7 @@ export function ShareButtonsClient({
           rel="noopener noreferrer"
         >
           <Download className="h-3.5 w-3.5" />
-          PDF para imprimir
+          {t("sharePdf")}
         </a>
       </Button>
     </div>

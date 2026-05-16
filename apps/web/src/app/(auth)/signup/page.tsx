@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@pet-app/ui";
 import { Input } from "@pet-app/ui";
 import { Label } from "@pet-app/ui";
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 
 export default function SignupOwnerPage() {
+  const t = useTranslations("signup");
   const router = useRouter();
   const [step, setStep] = useState<"form" | "code">("form");
   const [email, setEmail] = useState("");
@@ -48,7 +50,7 @@ export default function SignupOwnerPage() {
         if (result.success) {
           setStep("code");
         } else {
-          setError(result.error ?? "Error al crear la cuenta");
+          setError(result.error ?? t("errorCreateAccount"));
         }
       })();
     });
@@ -58,7 +60,7 @@ export default function SignupOwnerPage() {
     e.preventDefault();
     setError(null);
     if (code.trim().length < 6) {
-      setError("Ingresá los 6 dígitos del email.");
+      setError(t("errorCodeIncomplete"));
       return;
     }
     startTransition(() => {
@@ -68,7 +70,7 @@ export default function SignupOwnerPage() {
           router.push((result.redirectTo ?? "/app") as never);
           router.refresh();
         } else {
-          setError(result.error ?? "Código incorrecto. Probá de nuevo.");
+          setError(result.error ?? t("errorCodeWrong"));
         }
       })();
     });
@@ -82,7 +84,7 @@ export default function SignupOwnerPage() {
     const result = await loginWithMagicLink(email);
     setResending(false);
     if (!result.success) {
-      setError(result.error ?? "No pudimos reenviar.");
+      setError(result.error ?? t("errorResend"));
     }
   }
 
@@ -99,21 +101,27 @@ export default function SignupOwnerPage() {
           className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="size-4" />
-          Cambiar datos
+          {t("changeData")}
         </button>
 
         <div className="mb-6 flex size-14 items-center justify-center rounded-2xl bg-primary/10">
           <KeyRound className="size-6 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Revisá tu email</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("codeStepTitle")}
+        </h1>
         <p className="mt-2 text-muted-foreground">
-          Te mandamos un código de 6 dígitos a{" "}
-          <span className="font-medium text-foreground">{email}</span>.
+          {t.rich("codeStepSubtitle", {
+            email,
+            strong: (chunks) => (
+              <span className="font-medium text-foreground">{chunks}</span>
+            ),
+          })}
         </p>
 
         <form onSubmit={handleCodeSubmit} className="mt-6 space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="code">Código</Label>
+            <Label htmlFor="code">{t("codeLabel")}</Label>
             <Input
               ref={codeInputRef}
               id="code"
@@ -121,7 +129,7 @@ export default function SignupOwnerPage() {
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
-              placeholder="123456"
+              placeholder={t("codePlaceholder")}
               value={code}
               onChange={(e) =>
                 setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
@@ -147,7 +155,7 @@ export default function SignupOwnerPage() {
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <>
-                Confirmar y entrar
+                {t("confirmAndEnter")}
                 <ArrowRight className="size-4" />
               </>
             )}
@@ -160,7 +168,7 @@ export default function SignupOwnerPage() {
               disabled={resending || isPending}
               className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
             >
-              {resending ? "Reenviando..." : "No me llegó, reenviar"}
+              {resending ? t("resending") : t("resend")}
             </button>
           </div>
         </form>
@@ -171,22 +179,20 @@ export default function SignupOwnerPage() {
   return (
     <div className="animate-fade-up">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Crear cuenta</h1>
-        <p className="mt-2 text-muted-foreground">
-          Registrate como dueño de mascota. Es gratis y siempre lo será.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="mt-2 text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Nombre */}
         <div className="space-y-2">
-          <Label htmlFor="fullName">Nombre completo</Label>
+          <Label htmlFor="fullName">{t("fullNameLabel")}</Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="fullName"
               name="fullName"
-              placeholder="Tu nombre"
+              placeholder={t("fullNamePlaceholder")}
               required
               minLength={2}
               maxLength={100}
@@ -198,14 +204,14 @@ export default function SignupOwnerPage() {
 
         {/* Email */}
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("emailLabel")}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="email"
               name="email"
               type="email"
-              placeholder="tu@email.com"
+              placeholder={t("emailPlaceholder")}
               required
               autoComplete="email"
               className="pl-10"
@@ -217,8 +223,10 @@ export default function SignupOwnerPage() {
         {/* Teléfono (opcional) */}
         <div className="space-y-2">
           <Label htmlFor="phone">
-            Teléfono{" "}
-            <span className="text-muted-foreground font-normal">(opcional)</span>
+            {t("phoneLabel")}{" "}
+            <span className="text-muted-foreground font-normal">
+              {t("optional")}
+            </span>
           </Label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -226,7 +234,7 @@ export default function SignupOwnerPage() {
               id="phone"
               name="phone"
               type="tel"
-              placeholder="+54 11 1234-5678"
+              placeholder={t("phonePlaceholder")}
               autoComplete="tel"
               className="pl-10"
             />
@@ -244,14 +252,20 @@ export default function SignupOwnerPage() {
             className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
           />
           <Label htmlFor="acceptTerms" className="text-sm leading-relaxed font-normal">
-            Acepto los{" "}
-            <Link href="/terms" className="text-primary hover:underline">
-              Términos y Condiciones
-            </Link>{" "}
-            y la{" "}
-            <Link href="/privacy" className="text-primary hover:underline">
-              Política de Privacidad
-            </Link>
+            <span>
+              {t.rich("acceptTerms", {
+                terms: (chunks) => (
+                  <Link href="/terms" className="text-primary hover:underline">
+                    {chunks}
+                  </Link>
+                ),
+                privacy: (chunks) => (
+                  <Link href="/privacy" className="text-primary hover:underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </span>
           </Label>
         </div>
 
@@ -267,7 +281,7 @@ export default function SignupOwnerPage() {
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <>
-              Crear cuenta gratis
+              {t("submit")}
               <ArrowRight className="h-4 w-4" />
             </>
           )}
@@ -275,14 +289,14 @@ export default function SignupOwnerPage() {
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        ¿Ya tenés cuenta?{" "}
+        {t("hasAccount")}{" "}
         <Link href="/login" className="text-primary hover:underline font-medium">
-          Iniciá sesión
+          {t("signIn")}
         </Link>
       </p>
       <p className="mt-2 text-center text-sm text-muted-foreground">
         <Link href="/signup/vet" className="text-primary hover:underline">
-          Soy veterinario →
+          {t("isVet")}
         </Link>
       </p>
     </div>

@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Brand } from "@pet-app/ui";
 
-export const metadata = { title: "Privacidad" };
+export async function generateMetadata() {
+  const t = await getTranslations("privacy");
+  return { title: t("metaTitle") };
+}
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const t = await getTranslations("privacy");
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background/85 backdrop-blur-xl">
@@ -12,97 +17,85 @@ export default function PrivacyPage() {
             <Brand size="md" />
           </Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-            Volver
+            {t("back")}
           </Link>
         </div>
       </header>
 
       <main className="container max-w-3xl py-12">
-        <h1 className="text-3xl font-bold tracking-tight">Política de Privacidad</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Última actualización: 11 de mayo de 2026</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("lastUpdated")}</p>
 
         <div className="prose-petapp mt-8 space-y-6 text-[15px] leading-relaxed">
-          <Section title="Quiénes somos">
+          <Section title={t("whoTitle")}>
             <p>
-              PetApp es una plataforma de gestión de salud para mascotas
-              operada por Franco Coria, con domicilio en Buenos Aires, Argentina.
-              Email de contacto: <a href="mailto:1133985163f@gmail.com" className="text-primary underline-offset-2 hover:underline">1133985163f@gmail.com</a>
+              {t("whoText")}
+              <a href="mailto:1133985163f@gmail.com" className="text-primary underline-offset-2 hover:underline">1133985163f@gmail.com</a>
             </p>
           </Section>
 
-          <Section title="Qué datos recolectamos">
-            <p>Cuando usás PetApp recolectamos:</p>
+          <Section title={t("dataTitle")}>
+            <p>{t("dataIntro")}</p>
             <ul className="ml-5 mt-2 list-disc space-y-1">
-              <li>Datos de identidad: email, nombre completo, teléfono (opcional), ciudad (opcional)</li>
-              <li>Datos de tus mascotas: nombre, especie, raza, fecha de nacimiento, peso, color, microchip, fotos, alergias, vacunas, medicaciones, historial médico</li>
-              <li>Datos profesionales (veterinarios): matrícula, clínica, especialidad</li>
-              <li>Datos técnicos: dirección IP, sistema operativo, versión de la app</li>
+              <li>{t("dataItem1")}</li>
+              <li>{t("dataItem2")}</li>
+              <li>{t("dataItem3")}</li>
+              <li>{t("dataItem4")}</li>
             </ul>
           </Section>
 
-          <Section title="Cómo usamos tus datos">
-            <p>Usamos tus datos exclusivamente para:</p>
+          <Section title={t("useTitle")}>
+            <p>{t("useIntro")}</p>
             <ol className="ml-5 mt-2 list-decimal space-y-1">
-              <li>Proveer el servicio (mostrarte el perfil de tu mascota, etc.)</li>
-              <li>Permitir el vínculo con veterinarios cuando vos lo autorizás</li>
-              <li>Enviarte avisos relacionados con la salud de tu mascota</li>
-              <li>Mejorar el servicio (estadísticas agregadas, sin identificarte)</li>
+              <li>{t("useItem1")}</li>
+              <li>{t("useItem2")}</li>
+              <li>{t("useItem3")}</li>
+              <li>{t("useItem4")}</li>
             </ol>
-            <p className="mt-3 font-semibold">No vendemos tus datos a terceros. Nunca.</p>
+            <p className="mt-3 font-semibold">{t("useNoSell")}</p>
           </Section>
 
-          <Section title="Quién tiene acceso">
+          <Section title={t("accessTitle")}>
             <ul className="ml-5 list-disc space-y-1">
-              <li>Vos, dueño de la cuenta</li>
-              <li>Los veterinarios a los que aprobaste acceso (podés revocar cuando quieras)</li>
-              <li>Los co-dueños que invitaste</li>
-              <li>Nuestros proveedores técnicos (Supabase, Vercel, Resend) bajo contratos de confidencialidad</li>
+              <li>{t("accessItem1")}</li>
+              <li>{t("accessItem2")}</li>
+              <li>{t("accessItem3")}</li>
+              <li>{t("accessItem4")}</li>
             </ul>
           </Section>
 
-          <Section title="Tus derechos">
-            <p>Podés en cualquier momento:</p>
+          <Section title={t("rightsTitle")}>
+            <p>{t("rightsIntro")}</p>
             <ul className="ml-5 mt-2 list-disc space-y-1">
-              <li>Acceder a todos los datos que tenemos sobre vos</li>
-              <li>Modificar o corregir tu información</li>
-              <li>Eliminar tu cuenta y todos los datos asociados</li>
-              <li>Exportar tu historial completo en PDF o JSON</li>
-              <li>Revocar el acceso de cualquier veterinario</li>
+              <li>{t("rightsItem1")}</li>
+              <li>{t("rightsItem2")}</li>
+              <li>{t("rightsItem3")}</li>
+              <li>{t("rightsItem4")}</li>
+              <li>{t("rightsItem5")}</li>
             </ul>
             <p className="mt-3">
-              Para ejercer estos derechos escribinos a{" "}
+              {t("rightsContact")}
               <a href="mailto:1133985163f@gmail.com" className="text-primary underline-offset-2 hover:underline">
                 1133985163f@gmail.com
               </a>.
             </p>
           </Section>
 
-          <Section title="Almacenamiento">
-            <p>
-              Los datos están almacenados en servidores de Supabase (AWS,
-              región US-West) con encriptación en tránsito (TLS) y en reposo.
-              Las fotos están en buckets privados con URLs firmadas que expiran.
-            </p>
+          <Section title={t("storageTitle")}>
+            <p>{t("storageText")}</p>
           </Section>
 
-          <Section title="Niños">
-            <p>
-              PetApp no está dirigida a menores de 13 años. No recolectamos
-              datos de niños conscientemente. Si descubrís que un menor creó
-              una cuenta, contactanos para eliminarla.
-            </p>
+          <Section title={t("childrenTitle")}>
+            <p>{t("childrenText")}</p>
           </Section>
 
-          <Section title="Cambios">
-            <p>
-              Si hacemos cambios significativos te avisamos por email y en la
-              app antes de que entren en vigor.
-            </p>
+          <Section title={t("changesTitle")}>
+            <p>{t("changesText")}</p>
           </Section>
 
-          <Section title="Contacto">
+          <Section title={t("contactTitle")}>
             <p>
-              ¿Dudas?{" "}
+              {t("contactText")}
               <a href="mailto:1133985163f@gmail.com" className="text-primary underline-offset-2 hover:underline">
                 1133985163f@gmail.com
               </a>

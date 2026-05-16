@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Brand, Card, CardContent } from "@pet-app/ui";
 import {
   ChevronLeft,
@@ -10,14 +11,16 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-export const metadata = {
-  title: "Eliminación de datos",
-  description:
-    "Cómo eliminar tu cuenta PetApp y los datos asociados, desde la app o solicitándolo por email.",
-};
-
 const LAST_UPDATED = "13 de mayo de 2026";
 const SUPPORT_EMAIL = "1133985163f@gmail.com";
+
+export async function generateMetadata() {
+  const t = await getTranslations("dataDeletion");
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+  };
+}
 
 /**
  * Página pública de eliminación de datos.
@@ -26,7 +29,9 @@ const SUPPORT_EMAIL = "1133985163f@gmail.com";
  * encontrar las instrucciones para solicitar la eliminación de su cuenta
  * y los datos asociados. Esta es esa página.
  */
-export default function DataDeletionPage() {
+export default async function DataDeletionPage() {
+  const t = await getTranslations("dataDeletion");
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background/85 backdrop-blur-xl">
@@ -37,7 +42,7 @@ export default function DataDeletionPage() {
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="size-4" />
-            Privacidad
+            {t("backPrivacy")}
           </Link>
         </div>
       </header>
@@ -49,20 +54,16 @@ export default function DataDeletionPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-              Eliminar tu cuenta y datos
+              {t("title")}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Última actualización: {LAST_UPDATED}
+              {t("lastUpdated", { date: LAST_UPDATED })}
             </p>
           </div>
         </div>
 
         <p className="mt-6 text-[15px] leading-relaxed text-foreground/85">
-          Tenés dos formas de eliminar tu cuenta de PetApp. Ambas borran de
-          forma permanente tu perfil, todas tus mascotas, vacunas, alergias,
-          medicaciones, estudios, accesos a veterinarios, suscripciones y
-          cualquier historial médico asociado a tu cuenta. La acción es
-          irreversible y no se puede deshacer.
+          {t("intro")}
         </p>
 
         <div className="mt-8 grid gap-4">
@@ -72,31 +73,33 @@ export default function DataDeletionPage() {
                 <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Smartphone className="size-5" />
                 </div>
-                <h2 className="text-lg font-semibold">
-                  Opción 1 — Desde la app (recomendado)
-                </h2>
+                <h2 className="text-lg font-semibold">{t("option1Title")}</h2>
               </div>
               <ol className="ml-5 list-decimal space-y-2 text-[14.5px] leading-relaxed">
                 <li>
-                  Iniciá sesión en{" "}
-                  <Link href="/login" className="text-primary hover:underline">
-                    pet-friendly.fun
-                  </Link>{" "}
-                  o en la app instalada en tu celular.
+                  {t.rich("option1Step1", {
+                    link: (chunks) => (
+                      <Link
+                        href="/login"
+                        className="text-primary hover:underline"
+                      >
+                        {chunks}
+                      </Link>
+                    ),
+                  })}
                 </li>
                 <li>
-                  Andá a <strong>Configuración</strong> (o <strong>Yo</strong>{" "}
-                  en mobile).
+                  {t.rich("option1Step2", {
+                    b: (chunks) => <strong>{chunks}</strong>,
+                  })}
                 </li>
                 <li>
-                  Scroll hasta el fondo → tarjeta roja{" "}
-                  <strong>"Eliminar mi cuenta"</strong>.
+                  {t.rich("option1Step3", {
+                    b: (chunks) => <strong>{chunks}</strong>,
+                  })}
                 </li>
-                <li>Confirmá escribiendo "ELIMINAR" en mayúsculas.</li>
-                <li>
-                  En menos de 30 segundos tu cuenta y todos los datos quedan
-                  eliminados.
-                </li>
+                <li>{t("option1Step4")}</li>
+                <li>{t("option1Step5")}</li>
               </ol>
             </CardContent>
           </Card>
@@ -107,31 +110,30 @@ export default function DataDeletionPage() {
                 <div className="flex size-10 items-center justify-center rounded-xl bg-secondary text-foreground">
                   <Mail className="size-5" />
                 </div>
-                <h2 className="text-lg font-semibold">
-                  Opción 2 — Solicitud por email
-                </h2>
+                <h2 className="text-lg font-semibold">{t("option2Title")}</h2>
               </div>
               <p className="text-[14.5px] leading-relaxed">
-                Si perdiste acceso a tu cuenta o tenés un problema técnico,
-                mandanos un email a{" "}
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}?subject=Eliminaci%C3%B3n%20de%20cuenta%20PetApp`}
-                  className="text-primary hover:underline"
-                >
-                  {SUPPORT_EMAIL}
-                </a>{" "}
-                desde el email asociado a tu cuenta de PetApp.
+                {t.rich("option2Text1", {
+                  email: SUPPORT_EMAIL,
+                  link: (chunks) => (
+                    <a
+                      href={`mailto:${SUPPORT_EMAIL}?subject=Eliminaci%C3%B3n%20de%20cuenta%20PetApp`}
+                      className="text-primary hover:underline"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
               </p>
               <p className="text-[14.5px] leading-relaxed">
-                Incluí en el asunto:{" "}
-                <span className="font-mono text-[13px]">
-                  Eliminación de cuenta PetApp
-                </span>
+                {t.rich("option2Text2", {
+                  code: (chunks) => (
+                    <span className="font-mono text-[13px]">{chunks}</span>
+                  ),
+                })}
               </p>
               <p className="text-[14.5px] leading-relaxed">
-                Te respondemos dentro de las 72hs y procesamos la eliminación
-                en menos de 7 días hábiles. Te confirmamos por email cuando
-                queda hecho.
+                {t("option2Text3")}
               </p>
             </CardContent>
           </Card>
@@ -139,42 +141,35 @@ export default function DataDeletionPage() {
 
         <section className="mt-10 space-y-4">
           <h2 className="text-lg font-semibold tracking-tight">
-            Qué se elimina
+            {t("deletedTitle")}
           </h2>
           <ul className="ml-5 list-disc space-y-1.5 text-[14.5px] leading-relaxed text-foreground/85">
-            <li>Perfil personal (nombre, email, teléfono, foto, ciudad)</li>
-            <li>Todas tus mascotas y su historial completo</li>
-            <li>Vacunas, antiparasitarios, alergias, medicaciones</li>
-            <li>Pesos, fotos, estudios y consultas médicas</li>
-            <li>Accesos otorgados a veterinarios</li>
-            <li>
-              Suscripciones premium (vet) — si tenés una activa, se cancela
-              automáticamente al borrar la cuenta
-            </li>
-            <li>Notificaciones, recordatorios y preferencias</li>
-            <li>Cookies y datos de sesión locales</li>
+            <li>{t("deletedItem1")}</li>
+            <li>{t("deletedItem2")}</li>
+            <li>{t("deletedItem3")}</li>
+            <li>{t("deletedItem4")}</li>
+            <li>{t("deletedItem5")}</li>
+            <li>{t("deletedItem6")}</li>
+            <li>{t("deletedItem7")}</li>
+            <li>{t("deletedItem8")}</li>
           </ul>
         </section>
 
         <section className="mt-8 space-y-3">
           <h2 className="text-lg font-semibold tracking-tight">
-            Qué conservamos (y por qué)
+            {t("keptTitle")}
           </h2>
-          <p className="text-[14.5px] leading-relaxed">
-            Por requisitos legales y de seguridad básica, conservamos algunos
-            datos anonimizados o agregados después de la eliminación:
-          </p>
+          <p className="text-[14.5px] leading-relaxed">{t("keptIntro")}</p>
           <ul className="ml-5 list-disc space-y-1.5 text-[14.5px] leading-relaxed text-foreground/85">
             <li>
-              <strong>Logs de seguridad anonimizados</strong> (90 días) — para
-              detectar abusos.
+              {t.rich("keptItem1", {
+                b: (chunks) => <strong>{chunks}</strong>,
+              })}
             </li>
             <li>
-              <strong>Registros médicos creados por un veterinario sobre tu
-              mascota</strong> — los conserva el profesional según la legislación
-              aplicable (típicamente 5 años para protección del propio
-              veterinario). Estos quedan en la cuenta del vet, sin asociación
-              identificable a vos como dueño.
+              {t.rich("keptItem2", {
+                b: (chunks) => <strong>{chunks}</strong>,
+              })}
             </li>
           </ul>
         </section>
@@ -184,19 +179,21 @@ export default function DataDeletionPage() {
             <div className="flex items-center gap-3">
               <ShieldCheck className="size-5 text-emerald-700 dark:text-emerald-400" />
               <h3 className="font-semibold text-emerald-900 dark:text-emerald-200">
-                Tus derechos
+                {t("rightsTitle")}
               </h3>
             </div>
             <p className="text-[14px] leading-relaxed text-emerald-900/85 dark:text-emerald-100/85">
-              También podés solicitarnos una copia exportable de tus datos
-              (en formato JSON) antes de la eliminación. Pedila por email a{" "}
-              <a
-                href={`mailto:${SUPPORT_EMAIL}`}
-                className="underline underline-offset-2"
-              >
-                {SUPPORT_EMAIL}
-              </a>
-              .
+              {t.rich("rightsText", {
+                email: SUPPORT_EMAIL,
+                link: (chunks) => (
+                  <a
+                    href={`mailto:${SUPPORT_EMAIL}`}
+                    className="underline underline-offset-2"
+                  >
+                    {chunks}
+                  </a>
+                ),
+              })}
             </p>
           </CardContent>
         </Card>
@@ -205,18 +202,18 @@ export default function DataDeletionPage() {
           <div className="flex items-start gap-2 rounded-xl border border-border bg-surface-2/40 p-4 text-[13.5px]">
             <Clock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div>
-              <p className="font-medium">In-app: instantáneo</p>
+              <p className="font-medium">{t("inAppFast")}</p>
               <p className="mt-0.5 text-muted-foreground">
-                Tu cuenta deja de existir en segundos.
+                {t("inAppFastDesc")}
               </p>
             </div>
           </div>
           <div className="flex items-start gap-2 rounded-xl border border-border bg-surface-2/40 p-4 text-[13.5px]">
             <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div>
-              <p className="font-medium">Por email: hasta 7 días hábiles</p>
+              <p className="font-medium">{t("byEmailSlow")}</p>
               <p className="mt-0.5 text-muted-foreground">
-                Te confirmamos cuando se completa.
+                {t("byEmailSlowDesc")}
               </p>
             </div>
           </div>
@@ -224,10 +221,10 @@ export default function DataDeletionPage() {
 
         <div className="mt-12 flex justify-between border-t border-border pt-6 text-sm text-muted-foreground">
           <Link href="/privacy" className="hover:text-foreground">
-            &larr; Política de privacidad
+            {t("footerPrivacy")}
           </Link>
           <Link href="/" className="hover:text-foreground">
-            Inicio
+            {t("footerHome")}
           </Link>
         </div>
       </main>

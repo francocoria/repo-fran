@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
 /**
  * Layout de auth — pantalla limpia con branding mínimo.
  * Para: login, signup, onboarding.
  */
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export default async function AuthLayout({ children }: { children: ReactNode }) {
+  const t = await getTranslations("authLayout");
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Panel izquierdo: branding */}
@@ -19,11 +22,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <h2 className="mt-6 text-2xl font-semibold text-foreground/90">
-            El centro de control de tu mascota
+            {t("heading")}
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Vacunas, turnos, historial médico y comunicación con tu veterinario.
-            Todo en un solo lugar.
+            {t("tagline")}
           </p>
           {/* Decorative elements */}
           <div className="mt-10 flex justify-center gap-6 text-5xl opacity-60">

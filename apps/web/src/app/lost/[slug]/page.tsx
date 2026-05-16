@@ -18,6 +18,7 @@ import {
   PawPrint,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@pet-app/db";
 import { Button, Badge, PetAvatar } from "@pet-app/ui";
 import { getAge, formatDateLong } from "@pet-app/lib/utils/format";
@@ -30,16 +31,16 @@ const speciesIcons: Record<string, React.ReactNode> = {
   rabbit: <Rabbit className="h-12 w-12" />,
 };
 
-const speciesLabels: Record<string, string> = {
-  dog: "Perro",
-  cat: "Gato",
-  bird: "Ave",
-  rabbit: "Conejo",
-  rodent: "Roedor",
-  reptile: "Reptil",
-  fish: "Pez",
-  exotic: "Exótico",
-  other: "Otro",
+const speciesLabelKeys: Record<string, string> = {
+  dog: "speciesDog",
+  cat: "speciesCat",
+  bird: "speciesBird",
+  rabbit: "speciesRabbit",
+  rodent: "speciesRodent",
+  reptile: "speciesReptile",
+  fish: "speciesFish",
+  exotic: "speciesExotic",
+  other: "speciesOther",
 };
 
 export async function generateMetadata({
@@ -48,6 +49,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const t = await getTranslations("lostDetail");
+  const tLost = await getTranslations("lost");
   const alert = await prisma.lostPetAlert.findUnique({
     where: { public_slug: slug },
     include: {
@@ -56,19 +59,33 @@ export async function generateMetadata({
   });
 
   if (!alert || alert.status !== "active") {
-    return { title: "Alerta no disponible" };
+    return { title: t("metaUnavailable") };
   }
 
+  const speciesKey = speciesLabelKeys[alert.animal.species];
+  const speciesText = speciesKey
+    ? tLost(speciesKey as never)
+    : t("metaSpeciesFallback");
+  const ogTitle =
+    alert.animal.species === "dog"
+      ? t("ogTitleMale", { name: alert.animal.name })
+      : t("ogTitleFemale", { name: alert.animal.name });
+
   return {
-    title: `🚨 Se perdió ${alert.animal.name} — Ayudanos a encontrarla`,
-    description: `${speciesLabels[alert.animal.species] ?? "Mascota"} perdida${
-      alert.last_seen_location ? ` en ${alert.last_seen_location}` : ""
-    }. Si la viste, contactanos.`,
+    title: t("metaTitle", { name: alert.animal.name }),
+    description: alert.last_seen_location
+      ? t("metaDescriptionWithLocation", {
+          species: speciesText,
+          location: alert.last_seen_location,
+        })
+      : t("metaDescriptionNoLocation", { species: speciesText }),
     openGraph: {
-      title: `🚨 ${alert.animal.name} está perdid${alert.animal.species === "dog" ? "o" : "a"}`,
+      title: ogTitle,
       description: alert.last_seen_location
-        ? `Última vez vista en ${alert.last_seen_location}`
-        : "Ayudanos a encontrarla",
+        ? t("ogDescriptionWithLocation", {
+            location: alert.last_seen_location,
+          })
+        : t("ogDescriptionNoLocation"),
       images: alert.animal.photo_url
         ? [{ url: alert.animal.photo_url }]
         : undefined,
@@ -76,7 +93,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: `🚨 ${alert.animal.name} está perdid${alert.animal.species === "dog" ? "o" : "a"}`,
+      title: ogTitle,
     },
   };
 }
@@ -89,6 +106,8 @@ export default async function LostPetPublicPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const t = await getTranslations("lostDetail");
+  const tLost = await getTranslations("lost");
 
   const alert = await prisma.lostPetAlert.findUnique({
     where: { public_slug: slug },
@@ -124,7 +143,7 @@ export default async function LostPetPublicPage({
   // WhatsApp link con mensaje pre-armado
   const whatsappContact = alert.contact_phone
     ? `https://wa.me/${alert.contact_phone.replace(/\D/g, "")}?text=${encodeURIComponent(
-        `Hola! Vi tu publicación sobre ${animal.name}. Tengo info que te puede servir.`,
+        t("whatsappPrefill", { name: animal.name }),
       )}`
     : null;
 
@@ -140,7 +159,7 @@ export default async function LostPetPublicPage({
       <div className="bg-rose text-white shadow-lg">
         <div className="container flex items-center justify-center gap-2 py-3 text-sm font-semibold tracking-wide">
           <AlertTriangle className="size-4 animate-pulse" strokeWidth={2.4} />
-          MASCOTA PERDIDA — Ayudanos a encontrarla
+          {t("banner")}
         </div>
       </div>
 
@@ -183,10 +202,15 @@ export default async function LostPetPublicPage({
             {animal.name}
           </h1>
           <p className="mt-2 text-base text-muted-foreground">
-            {speciesLabels[animal.species] ?? animal.species}
+            {speciesLabelKeys[animal.species]
+              ? tLost(speciesLabelKeys[animal.species] as never)
+              : animal.species}
             {animal.breed && ` · ${animal.breed}`}
             {animal.sex !== "unknown" && (
-              <> · {animal.sex === "male" ? "♂ Macho" : "♀ Hembra"}</>
+              <>
+                {" · "}
+                {animal.sex === "male" ? t("sexMale") : t("sexFemale")}
+              </>
             )}
             {ageText && ` · ${ageText}`}
           </p>
@@ -195,7 +219,7 @@ export default async function LostPetPublicPage({
         {/* CTA contacto principal */}
         <div className="mb-6 rounded-2xl border-2 border-rose/40 bg-card p-5 shadow-lg shadow-rose/10">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-rose">
-            Si la viste, escribinos
+            {t("contactEyebrow")}
           </p>
           <p className="text-lg font-semibold">{alert.contact_name}</p>
           <p className="mt-1 font-mono text-base text-foreground">
@@ -211,21 +235,23 @@ export default async function LostPetPublicPage({
                   rel="noopener noreferrer"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  WhatsApp
+                  {t("whatsapp")}
                 </a>
               </Button>
             )}
             <Button asChild size="lg" variant="outline" className="w-full gap-2 h-12">
               <a href={`tel:${alert.contact_phone}`}>
                 <Phone className="h-4 w-4" />
-                Llamar
+                {t("call")}
               </a>
             </Button>
           </div>
 
           {alert.contact_email && (
             <a
-              href={`mailto:${alert.contact_email}?subject=Información sobre ${animal.name}`}
+              href={`mailto:${alert.contact_email}?subject=${encodeURIComponent(
+                t("emailSubject", { name: animal.name }),
+              )}`}
               className="mt-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
             >
               <Mail className="h-3.5 w-3.5" />
@@ -241,7 +267,7 @@ export default async function LostPetPublicPage({
               <Gift className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                  Recompensa
+                  {t("rewardLabel")}
                 </p>
                 <p className="mt-1 text-sm">{alert.reward_description}</p>
               </div>
@@ -253,7 +279,7 @@ export default async function LostPetPublicPage({
         {(alert.last_seen_location || alert.last_seen_at) && (
           <div className="mb-6 rounded-xl border bg-card p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-              Última vez vista
+              {t("lastSeenLabel")}
             </p>
             <div className="space-y-2 text-sm">
               {alert.last_seen_location && (
@@ -275,25 +301,25 @@ export default async function LostPetPublicPage({
         {/* Características */}
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
           {animal.color && (
-            <DataCard label="Color" value={animal.color} />
+            <DataCard label={t("dataColor")} value={animal.color} />
           )}
           {animal.distinctive_marks && (
             <DataCard
-              label="Marcas distintivas"
+              label={t("dataMarks")}
               value={animal.distinctive_marks}
               full
             />
           )}
           {animal.microchip && (
             <DataCard
-              label="Chip"
+              label={t("dataChip")}
               value={animal.microchip}
               icon={<Microchip className="h-3.5 w-3.5" />}
               mono
             />
           )}
           {animal.neutered && (
-            <DataCard label="Estado" value="Castrado/a" />
+            <DataCard label={t("dataStatus")} value={t("dataNeutered")} />
           )}
         </div>
 
@@ -301,10 +327,10 @@ export default async function LostPetPublicPage({
         {animal.allergies.length > 0 && (
           <div className="mb-6 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-400 mb-2">
-              ⚠️ Tiene alergias graves
+              {t("allergyTitle")}
             </p>
             <p className="text-sm">
-              No darle:{" "}
+              {t("allergyText")}
               <strong>
                 {animal.allergies.map((a) => a.allergen).join(", ")}
               </strong>
@@ -316,7 +342,7 @@ export default async function LostPetPublicPage({
         {alert.additional_info && (
           <div className="mb-6 rounded-xl border bg-card p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-              Info adicional
+              {t("additionalInfoLabel")}
             </p>
             <p className="text-sm whitespace-pre-wrap">
               {alert.additional_info}
@@ -328,7 +354,7 @@ export default async function LostPetPublicPage({
         <div className="rounded-xl border border-dashed border-border bg-card/50 p-4 text-center">
           <Share2 className="mx-auto h-5 w-5 text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground mb-3">
-            Compartí esta página para ayudar a que vuelva a casa.
+            {t("sharePrompt")}
           </p>
           <ShareButtonsClient
             animalName={animal.name}
@@ -338,7 +364,7 @@ export default async function LostPetPublicPage({
 
         {/* Footer */}
         <p className="mt-8 text-center text-xs text-muted-foreground">
-          Alerta creada el {formatDateLong(alert.activated_at)} ·{" "}
+          {t("footerCreated", { date: formatDateLong(alert.activated_at) })}
           <Link href="/" className="underline-offset-2 hover:underline">
             PetApp
           </Link>

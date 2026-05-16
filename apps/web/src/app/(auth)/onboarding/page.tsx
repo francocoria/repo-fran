@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Dog, Stethoscope, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@pet-app/ui";
 import { createSupabaseServerClient } from "@pet-app/lib";
@@ -24,14 +25,16 @@ export default async function OnboardingPage() {
   if (role === "owner") redirect("/onboarding/owner");
   if (role === "vet") redirect("/onboarding/vet");
 
+  const t = await getTranslations("onboarding");
+
   return (
     <div className="animate-fade-up">
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold tracking-tight">
-          ¿Cómo vas a usar PetApp?
+          {t("title")}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Elegí tu tipo de cuenta para personalizar tu experiencia.
+          {t("subtitle")}
         </p>
       </div>
 
@@ -44,10 +47,9 @@ export default async function OnboardingPage() {
                 <Dog className="h-6 w-6" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold">Soy dueño de mascota</h3>
+                <h3 className="font-semibold">{t("ownerTitle")}</h3>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  Registrá a tus animales, llevá su historial de salud y
-                  compartí con tu veterinario.
+                  {t("ownerDescription")}
                 </p>
               </div>
               <ArrowRight className="h-5 w-5 text-muted-foreground/50 transition-transform group-hover:translate-x-1 group-hover:text-primary" />
@@ -63,12 +65,11 @@ export default async function OnboardingPage() {
                 <Stethoscope className="h-6 w-6" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold">Soy veterinario</h3>
+                <h3 className="font-semibold">{t("vetTitle")}</h3>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  Accedé al historial de tus pacientes, creá consultas y
-                  prescripciones digitales.
+                  {t("vetDescription")}
                   <span className="ml-1 text-accent font-medium">
-                    30 días premium gratis.
+                    {t("vetPremium")}
                   </span>
                 </p>
               </div>

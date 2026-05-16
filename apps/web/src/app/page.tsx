@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   FileText,
   QrCode,
@@ -21,54 +22,13 @@ import { createSupabaseServerClient } from "@pet-app/lib";
 
 export const dynamic = "force-dynamic";
 
-const features = [
-  {
-    icon: FileText,
-    title: "Historial clínico completo",
-    desc: "Vacunas, peso, alergias, estudios y medicaciones en un solo lugar. Para siempre, gratis.",
-  },
-  {
-    icon: QrCode,
-    title: "QR único por mascota",
-    desc: "El vet escanea, ve todo. Sin trámites, sin papeles, sin contar la historia desde cero.",
-  },
-  {
-    icon: AlertTriangle,
-    title: "Modo perdido viral",
-    desc: "Activás un toque y generás una página pública para compartir por WhatsApp. Foto, datos y contacto.",
-  },
-  {
-    icon: Users,
-    title: "Co-dueños y familia",
-    desc: "Compartí la mascota con tu pareja, tus viejos o quien la cuida. Todos ven lo mismo.",
-  },
-  {
-    icon: Bell,
-    title: "Avisos automáticos",
-    desc: "Te avisamos antes de que se venza una vacuna o desparasitación. Sin agenda, sin estrés.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Vets verificados",
-    desc: "Solo veterinarios con matrícula validada pueden escribir en el historial de tu mascota.",
-  },
-];
-
-const ownerPlanItems = [
-  "Mascotas ilimitadas",
-  "Historial completo",
-  "QR para vets",
-  "Modo perdido",
-  "Co-dueños",
-];
-
-const vetPlanItems = [
-  "Pacientes ilimitados",
-  "Recetas con tu marca",
-  "Certificados oficiales",
-  "Verificación de matrícula",
-  "Stats de tu práctica",
-  "Plantillas de consulta",
+const featureIcons = [
+  FileText,
+  QrCode,
+  AlertTriangle,
+  Users,
+  Bell,
+  ShieldCheck,
 ];
 
 /**
@@ -116,6 +76,21 @@ export default async function LandingPage() {
   const target = await resolveAuthenticatedRedirect();
   if (target) redirect(target);
 
+  const t = await getTranslations("landing");
+
+  const features = featureIcons.map((icon, i) => ({
+    icon,
+    title: t(`feature${i + 1}Title` as never),
+    desc: t(`feature${i + 1}Desc` as never),
+  }));
+  const ownerPlanItems = [1, 2, 3, 4, 5].map((i) =>
+    t(`pricingOwnerItem${i}` as never),
+  );
+  const vetPlanItems = [1, 2, 3, 4, 5, 6].map((i) =>
+    t(`pricingVetItem${i}` as never),
+  );
+  const heroPreview = await HeroPreview();
+
   return (
     <div className="bg-background">
       {/* Header sticky */}
@@ -127,30 +102,30 @@ export default async function LandingPage() {
               href="#features"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              Features
+              {t("navFeatures")}
             </a>
             <a
               href="#pricing"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              Precios
+              {t("navPricing")}
             </a>
             <a
               href="#vets"
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
-              Para vets
+              {t("navVets")}
             </a>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Ingresar</Link>
+              <Link href="/login">{t("navSignIn")}</Link>
             </Button>
             <Button size="sm" asChild>
-              <Link href="/signup">Crear cuenta</Link>
+              <Link href="/signup">{t("navCreateAccount")}</Link>
             </Button>
           </nav>
           <div className="md:hidden">
             <Button size="sm" asChild>
-              <Link href="/signup">Empezar</Link>
+              <Link href="/signup">{t("navStart")}</Link>
             </Button>
           </div>
         </div>
@@ -172,24 +147,22 @@ export default async function LandingPage() {
           <div className="mx-auto max-w-3xl text-center animate-fade-up">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3.5 py-1.5 text-sm backdrop-blur-sm">
               <Sparkles className="size-3.5" />
-              Free para dueños · 30 días premium gratis para vets
+              {t("heroBadge")}
             </div>
             <h1
               className="text-balance text-[40px] font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-[68px]"
               style={{ letterSpacing: "-0.02em" }}
             >
-              El historial de tu mascota,
-              <br className="hidden sm:block" /> en el bolsillo de tu vet.
+              {t("heroTitleLine1")}
+              <br className="hidden sm:block" /> {t("heroTitleLine2")}
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-pretty text-[17px] leading-relaxed text-white/90 md:text-lg">
-              Llevá vacunas, peso, alergias y estudios. El vet escanea un QR y ve
-              todo. Sin papeles, sin perder libretas, sin contar la historia
-              veinte veces.
+              {t("heroSubtitle")}
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button size="lg" variant="dark" asChild>
                 <Link href="/signup">
-                  Empezar gratis
+                  {t("heroCtaStart")}
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
@@ -201,13 +174,13 @@ export default async function LandingPage() {
               >
                 <Link href="/signup/vet">
                   <Stethoscope className="size-4" />
-                  Soy veterinario
+                  {t("heroCtaVet")}
                 </Link>
               </Button>
             </div>
             <p className="mt-8 text-xs text-white/80">
               <Check className="-mt-0.5 mr-1 inline size-3.5" />
-              Sin tarjeta de crédito · Sin instalar nada · Funciona en cualquier celu
+              {t("heroNote")}
             </p>
           </div>
 
@@ -216,7 +189,7 @@ export default async function LandingPage() {
             className="mx-auto mt-16 max-w-3xl animate-fade-up md:mt-20"
             style={{ animationDelay: "120ms" }}
           >
-            <HeroPreview />
+            {heroPreview}
           </div>
         </div>
       </section>
@@ -226,14 +199,13 @@ export default async function LandingPage() {
         <div className="container">
           <div className="mx-auto mb-12 max-w-2xl text-center md:mb-16">
             <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.1em] text-primary">
-              Todo lo que necesitás
+              {t("featuresEyebrow")}
             </p>
             <h2 className="text-balance text-3xl font-bold tracking-tight md:text-4xl lg:text-[42px]">
-              Un solo lugar para la salud de tu mascota
+              {t("featuresTitle")}
             </h2>
             <p className="mt-4 text-pretty text-base text-muted-foreground md:text-[17px]">
-              Diseñado con veterinarios argentinos para que cuidar a tu mascota
-              sea simple.
+              {t("featuresSubtitle")}
             </p>
           </div>
 
@@ -264,10 +236,10 @@ export default async function LandingPage() {
         <div className="container">
           <div className="mb-12 text-center">
             <h2 className="text-balance text-3xl font-bold tracking-tight md:text-[38px]">
-              Precios honestos
+              {t("pricingTitle")}
             </h2>
             <p className="mt-3 text-base text-muted-foreground">
-              Free para dueños, siempre. Para vets, lo que se usa.
+              {t("pricingSubtitle")}
             </p>
           </div>
 
@@ -275,13 +247,15 @@ export default async function LandingPage() {
             {/* Owner plan */}
             <div className="rounded-2xl border border-border bg-card p-7 shadow-sm">
               <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-primary">
-                Dueños
+                {t("pricingOwnerLabel")}
               </p>
               <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-5xl font-bold tracking-tight">Gratis</span>
+                <span className="text-5xl font-bold tracking-tight">
+                  {t("pricingOwnerPrice")}
+                </span>
               </div>
               <p className="mb-5 mt-1.5 text-sm text-muted-foreground">
-                Para siempre. No es un trial.
+                {t("pricingOwnerNote")}
               </p>
               <ul className="mb-6 space-y-2.5">
                 {ownerPlanItems.map((item) => (
@@ -292,7 +266,7 @@ export default async function LandingPage() {
                 ))}
               </ul>
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/signup">Empezar</Link>
+                <Link href="/signup">{t("pricingOwnerCta")}</Link>
               </Button>
             </div>
 
@@ -307,21 +281,23 @@ export default async function LandingPage() {
             >
               <div className="flex items-center justify-between">
                 <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-accent">
-                  Veterinarios
+                  {t("pricingVetLabel")}
                 </p>
                 <Badge variant="gold">
                   <Crown className="size-3" />
-                  Más elegido
+                  {t("pricingVetBadge")}
                 </Badge>
               </div>
               <div className="mt-3 flex items-baseline gap-2">
                 <span className="font-mono text-5xl font-bold tracking-tight">
                   USD 10
                 </span>
-                <span className="text-base text-muted-foreground">/ mes</span>
+                <span className="text-base text-muted-foreground">
+                  {t("pricingVetPriceUnit")}
+                </span>
               </div>
               <p className="mb-5 mt-1.5 text-sm text-muted-foreground">
-                Free hasta 5 pacientes activos.
+                {t("pricingVetNote")}
               </p>
               <ul className="mb-6 space-y-2.5">
                 {vetPlanItems.map((item) => (
@@ -332,7 +308,7 @@ export default async function LandingPage() {
                 ))}
               </ul>
               <Button variant="accent" className="w-full" asChild>
-                <Link href="/signup/vet">Probar 30 días gratis</Link>
+                <Link href="/signup/vet">{t("pricingVetCta")}</Link>
               </Button>
             </div>
           </div>
@@ -345,16 +321,16 @@ export default async function LandingPage() {
           <Brand size="sm" />
           <div className="flex gap-5 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground">
-              Términos
+              {t("footerTerms")}
             </a>
             <a href="#" className="hover:text-foreground">
-              Privacidad
+              {t("footerPrivacy")}
             </a>
             <a href="#" className="hover:text-foreground">
-              Contacto
+              {t("footerContact")}
             </a>
           </div>
-          <p className="text-xs text-subtle">Hecho en Buenos Aires</p>
+          <p className="text-xs text-subtle">{t("footerMade")}</p>
         </div>
       </footer>
     </div>
@@ -364,7 +340,8 @@ export default async function LandingPage() {
 /* ─────────────────────────────────────────────────────── */
 /* HeroPreview — card 3D con datos de mock mascota          */
 /* ─────────────────────────────────────────────────────── */
-function HeroPreview() {
+async function HeroPreview() {
+  const t = await getTranslations("landing");
   return (
     <div
       className="overflow-hidden rounded-2xl border border-white/40 bg-card"
@@ -388,16 +365,21 @@ function HeroPreview() {
       {/* Preview content */}
       <div className="grid gap-6 p-6 sm:grid-cols-[1fr,1.2fr] md:p-8">
         <div className="flex flex-col items-center text-center">
-          <PetAvatar name="Luna" species="dog" size={120} radius={28} />
+          <PetAvatar
+            name={t("previewName")}
+            species="dog"
+            size={120}
+            radius={28}
+          />
           <div className="mt-3">
-            <p className="text-xl font-bold">Luna</p>
+            <p className="text-xl font-bold">{t("previewName")}</p>
             <p className="text-[13px] text-muted-foreground">
-              Border Collie · 3 años
+              {t("previewBreed")}
             </p>
           </div>
           <Badge variant="primary" className="mt-3">
             <Check className="size-3" />
-            Vacunas al día
+            {t("previewVaccinesOk")}
           </Badge>
         </div>
 
@@ -405,22 +387,30 @@ function HeroPreview() {
           <PreviewRow
             icon={Syringe}
             iconBg="bg-primary/12 text-primary"
-            title="Antirrábica"
-            subtitle="Próxima: 12 sept 2026"
-            badge={<Badge variant="emerald" size="xs">OK</Badge>}
+            title={t("previewRabiesTitle")}
+            subtitle={t("previewRabiesSubtitle")}
+            badge={
+              <Badge variant="emerald" size="xs">
+                {t("previewRabiesBadge")}
+              </Badge>
+            }
           />
           <PreviewRow
             icon={AlertTriangle}
             iconBg="bg-rose/12 text-rose"
-            title="Alergia · Pollo"
-            subtitle="Severa — confirmada 2024"
-            badge={<Badge variant="rose" size="xs">SEVERA</Badge>}
+            title={t("previewAllergyTitle")}
+            subtitle={t("previewAllergySubtitle")}
+            badge={
+              <Badge variant="rose" size="xs">
+                {t("previewAllergyBadge")}
+              </Badge>
+            }
           />
           <PreviewRow
             icon={Scale}
             iconBg="bg-accent/15 text-accent"
             title={<span className="font-mono">18.4 kg</span>}
-            subtitle="+0.4kg desde feb"
+            subtitle={t("previewWeightSubtitle")}
             badge={<TrendingUp className="size-3.5 text-emerald" />}
           />
         </div>
