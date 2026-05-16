@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import crypto from "node:crypto";
 import { activatePremiumFromPayment } from "@/lib/premium-activation";
+import { getMpWebhookSecret } from "@/lib/mercadopago";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
   const urlDataId = request.nextUrl.searchParams.get("data.id");
 
   // 1) Validar firma del webhook (si tenemos el secret)
-  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+  const secret = getMpWebhookSecret();
   if (secret) {
     const signature = request.headers.get("x-signature") ?? "";
     const requestId = request.headers.get("x-request-id") ?? "";

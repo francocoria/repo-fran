@@ -15,6 +15,7 @@ import {
   ChevronRight,
   CalendarDays,
   Inbox,
+  Lock,
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -24,6 +25,7 @@ import { prisma } from "@pet-app/db";
 import {
   effectivePlan,
   daysUntilExpiry,
+  getFeatureGates,
   FREE_PATIENT_CAP,
 } from "@pet-app/lib/utils/subscription";
 import { formatDateLong } from "@pet-app/lib/utils/format";
@@ -31,6 +33,26 @@ import { UpgradeModal } from "@/components/vet/upgrade-modal";
 
 export const metadata = { title: "Panel veterinario" };
 export const dynamic = "force-dynamic";
+
+/** Teaser para una sección bloqueada en plan gratis — empuja a Premium. */
+function LockedSection({ title, desc }: { title: string; desc: string }) {
+  return (
+    <Card className="border-dashed bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/15">
+      <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+        <span className="flex size-11 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+          <Lock className="size-5" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold">{title}</p>
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
+            {desc}
+          </p>
+        </div>
+        <UpgradeModal triggerLabel="Desbloquear con Premium" />
+      </CardContent>
+    </Card>
+  );
+}
 
 /** Sublabel con comparación mes-a-mes para las StatCard de métricas. */
 function MonthDelta({ current, prev }: { current: number; prev: number }) {
@@ -216,15 +238,15 @@ export default async function VetDashboardPage() {
     .sort((a, b) => a.date.getTime() - b.date.getTime())
     .slice(0, 8);
 
-  const plan = effectivePlan(
-    subscription
-      ? {
-          plan: subscription.plan,
-          status: subscription.status,
-          expiresAt: subscription.expires_at,
-        }
-      : null,
-  );
+  const subState = subscription
+    ? {
+        plan: subscription.plan,
+        status: subscription.status,
+        expiresAt: subscription.expires_at,
+      }
+    : null;
+  const plan = effectivePlan(subState);
+  const features = getFeatureGates(subState);
 
   const isPremium = plan === "premium" || plan === "trial";
   const daysLeft = daysUntilExpiry(subscription?.expires_at ?? null);
@@ -361,53 +383,62 @@ export default async function VetDashboardPage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Resumen del mes
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            label="Consultas"
-            value={consultsThisMonth}
-            icon={Stethoscope}
-            accent="primary"
-            sublabel={
-              <MonthDelta
-                current={consultsThisMonth}
-                prev={consultsPrevMonth}
-              />
-            }
+        {features.practiceStats ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              label="Consultas"
+              value={consultsThisMonth}
+              icon={Stethoscope}
+              accent="primary"
+              sublabel={
+                <MonthDelta
+                  current={consultsThisMonth}
+                  prev={consultsPrevMonth}
+                />
+              }
+            />
+            <StatCard
+              label="Vacunas aplicadas"
+              value={vaccinesThisMonth}
+              icon={Syringe}
+              accent="emerald"
+              sublabel={
+                <MonthDelta
+                  current={vaccinesThisMonth}
+                  prev={vaccinesPrevMonth}
+                />
+              }
+            />
+            <StatCard
+              label="Pacientes nuevos"
+              value={newPatientsThisMonth}
+              icon={Users}
+              accent="accent"
+              sublabel={
+                <MonthDelta
+                  current={newPatientsThisMonth}
+                  prev={newPatientsPrevMonth}
+                />
+              }
+            />
+            <StatCard
+              label="Certificados"
+              value={certsThisMonth}
+              icon={FileCheck}
+              accent="amber"
+              sublabel={
+                <span className="text-muted-foreground">
+                  Emitidos este mes
+                </span>
+              }
+            />
+          </div>
+        ) : (
+          <LockedSection
+            title="Estadísticas de práctica"
+            desc="Consultas, vacunas aplicadas, pacientes nuevos y certificados del mes — con comparación contra el mes anterior. Disponible en Premium."
           />
-          <StatCard
-            label="Vacunas aplicadas"
-            value={vaccinesThisMonth}
-            icon={Syringe}
-            accent="emerald"
-            sublabel={
-              <MonthDelta
-                current={vaccinesThisMonth}
-                prev={vaccinesPrevMonth}
-              />
-            }
-          />
-          <StatCard
-            label="Pacientes nuevos"
-            value={newPatientsThisMonth}
-            icon={Users}
-            accent="accent"
-            sublabel={
-              <MonthDelta
-                current={newPatientsThisMonth}
-                prev={newPatientsPrevMonth}
-              />
-            }
-          />
-          <StatCard
-            label="Certificados"
-            value={certsThisMonth}
-            icon={FileCheck}
-            accent="amber"
-            sublabel={
-              <span className="text-muted-foreground">Emitidos este mes</span>
-            }
-          />
-        </div>
+        )}
       </section>
 
       {/* ─── ACCIONES RÁPIDAS ───────────────────────────────────── */}
@@ -472,7 +503,12 @@ export default async function VetDashboardPage() {
             <CalendarDays className="h-3.5 w-3.5" />
             Agenda · próximos 45 días
           </h2>
-          {agenda.length === 0 ? (
+          {!features.practiceStats ? (
+            <LockedSection
+              title="Agenda de próximas visitas"
+              desc="Refuerzos de vacunas a vencer y turnos de tus pacientes, ordenados por fecha. Disponible en Premium."
+            />
+          ) : agenda.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="py-8 text-center">
                 <CalendarClock className="mx-auto h-7 w-7 text-muted-foreground/40" />
