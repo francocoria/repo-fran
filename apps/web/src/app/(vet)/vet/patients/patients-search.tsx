@@ -16,8 +16,10 @@ import {
   User,
   Phone,
   Loader2,
+  Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatRelative } from "@pet-app/lib/utils/format";
 import { archivePatient, unarchivePatient } from "../access-actions";
 
 const speciesIcons: Record<string, React.ReactNode> = {
@@ -35,6 +37,7 @@ const speciesLabels: Record<string, string> = {
 interface PatientRow {
   id: string;
   archived: boolean;
+  lastVisit: string | null;
   animal: {
     id: string;
     name: string;
@@ -197,12 +200,20 @@ function PatientCard({ row }: { row: PatientRow }) {
           </div>
         </div>
 
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/50 pt-2.5">
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Stethoscope className="h-3 w-3 shrink-0" />
+            {row.lastVisit ? (
+              <>Última visita {formatRelative(row.lastVisit)}</>
+            ) : (
+              <span className="italic">Sin consultas registradas</span>
+            )}
+          </span>
           <button
             type="button"
             onClick={handleArchive}
             disabled={isPending}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
           >
             {isPending ? (
               <Loader2 className="h-3 w-3 animate-spin" />

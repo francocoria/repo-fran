@@ -58,6 +58,19 @@ export default async function PatientsPage() {
     orderBy: [{ archived_by_vet: "asc" }, { approved_at: "desc" }],
   });
 
+  // Última consulta de este vet por cada paciente — para mostrar "hace X".
+  const animalIds = accesses.map((a) => a.animal.id);
+  const lastVisits = animalIds.length
+    ? await prisma.medicalRecord.groupBy({
+        by: ["animal_id"],
+        where: { vet_id: profile.id, animal_id: { in: animalIds } },
+        _max: { visit_date: true },
+      })
+    : [];
+  const lastVisitMap = new Map(
+    lastVisits.map((v) => [v.animal_id, v._max.visit_date]),
+  );
+
   const active = accesses.filter((a) => !a.archived_by_vet);
   const archived = accesses.filter((a) => a.archived_by_vet);
 
@@ -122,6 +135,8 @@ export default async function PatientsPage() {
             owner_phone: a.animal.owner_profile.phone,
           },
           archived: a.archived_by_vet,
+          lastVisit:
+            lastVisitMap.get(a.animal.id)?.toISOString() ?? null,
         }))}
       />
 
