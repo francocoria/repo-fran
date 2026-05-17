@@ -6,9 +6,11 @@ import { ChevronLeft, Mail } from "lucide-react-native";
 import { Button } from "../../src/components/ui/button";
 import { Input } from "../../src/components/ui/input";
 import { verifyOtp, signInWithOtp } from "../../src/lib/session";
+import { useTranslation } from "../../src/lib/i18n";
 
 export default function VerifyScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,14 +18,17 @@ export default function VerifyScreen() {
 
   async function handleVerify() {
     if (!code.trim() || code.trim().length < 6) {
-      Alert.alert("Código inválido", "Ingresá los 6 dígitos del email.");
+      Alert.alert(
+        t("auth.verify.invalidCodeTitle"),
+        t("auth.verify.invalidCodeBody"),
+      );
       return;
     }
     setLoading(true);
     const { error } = await verifyOtp(email ?? "", code);
     setLoading(false);
     if (error) {
-      Alert.alert("Código incorrecto", error.message);
+      Alert.alert(t("auth.verify.wrongCodeTitle"), error.message);
       return;
     }
     router.replace("/");
@@ -34,10 +39,10 @@ export default function VerifyScreen() {
     const { error } = await signInWithOtp(email ?? "");
     setResending(false);
     if (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert(t("common.error"), error.message);
       return;
     }
-    Alert.alert("Listo", "Te mandamos un código nuevo.");
+    Alert.alert(t("common.done"), t("auth.verify.resentBody"));
   }
 
   return (
@@ -48,7 +53,7 @@ export default function VerifyScreen() {
       >
         <Pressable onPress={() => router.back()} className="flex-row items-center gap-1 px-4 py-3">
           <ChevronLeft size={20} color="#57534e" />
-          <Text className="text-[15px] text-muted">Volver</Text>
+          <Text className="text-[15px] text-muted">{t("common.back")}</Text>
         </Pressable>
 
         <View className="flex-1 px-6 pt-4">
@@ -57,27 +62,27 @@ export default function VerifyScreen() {
           </View>
 
           <Text className="text-[28px] font-bold tracking-tight text-foreground">
-            Revisá tu email
+            {t("auth.verify.title")}
           </Text>
           <Text className="mt-2 text-[15px] text-muted">
-            Te mandamos un código a{" "}
-            <Text className="font-semibold text-foreground">{email}</Text>.
-            Ingresalo abajo para entrar.
+            {t("auth.verify.subtitlePre")}
+            <Text className="font-semibold text-foreground">{email}</Text>
+            {t("auth.verify.subtitlePost")}
           </Text>
 
           <View className="mt-8 gap-4">
             <Input
-              label="Código de 6 dígitos"
+              label={t("auth.verify.codeLabel")}
               required
               value={code}
               onChangeText={setCode}
-              placeholder="123456"
+              placeholder={t("auth.verify.codePlaceholder")}
               keyboardType="number-pad"
               maxLength={6}
               autoFocus
             />
             <Button
-              label="Verificar y entrar"
+              label={t("auth.verify.verifyAndEnter")}
               onPress={handleVerify}
               loading={loading}
               fullWidth
@@ -85,7 +90,9 @@ export default function VerifyScreen() {
             />
             <Pressable onPress={handleResend} disabled={resending} className="self-center">
               <Text className="text-[14px] font-medium text-primary">
-                {resending ? "Reenviando..." : "No me llegó, reenviar"}
+                {resending
+                  ? t("auth.verify.resending")
+                  : t("auth.verify.resend")}
               </Text>
             </Pressable>
           </View>

@@ -7,22 +7,27 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Button } from "../../src/components/ui/button";
 import { Input } from "../../src/components/ui/input";
 import { signInWithOtp } from "../../src/lib/session";
+import { useTranslation } from "../../src/lib/i18n";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit() {
     if (!email.trim() || !email.includes("@")) {
-      Alert.alert("Email inválido", "Ingresá un email válido.");
+      Alert.alert(
+        t("auth.login.invalidEmailTitle"),
+        t("auth.login.invalidEmailBody"),
+      );
       return;
     }
     setLoading(true);
     const { error } = await signInWithOtp(email);
     setLoading(false);
     if (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert(t("common.error"), error.message);
       return;
     }
     router.push({ pathname: "/verify", params: { email: email.trim().toLowerCase() } });
@@ -46,26 +51,26 @@ export default function LoginScreen() {
           </LinearGradient>
 
           <Text className="text-[28px] font-bold tracking-tight text-foreground">
-            Bienvenido a PetApp
+            {t("auth.login.title")}
           </Text>
           <Text className="mt-2 text-[15px] text-muted">
-            Ingresá tu email y te mandamos un código de 6 dígitos para entrar.
+            {t("auth.login.subtitle")}
           </Text>
 
           <View className="mt-8 gap-4">
             <Input
-              label="Email"
+              label={t("auth.login.emailLabel")}
               required
               value={email}
               onChangeText={setEmail}
-              placeholder="tu@email.com"
+              placeholder={t("auth.login.emailPlaceholder")}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
             />
             <Button
-              label="Enviar código"
+              label={t("auth.login.sendCode")}
               onPress={handleSubmit}
               loading={loading}
               fullWidth
@@ -75,8 +80,7 @@ export default function LoginScreen() {
 
           <View className="mt-8 rounded-lg bg-surface-2 p-3">
             <Text className="text-xs text-muted">
-              No tenés que recordar contraseña — usamos códigos por email cada
-              vez que entrás desde un dispositivo nuevo.
+              {t("auth.login.noPasswordHint")}
             </Text>
           </View>
         </View>

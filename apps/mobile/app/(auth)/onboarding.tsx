@@ -8,11 +8,13 @@ import { Button } from "../../src/components/ui/button";
 import { Input } from "../../src/components/ui/input";
 import { supabase } from "../../src/lib/supabase";
 import { useSession } from "../../src/lib/session";
+import { useTranslation } from "../../src/lib/i18n";
 
 type Role = "owner" | "vet";
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { session } = useSession();
   const [step, setStep] = useState<"role" | "details">("role");
   const [role, setRole] = useState<Role>("owner");
@@ -23,11 +25,14 @@ export default function OnboardingScreen() {
 
   async function handleFinish() {
     if (!session) {
-      Alert.alert("Error", "No hay sesión activa.");
+      Alert.alert(t("common.error"), t("auth.onboarding.noSession"));
       return;
     }
     if (!fullName.trim() || fullName.trim().length < 2) {
-      Alert.alert("Falta tu nombre", "Ingresá tu nombre completo.");
+      Alert.alert(
+        t("auth.onboarding.missingNameTitle"),
+        t("auth.onboarding.missingNameBody"),
+      );
       return;
     }
 
@@ -68,7 +73,7 @@ export default function OnboardingScreen() {
         router.replace("/(app)/vet" as never);
       }
     } catch (e: any) {
-      Alert.alert("Error", e?.message ?? "No pudimos crear tu perfil.");
+      Alert.alert(t("common.error"), e?.message ?? t("auth.onboarding.createError"));
     } finally {
       setLoading(false);
     }
@@ -79,25 +84,25 @@ export default function OnboardingScreen() {
       <SafeAreaView className="flex-1 bg-background">
         <View className="flex-1 px-6 pt-8">
           <Text className="text-[28px] font-bold tracking-tight text-foreground">
-            ¿Quién sos?
+            {t("auth.onboarding.roleQuestion")}
           </Text>
           <Text className="mt-2 text-[15px] text-muted">
-            Elegí el tipo de cuenta para empezar.
+            {t("auth.onboarding.roleSubtitle")}
           </Text>
 
           <View className="mt-8 gap-3">
             <RoleCard
               icon={Dog}
-              title="Soy dueño"
-              description="Quiero llevar el control de la salud de mi mascota."
+              title={t("auth.onboarding.roleOwnerTitle")}
+              description={t("auth.onboarding.roleOwnerDesc")}
               tone="primary"
               selected={role === "owner"}
               onPress={() => setRole("owner")}
             />
             <RoleCard
               icon={Stethoscope}
-              title="Soy veterinario"
-              description="Quiero atender pacientes y registrar consultas."
+              title={t("auth.onboarding.roleVetTitle")}
+              description={t("auth.onboarding.roleVetDesc")}
               tone="accent"
               selected={role === "vet"}
               onPress={() => setRole("vet")}
@@ -106,7 +111,7 @@ export default function OnboardingScreen() {
 
           <View className="mt-auto pb-4">
             <Button
-              label="Continuar"
+              label={t("common.continue")}
               onPress={() => setStep("details")}
               fullWidth
               size="lg"
@@ -125,50 +130,58 @@ export default function OnboardingScreen() {
       >
         <View className="flex-1 px-6 pt-8">
           <Text className="text-[28px] font-bold tracking-tight text-foreground">
-            {role === "owner" ? "Tu perfil" : "Datos profesionales"}
+            {role === "owner"
+              ? t("auth.onboarding.detailsTitleOwner")
+              : t("auth.onboarding.detailsTitleVet")}
           </Text>
           <Text className="mt-2 text-[15px] text-muted">
             {role === "owner"
-              ? "Solo necesitamos tu nombre para empezar."
-              : "Completá tu información profesional."}
+              ? t("auth.onboarding.detailsSubtitleOwner")
+              : t("auth.onboarding.detailsSubtitleVet")}
           </Text>
 
           <View className="mt-8 gap-4">
             <Input
-              label="Nombre completo"
+              label={t("auth.onboarding.fullNameLabel")}
               required
               value={fullName}
               onChangeText={setFullName}
-              placeholder={role === "vet" ? "Dra. Camila Martínez" : "Tu nombre"}
+              placeholder={
+                role === "vet"
+                  ? t("auth.onboarding.fullNamePlaceholderVet")
+                  : t("auth.onboarding.fullNamePlaceholderOwner")
+              }
               autoFocus
             />
             {role === "vet" && (
               <>
                 <Input
-                  label="Matrícula profesional"
-                  hint="Opcional"
+                  label={t("auth.onboarding.licenseLabel")}
+                  hint={t("auth.onboarding.optional")}
                   value={licenseNumber}
                   onChangeText={setLicenseNumber}
-                  placeholder="Ej: 12345"
+                  placeholder={t("auth.onboarding.licensePlaceholder")}
                 />
                 <Input
-                  label="Clínica"
-                  hint="Opcional"
+                  label={t("auth.onboarding.clinicLabel")}
+                  hint={t("auth.onboarding.optional")}
                   value={clinicName}
                   onChangeText={setClinicName}
-                  placeholder="Veterinaria Palermo"
+                  placeholder={t("auth.onboarding.clinicPlaceholder")}
                 />
               </>
             )}
             <Button
-              label="Crear cuenta"
+              label={t("auth.onboarding.createAccount")}
               onPress={handleFinish}
               loading={loading}
               fullWidth
               size="lg"
             />
             <Pressable onPress={() => setStep("role")} className="self-center">
-              <Text className="text-[14px] text-muted">Volver atrás</Text>
+              <Text className="text-[14px] text-muted">
+                {t("auth.onboarding.goBack")}
+              </Text>
             </Pressable>
           </View>
         </View>
