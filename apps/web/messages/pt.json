@@ -1397,5 +1397,63 @@
   },
   "adminNotifications": {
     "metaTitle": "Notificações"
+  },
+  "appHeader": {
+    "roleOwner": "Dono",
+    "roleVet": "Veterinário",
+    "roleAdmin": "Admin",
+    "navOwnerPets": "Meus pets",
+    "navOwnerAccess": "Acessos",
+    "navVetPatients": "Pacientes",
+    "navVetScan": "Escanear QR",
+    "navVetTemplates": "Modelos",
+    "navVetPlan": "Meu plano",
+    "navAdminDashboard": "Dashboard",
+    "navAdminVets": "Vets",
+    "navAdminVerifications": "Verificações",
+    "navAdminPayments": "Pagamentos",
+    "notifications": "Notificações",
+    "toggleTheme": "Alternar tema",
+    "settings": "Configurações",
+    "logout": "Sair"
+  },
+  "mobileNav": {
+    "navAria": "Navegação principal",
+    "tabHome": "Início",
+    "tabLost": "Perdidos",
+    "tabReminders": "Lembretes",
+    "tabMe": "Eu",
+    "tabPatients": "Pacientes",
+    "tabPlan": "Plano",
+    "tabVets": "Vets",
+    "tabPayments": "Pagamentos",
+    "tabNotices": "Avisos"
+  },
+  "installPrompt": {
+    "iosTitle": "Instale o PetApp no iPhone",
+    "iosSubtitle": "Sem baixar da App Store. 3 passos:",
+    "iosStep1Pre": "Toque no botão ",
+    "iosStep1Action": "Compartilhar",
+    "iosStep1Post": " na parte de baixo do navegador",
+    "iosStep2Pre": "Role para baixo → ",
+    "iosStep2Action": "Adicionar à Tela de Início",
+    "iosStep3Pre": "Toque em ",
+    "iosStep3Action": "Adicionar",
+    "iosStep3Post": " no canto superior direito",
+    "bannerTitle": "Instale o PetApp",
+    "bannerDesc": "Acesso rápido pela sua tela de início. Sem App Store.",
+    "install": "Instalar",
+    "closeAria": "Fechar",
+    "dismissAria": "Dispensar"
+  },
+  "deleteAccount": {
+    "title": "Excluir minha conta",
+    "description": "Exclui seu perfil, todos os seus pets, vacinas, alergias, exames, acessos de veterinários e assinaturas. Esta ação não pode ser desfeita.",
+    "startButton": "Quero excluir minha conta",
+    "confirmInstructionPre": "Para confirmar, digite ",
+    "confirmInstructionPost": " em maiúsculas",
+    "error": "Erro ao excluir a conta.",
+    "confirmButton": "Confirmar exclusão",
+    "cancel": "Cancelar"
   }
 }

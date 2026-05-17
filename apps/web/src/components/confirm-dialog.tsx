@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@pet-app/ui";
 import { X, AlertTriangle } from "lucide-react";
 import { ModalPortal } from "./modal-portal";
@@ -31,11 +32,13 @@ export function ConfirmDialog({
   onConfirm,
   title,
   description,
-  confirmLabel = "Confirmar",
-  cancelLabel = "Cancelar",
+  confirmLabel,
+  cancelLabel,
   tone = "default",
   loading = false,
 }: ConfirmDialogProps) {
+  const t = useTranslations("common");
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -74,7 +77,7 @@ export function ConfirmDialog({
           onClick={onClose}
           disabled={loading}
           className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary disabled:opacity-50"
-          aria-label="Cerrar"
+          aria-label={t("close")}
         >
           <X className="size-4" />
         </button>
@@ -106,7 +109,7 @@ export function ConfirmDialog({
             disabled={loading}
             className="flex-1"
           >
-            {cancelLabel}
+            {cancelLabel ?? t("cancel")}
           </Button>
           <Button
             type="button"
@@ -115,7 +118,7 @@ export function ConfirmDialog({
             disabled={loading}
             className="flex-1"
           >
-            {loading ? "..." : confirmLabel}
+            {loading ? "..." : (confirmLabel ?? t("confirm"))}
           </Button>
         </div>
       </div>

@@ -15,38 +15,39 @@ import {
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@pet-app/lib/client";
 
 type Role = "owner" | "vet" | "admin";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   href: string;
   icon: LucideIcon;
 }
 
 const OWNER_TABS: NavItem[] = [
-  { label: "Inicio", href: "/app", icon: Home },
-  { label: "Perdidas", href: "/lost", icon: AlertTriangle },
+  { labelKey: "tabHome", href: "/app", icon: Home },
+  { labelKey: "tabLost", href: "/lost", icon: AlertTriangle },
   // [FAB QR] va acá en el medio visual
-  { label: "Recordatorios", href: "/app/notifications", icon: Bell },
-  { label: "Yo", href: "/app/settings", icon: User },
+  { labelKey: "tabReminders", href: "/app/notifications", icon: Bell },
+  { labelKey: "tabMe", href: "/app/settings", icon: User },
 ];
 
 const VET_TABS: NavItem[] = [
-  { label: "Inicio", href: "/vet", icon: Home },
-  { label: "Pacientes", href: "/vet/patients", icon: Users },
+  { labelKey: "tabHome", href: "/vet", icon: Home },
+  { labelKey: "tabPatients", href: "/vet/patients", icon: Users },
   // [FAB Escanear] va acá en el medio
-  { label: "Plan", href: "/vet/plan", icon: Crown },
-  { label: "Yo", href: "/vet/settings", icon: User },
+  { labelKey: "tabPlan", href: "/vet/plan", icon: Crown },
+  { labelKey: "tabMe", href: "/vet/settings", icon: User },
 ];
 
 const ADMIN_TABS: NavItem[] = [
-  { label: "Inicio", href: "/admin", icon: Home },
-  { label: "Vets", href: "/admin/vets", icon: ShieldCheck },
+  { labelKey: "tabHome", href: "/admin", icon: Home },
+  { labelKey: "tabVets", href: "/admin/vets", icon: ShieldCheck },
   // [FAB] va acá en el medio
-  { label: "Pagos", href: "/admin/payments", icon: CreditCard },
-  { label: "Avisos", href: "/admin/notifications", icon: Bell },
+  { labelKey: "tabPayments", href: "/admin/payments", icon: CreditCard },
+  { labelKey: "tabNotices", href: "/admin/notifications", icon: Bell },
 ];
 
 function isActive(currentPath: string, target: string): boolean {
@@ -72,6 +73,7 @@ interface MobileNavProps {
  * Renderizado solo en mobile (`md:hidden`).
  */
 export function MobileNav({ role, fabHref, fabIcon, fabLabel }: MobileNavProps) {
+  const t = useTranslations("mobileNav");
   const pathname = usePathname() || "/";
   const tabs =
     role === "vet" ? VET_TABS : role === "admin" ? ADMIN_TABS : OWNER_TABS;
@@ -97,7 +99,7 @@ export function MobileNav({ role, fabHref, fabIcon, fabLabel }: MobileNavProps) 
       {/* Nav bar */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
-        aria-label="Navegación principal"
+        aria-label={t("navAria")}
       >
         {/* Backdrop */}
         <div
@@ -109,8 +111,9 @@ export function MobileNav({ role, fabHref, fabIcon, fabLabel }: MobileNavProps) 
         <div className="relative grid grid-cols-5 items-end pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 px-1">
           {leftTabs.map((tab) => (
             <NavTab
-              key={tab.href + tab.label}
+              key={tab.href + tab.labelKey}
               item={tab}
+              label={t(tab.labelKey)}
               active={isActive(pathname, tab.href)}
               accentColor={accentColor}
             />
@@ -121,8 +124,9 @@ export function MobileNav({ role, fabHref, fabIcon, fabLabel }: MobileNavProps) 
 
           {rightTabs.map((tab) => (
             <NavTab
-              key={tab.href + tab.label}
+              key={tab.href + tab.labelKey}
               item={tab}
+              label={t(tab.labelKey)}
               active={isActive(pathname, tab.href)}
               accentColor={accentColor}
             />
@@ -153,10 +157,12 @@ export function MobileNav({ role, fabHref, fabIcon, fabLabel }: MobileNavProps) 
 
 function NavTab({
   item,
+  label,
   active,
   accentColor,
 }: {
   item: NavItem;
+  label: string;
   active: boolean;
   accentColor: "primary" | "accent";
 }) {
@@ -184,7 +190,7 @@ function NavTab({
           active ? "font-semibold" : "font-medium",
         )}
       >
-        {item.label}
+        {label}
       </span>
     </Link>
   );

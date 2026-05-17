@@ -2,10 +2,12 @@
 
 import { useTransition } from "react";
 import { LogOut, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@pet-app/ui";
 import { logout } from "@/app/(auth)/actions";
 
 export function LogoutButton() {
+  const t = useTranslations("appHeader");
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -28,7 +30,7 @@ export function LogoutButton() {
       ) : (
         <LogOut className="size-3.5" />
       )}
-      Cerrar sesión
+      {t("logout")}
     </Button>
   );
 }

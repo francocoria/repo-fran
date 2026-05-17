@@ -17,6 +17,7 @@ import {
   Shield,
   Bell,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { logout } from "@/app/(auth)/actions";
 import { useState, useTransition } from "react";
 import { VetSearch } from "@/components/vet/vet-search";
@@ -31,42 +32,43 @@ interface AppHeaderProps {
 
 const roleConfig = {
   owner: {
-    label: "Dueño",
+    labelKey: "roleOwner",
     icon: Dog,
     color: "text-primary",
     basePath: "/app",
     navItems: [
-      { label: "Mis mascotas", href: "/app" },
-      { label: "Accesos", href: "/app/access" },
+      { labelKey: "navOwnerPets", href: "/app" },
+      { labelKey: "navOwnerAccess", href: "/app/access" },
     ],
   },
   vet: {
-    label: "Veterinario",
+    labelKey: "roleVet",
     icon: Stethoscope,
     color: "text-accent",
     basePath: "/vet",
     navItems: [
-      { label: "Pacientes", href: "/vet" },
-      { label: "Escanear QR", href: "/vet/scan" },
-      { label: "Plantillas", href: "/vet/templates" },
-      { label: "Mi plan", href: "/vet/plan" },
+      { labelKey: "navVetPatients", href: "/vet" },
+      { labelKey: "navVetScan", href: "/vet/scan" },
+      { labelKey: "navVetTemplates", href: "/vet/templates" },
+      { labelKey: "navVetPlan", href: "/vet/plan" },
     ],
   },
   admin: {
-    label: "Admin",
+    labelKey: "roleAdmin",
     icon: Shield,
     color: "text-destructive",
     basePath: "/admin",
     navItems: [
-      { label: "Dashboard", href: "/admin" },
-      { label: "Vets", href: "/admin/vets" },
-      { label: "Verificaciones", href: "/admin/verifications" },
-      { label: "Pagos", href: "/admin/payments" },
+      { labelKey: "navAdminDashboard", href: "/admin" },
+      { labelKey: "navAdminVets", href: "/admin/vets" },
+      { labelKey: "navAdminVerifications", href: "/admin/verifications" },
+      { labelKey: "navAdminPayments", href: "/admin/payments" },
     ],
   },
-};
+} as const;
 
 export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
+  const t = useTranslations("appHeader");
   const { theme, setTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -102,7 +104,7 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
                 href={item.href}
                 className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               >
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             ))}
           </nav>
@@ -119,14 +121,14 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
             className="hidden sm:inline-flex gap-1 text-xs"
           >
             <RoleIcon className={`h-3 w-3 ${config.color}`} />
-            {config.label}
+            {t(config.labelKey)}
           </Badge>
 
           {/* Notifications (placeholder) */}
           <Button variant="ghost" size="icon" className="relative" asChild>
             <Link href={`${config.basePath}/notifications`}>
               <Bell className="h-4 w-4" />
-              <span className="sr-only">Notificaciones</span>
+              <span className="sr-only">{t("notifications")}</span>
             </Link>
           </Button>
 
@@ -138,7 +140,7 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
           >
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Cambiar tema</span>
+            <span className="sr-only">{t("toggleTheme")}</span>
           </Button>
 
           {/* User menu - desktop */}
@@ -168,7 +170,7 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
               size="icon"
               onClick={handleLogout}
               disabled={isPending}
-              title="Cerrar sesión"
+              title={t("logout")}
             >
               <LogOut className="h-4 w-4" />
             </Button>
@@ -201,7 +203,7 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
                 className="flex items-center rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 onClick={() => setMobileOpen(false)}
               >
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             ))}
             <hr className="my-2" />
@@ -211,7 +213,7 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
               onClick={() => setMobileOpen(false)}
             >
               <Settings className="h-4 w-4" />
-              Configuración
+              {t("settings")}
             </Link>
             <button
               onClick={handleLogout}
@@ -219,7 +221,7 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-destructive transition-colors hover:bg-destructive/10"
             >
               <LogOut className="h-4 w-4" />
-              Cerrar sesión
+              {t("logout")}
             </button>
           </div>
         </div>

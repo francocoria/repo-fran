@@ -1397,5 +1397,63 @@
   },
   "adminNotifications": {
     "metaTitle": "Notificaciones"
+  },
+  "appHeader": {
+    "roleOwner": "Dueño",
+    "roleVet": "Veterinario",
+    "roleAdmin": "Admin",
+    "navOwnerPets": "Mis mascotas",
+    "navOwnerAccess": "Accesos",
+    "navVetPatients": "Pacientes",
+    "navVetScan": "Escanear QR",
+    "navVetTemplates": "Plantillas",
+    "navVetPlan": "Mi plan",
+    "navAdminDashboard": "Dashboard",
+    "navAdminVets": "Vets",
+    "navAdminVerifications": "Verificaciones",
+    "navAdminPayments": "Pagos",
+    "notifications": "Notificaciones",
+    "toggleTheme": "Cambiar tema",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "mobileNav": {
+    "navAria": "Navegación principal",
+    "tabHome": "Inicio",
+    "tabLost": "Perdidas",
+    "tabReminders": "Recordatorios",
+    "tabMe": "Yo",
+    "tabPatients": "Pacientes",
+    "tabPlan": "Plan",
+    "tabVets": "Vets",
+    "tabPayments": "Pagos",
+    "tabNotices": "Avisos"
+  },
+  "installPrompt": {
+    "iosTitle": "Instalá PetApp en iPhone",
+    "iosSubtitle": "Sin descargar de App Store. 3 pasos:",
+    "iosStep1Pre": "Tocá el botón ",
+    "iosStep1Action": "Compartir",
+    "iosStep1Post": " abajo del navegador",
+    "iosStep2Pre": "Scroll abajo → ",
+    "iosStep2Action": "Agregar a pantalla de inicio",
+    "iosStep3Pre": "Tocá ",
+    "iosStep3Action": "Agregar",
+    "iosStep3Post": " arriba a la derecha",
+    "bannerTitle": "Instalá PetApp",
+    "bannerDesc": "Acceso rápido desde tu pantalla de inicio. Sin App Store.",
+    "install": "Instalar",
+    "closeAria": "Cerrar",
+    "dismissAria": "Descartar"
+  },
+  "deleteAccount": {
+    "title": "Eliminar mi cuenta",
+    "description": "Borra tu perfil, todas tus mascotas, vacunas, alergias, estudios, accesos a veterinarios y suscripciones. Esta acción no se puede deshacer.",
+    "startButton": "Quiero eliminar mi cuenta",
+    "confirmInstructionPre": "Para confirmar, escribí ",
+    "confirmInstructionPost": " en mayúsculas",
+    "error": "Error al eliminar la cuenta.",
+    "confirmButton": "Confirmar eliminación",
+    "cancel": "Cancelar"
   }
 }

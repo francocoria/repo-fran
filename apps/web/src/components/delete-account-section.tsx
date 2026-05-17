@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button, Card, CardContent, Input, Label } from "@pet-app/ui";
 import { deleteAccount } from "@/app/(auth)/actions";
 
@@ -16,6 +17,7 @@ import { deleteAccount } from "@/app/(auth)/actions";
  * Google Play.
  */
 export function DeleteAccountSection() {
+  const t = useTranslations("deleteAccount");
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [confirmation, setConfirmation] = useState("");
@@ -31,7 +33,7 @@ export function DeleteAccountSection() {
           router.push("/");
           router.refresh();
         } else {
-          setError(result.error ?? "Error al eliminar la cuenta.");
+          setError(result.error ?? t("error"));
         }
       })();
     });
@@ -45,13 +47,9 @@ export function DeleteAccountSection() {
             <AlertTriangle className="size-5" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-destructive">
-              Eliminar mi cuenta
-            </h3>
+            <h3 className="font-semibold text-destructive">{t("title")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Borra tu perfil, todas tus mascotas, vacunas, alergias, estudios,
-              accesos a veterinarios y suscripciones. Esta acción no se puede
-              deshacer.
+              {t("description")}
             </p>
           </div>
         </div>
@@ -65,17 +63,17 @@ export function DeleteAccountSection() {
             onClick={() => setExpanded(true)}
           >
             <Trash2 className="size-3.5" />
-            Quiero eliminar mi cuenta
+            {t("startButton")}
           </Button>
         ) : (
           <div className="space-y-3 rounded-xl border border-destructive/30 bg-background p-4">
             <div className="space-y-1.5">
               <Label htmlFor="deleteConfirm" className="text-foreground">
-                Para confirmar, escribí{" "}
+                {t("confirmInstructionPre")}
                 <span className="font-mono font-semibold text-destructive">
                   ELIMINAR
-                </span>{" "}
-                en mayúsculas
+                </span>
+                {t("confirmInstructionPost")}
               </Label>
               <Input
                 id="deleteConfirm"
@@ -108,7 +106,7 @@ export function DeleteAccountSection() {
                 ) : (
                   <Trash2 className="size-3.5" />
                 )}
-                Confirmar eliminación
+                {t("confirmButton")}
               </Button>
               <Button
                 type="button"
@@ -121,7 +119,7 @@ export function DeleteAccountSection() {
                   setError(null);
                 }}
               >
-                Cancelar
+                {t("cancel")}
               </Button>
             </div>
           </div>

@@ -1397,5 +1397,63 @@
   },
   "adminNotifications": {
     "metaTitle": "Notifications"
+  },
+  "appHeader": {
+    "roleOwner": "Owner",
+    "roleVet": "Veterinarian",
+    "roleAdmin": "Admin",
+    "navOwnerPets": "My pets",
+    "navOwnerAccess": "Access",
+    "navVetPatients": "Patients",
+    "navVetScan": "Scan QR",
+    "navVetTemplates": "Templates",
+    "navVetPlan": "My plan",
+    "navAdminDashboard": "Dashboard",
+    "navAdminVets": "Vets",
+    "navAdminVerifications": "Verifications",
+    "navAdminPayments": "Payments",
+    "notifications": "Notifications",
+    "toggleTheme": "Toggle theme",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "mobileNav": {
+    "navAria": "Main navigation",
+    "tabHome": "Home",
+    "tabLost": "Lost",
+    "tabReminders": "Reminders",
+    "tabMe": "Me",
+    "tabPatients": "Patients",
+    "tabPlan": "Plan",
+    "tabVets": "Vets",
+    "tabPayments": "Payments",
+    "tabNotices": "Notices"
+  },
+  "installPrompt": {
+    "iosTitle": "Install PetApp on iPhone",
+    "iosSubtitle": "No App Store download. 3 steps:",
+    "iosStep1Pre": "Tap the ",
+    "iosStep1Action": "Share",
+    "iosStep1Post": " button at the bottom of the browser",
+    "iosStep2Pre": "Scroll down → ",
+    "iosStep2Action": "Add to Home Screen",
+    "iosStep3Pre": "Tap ",
+    "iosStep3Action": "Add",
+    "iosStep3Post": " at the top right",
+    "bannerTitle": "Install PetApp",
+    "bannerDesc": "Quick access from your home screen. No App Store.",
+    "install": "Install",
+    "closeAria": "Close",
+    "dismissAria": "Dismiss"
+  },
+  "deleteAccount": {
+    "title": "Delete my account",
+    "description": "Deletes your profile, all your pets, vaccines, allergies, studies, vet access and subscriptions. This action cannot be undone.",
+    "startButton": "I want to delete my account",
+    "confirmInstructionPre": "To confirm, type ",
+    "confirmInstructionPost": " in uppercase",
+    "error": "Error deleting the account.",
+    "confirmButton": "Confirm deletion",
+    "cancel": "Cancel"
   }
 }

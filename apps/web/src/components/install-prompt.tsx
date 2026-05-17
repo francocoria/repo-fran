@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Download, X, Share } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 /**
  * Banner discreto que sugiere instalar la PWA.
@@ -24,6 +25,7 @@ const DISMISS_KEY = "petapp-install-dismissed";
 const DISMISS_DURATION = 14 * 24 * 60 * 60 * 1000; // 14 días
 
 export function InstallPrompt() {
+  const t = useTranslations("installPrompt");
   const [visible, setVisible] = useState(false);
   const [platform, setPlatform] = useState<"android" | "ios" | "other">("other");
   const [deferredPrompt, setDeferredPrompt] =
@@ -110,13 +112,13 @@ export function InstallPrompt() {
             type="button"
             onClick={dismiss}
             className="absolute right-3 top-3 inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
-            aria-label="Cerrar"
+            aria-label={t("closeAria")}
           >
             <X className="size-4" />
           </button>
-          <h2 className="text-base font-semibold">Instalá PetApp en iPhone</h2>
+          <h2 className="text-base font-semibold">{t("iosTitle")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sin descargar de App Store. 3 pasos:
+            {t("iosSubtitle")}
           </p>
           <ol className="mt-4 space-y-3 text-sm">
             <li className="flex items-start gap-3">
@@ -124,8 +126,10 @@ export function InstallPrompt() {
                 1
               </span>
               <span>
-                Tocá el botón <Share className="-mt-0.5 inline size-4 text-primary" />{" "}
-                <strong>Compartir</strong> abajo del navegador
+                {t("iosStep1Pre")}
+                <Share className="-mt-0.5 inline size-4 text-primary" />{" "}
+                <strong>{t("iosStep1Action")}</strong>
+                {t("iosStep1Post")}
               </span>
             </li>
             <li className="flex items-start gap-3">
@@ -133,7 +137,8 @@ export function InstallPrompt() {
                 2
               </span>
               <span>
-                Scroll abajo → <strong>"Agregar a pantalla de inicio"</strong>
+                {t("iosStep2Pre")}
+                <strong>&quot;{t("iosStep2Action")}&quot;</strong>
               </span>
             </li>
             <li className="flex items-start gap-3">
@@ -141,7 +146,9 @@ export function InstallPrompt() {
                 3
               </span>
               <span>
-                Tocá <strong>"Agregar"</strong> arriba a la derecha
+                {t("iosStep3Pre")}
+                <strong>&quot;{t("iosStep3Action")}&quot;</strong>
+                {t("iosStep3Post")}
               </span>
             </li>
           </ol>
@@ -158,10 +165,10 @@ export function InstallPrompt() {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[13.5px] font-semibold leading-tight">
-            Instalá PetApp
+            {t("bannerTitle")}
           </p>
           <p className="mt-0.5 text-[11.5px] leading-tight text-muted-foreground">
-            Acceso rápido desde tu pantalla de inicio. Sin App Store.
+            {t("bannerDesc")}
           </p>
         </div>
         <button
@@ -169,13 +176,13 @@ export function InstallPrompt() {
           onClick={handleInstall}
           className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-[12.5px] font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
         >
-          Instalar
+          {t("install")}
         </button>
         <button
           type="button"
           onClick={dismiss}
           className="shrink-0 inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
-          aria-label="Descartar"
+          aria-label={t("dismissAria")}
         >
           <X className="size-3.5" />
         </button>
