@@ -9,14 +9,19 @@ import {
   Dog,
   AlertCircle,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, Badge } from "@pet-app/ui";
 import { prisma } from "@pet-app/db";
 import { formatDateLong } from "@pet-app/lib/utils/format";
 
-export const metadata = { title: "Panel admin" };
+export async function generateMetadata() {
+  const t = await getTranslations("adminDashboard");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
+  const t = await getTranslations("adminDashboard");
   const now = new Date();
   const last30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
@@ -76,10 +81,8 @@ export default async function AdminDashboardPage() {
   return (
     <div className="animate-fade-up space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Panel admin</h1>
-        <p className="mt-1 text-muted-foreground">
-          Vista general de la plataforma.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="mt-1 text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {/* ─── ALERTS ─────────────────────────────────────────────── */}
@@ -91,12 +94,10 @@ export default async function AdminDashboardPage() {
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="font-semibold">
-              {pendingVerifications} verificación
-              {pendingVerifications !== 1 ? "es" : ""} pendiente
-              {pendingVerifications !== 1 ? "s" : ""}
+              {t("pendingAlert", { count: pendingVerifications })}
             </p>
             <p className="text-sm text-amber-800/80 dark:text-amber-300/80">
-              Hay solicitudes esperando tu revisión.
+              {t("pendingAlertDesc")}
             </p>
           </div>
         </Link>
@@ -106,25 +107,25 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Users className="h-5 w-5" />}
-          label="Dueños"
+          label={t("statOwners")}
           value={totalOwners}
           color="primary"
         />
         <StatCard
           icon={<Stethoscope className="h-5 w-5" />}
-          label="Veterinarios"
+          label={t("statVets")}
           value={totalVets}
           color="accent"
         />
         <StatCard
           icon={<Dog className="h-5 w-5" />}
-          label="Mascotas"
+          label={t("statAnimals")}
           value={totalAnimals}
           color="primary"
         />
         <StatCard
           icon={<TrendingUp className="h-5 w-5" />}
-          label="Consultas registradas"
+          label={t("statConsults")}
           value={totalConsults}
           color="accent"
         />
@@ -133,24 +134,24 @@ export default async function AdminDashboardPage() {
       {/* ─── PREMIUM STATS ─────────────────────────────────────── */}
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Suscripciones
+          {t("sectionSubscriptions")}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             icon={<Crown className="h-5 w-5" />}
-            label="Premium activos"
+            label={t("statPremiumActive")}
             value={activePremium}
             color="amber"
           />
           <StatCard
             icon={<Crown className="h-5 w-5" />}
-            label="En trial"
+            label={t("statTrials")}
             value={activeTrials}
             color="primary"
           />
           <StatCard
             icon={<AlertCircle className="h-5 w-5" />}
-            label="Vencidos"
+            label={t("statExpired")}
             value={expiredCount}
             color="destructive"
           />
@@ -159,16 +160,14 @@ export default async function AdminDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                    Ingresos 30 días
+                    {t("revenue30")}
                   </p>
                   <p className="mt-1 text-2xl font-bold">USD {revenueLast30}</p>
                 </div>
                 <Receipt className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <p className="mt-3 text-xs text-muted-foreground">
-                {paymentsLast30._count} pago
-                {paymentsLast30._count !== 1 ? "s" : ""} registrado
-                {paymentsLast30._count !== 1 ? "s" : ""}
+                {t("paymentsCount", { count: paymentsLast30._count })}
               </p>
             </CardContent>
           </Card>
@@ -178,33 +177,33 @@ export default async function AdminDashboardPage() {
       {/* ─── QUICK ACTIONS ──────────────────────────────────────── */}
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Gestión
+          {t("sectionManagement")}
         </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <AdminLink
             href="/admin/vets"
             icon={<Stethoscope className="h-5 w-5" />}
-            title="Veterinarios"
-            desc="Activar premium, ver detalles"
+            title={t("linkVets")}
+            desc={t("linkVetsDesc")}
           />
           <AdminLink
             href="/admin/verifications"
             icon={<ShieldCheck className="h-5 w-5" />}
-            title="Verificaciones"
-            desc="Cola de matrículas pendientes"
+            title={t("linkVerifications")}
+            desc={t("linkVerificationsDesc")}
             badge={pendingVerifications}
           />
           <AdminLink
             href="/admin/payments"
             icon={<Receipt className="h-5 w-5" />}
-            title="Pagos manuales"
-            desc="Historial completo"
+            title={t("linkPayments")}
+            desc={t("linkPaymentsDesc")}
           />
           <AdminLink
             href="/admin/owners"
             icon={<Users className="h-5 w-5" />}
-            title="Dueños"
-            desc="Lista de cuentas"
+            title={t("linkOwners")}
+            desc={t("linkOwnersDesc")}
           />
         </div>
       </div>
@@ -212,24 +211,26 @@ export default async function AdminDashboardPage() {
       {/* ─── RECENT SIGNUPS ─────────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-2">
         <RecentList
-          title="Vets recientes"
+          title={t("recentVets")}
+          emptyText={t("noRecords")}
           icon={<Stethoscope className="h-3.5 w-3.5" />}
           items={recentSignupsVets.map((v) => ({
             id: v.id,
             href: `/admin/vets/${v.id}`,
             primary: v.full_name,
-            secondary: v.clinic_name ?? "Sin clínica",
+            secondary: v.clinic_name ?? t("noClinic"),
             date: v.created_at,
           }))}
         />
         <RecentList
-          title="Dueños recientes"
+          title={t("recentOwners")}
+          emptyText={t("noRecords")}
           icon={<Users className="h-3.5 w-3.5" />}
           items={recentSignupsOwners.map((o) => ({
             id: o.id,
             href: undefined,
             primary: o.full_name,
-            secondary: o.city ?? "Sin ciudad",
+            secondary: o.city ?? t("noCity"),
             date: o.created_at,
           }))}
         />
@@ -319,10 +320,12 @@ interface RecentItem {
 
 function RecentList({
   title,
+  emptyText,
   icon,
   items,
 }: {
   title: string;
+  emptyText: string;
   icon: React.ReactNode;
   items: RecentItem[];
 }) {
@@ -336,7 +339,7 @@ function RecentList({
         <CardContent className="p-0">
           {items.length === 0 ? (
             <p className="px-4 py-6 text-sm text-muted-foreground text-center">
-              Todavía no hay registros.
+              {emptyText}
             </p>
           ) : (
             <ul className="divide-y divide-border/60">

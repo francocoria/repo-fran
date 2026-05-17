@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { Receipt, Stethoscope } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, Badge } from "@pet-app/ui";
 import { prisma } from "@pet-app/db";
 import { formatDateLong } from "@pet-app/lib/utils/format";
 
-export const metadata = { title: "Pagos manuales" };
+export async function generateMetadata() {
+  const t = await getTranslations("adminPayments");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
@@ -16,6 +20,15 @@ export default async function AdminPaymentsPage({
 }) {
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, Number(pageParam ?? "1"));
+  const t = await getTranslations("adminPayments");
+
+  const methodLabels: Record<string, string> = {
+    transfer: t("methodTransfer"),
+    cash: t("methodCash"),
+    mp_external: t("methodMpExternal"),
+    stripe_external: t("methodStripeExternal"),
+    other: t("methodOther"),
+  };
 
   const [payments, totals, count] = await Promise.all([
     prisma.manualPayment.findMany({
@@ -43,10 +56,9 @@ export default async function AdminPaymentsPage({
   return (
     <div className="animate-fade-up space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Pagos manuales</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-muted-foreground">
-          {totals._count} pago{totals._count !== 1 ? "s" : ""} registrados ·
-          Total: USD {usdTotal}
+          {t("summary", { count: totals._count, total: usdTotal })}
         </p>
       </div>
 
@@ -55,11 +67,10 @@ export default async function AdminPaymentsPage({
           <CardContent className="py-12 text-center">
             <Receipt className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm text-muted-foreground">
-              Todavía no se registraron pagos.
+              {t("emptyTitle")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground/70">
-              Cuando actives Premium para un vet desde su detalle, el pago se
-              guarda acá.
+              {t("emptyDesc")}
             </p>
           </CardContent>
         </Card>
@@ -70,12 +81,12 @@ export default async function AdminPaymentsPage({
               <table className="w-full text-sm">
                 <thead className="text-xs text-muted-foreground border-b border-border/60">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium">Fecha</th>
-                    <th className="px-4 py-3 text-left font-medium">Vet</th>
-                    <th className="px-4 py-3 text-left font-medium">Monto</th>
-                    <th className="px-4 py-3 text-left font-medium">Método</th>
-                    <th className="px-4 py-3 text-left font-medium">Meses</th>
-                    <th className="px-4 py-3 text-left font-medium">Notas</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("thDate")}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("thVet")}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("thAmount")}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("thMethod")}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("thMonths")}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t("thNotes")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -104,8 +115,8 @@ export default async function AdminPaymentsPage({
                         {p.currency} {Number(p.amount).toFixed(2)}
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        <Badge variant="secondary" className="capitalize">
-                          {p.method.replace("_", " ")}
+                        <Badge variant="secondary">
+                          {methodLabels[p.method] ?? p.method.replace("_", " ")}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-xs">
@@ -127,7 +138,7 @@ export default async function AdminPaymentsPage({
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-sm">
           <p className="text-muted-foreground">
-            Página {page} de {totalPages}
+            {t("pagination", { page, total: totalPages })}
           </p>
           <div className="flex gap-2">
             {page > 1 && (
@@ -135,7 +146,7 @@ export default async function AdminPaymentsPage({
                 href={`/admin/payments?page=${page - 1}`}
                 className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs hover:bg-secondary"
               >
-                Anterior
+                {t("prev")}
               </Link>
             )}
             {page < totalPages && (
@@ -143,7 +154,7 @@ export default async function AdminPaymentsPage({
                 href={`/admin/payments?page=${page + 1}`}
                 className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs hover:bg-secondary"
               >
-                Siguiente
+                {t("next")}
               </Link>
             )}
           </div>

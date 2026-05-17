@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Loader2, AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button, Textarea } from "@pet-app/ui";
 import { approveVerification, rejectVerification } from "../actions";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function VerificationActions({ requestId }: Props) {
+  const t = useTranslations("adminVerifications");
   const router = useRouter();
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -27,7 +29,7 @@ export function VerificationActions({ requestId }: Props) {
       if (result.success) {
         router.refresh();
       } else {
-        setError(result.error ?? "Error.");
+        setError(result.error ?? t("genericError"));
       }
     })(); });
   }
@@ -35,7 +37,7 @@ export function VerificationActions({ requestId }: Props) {
   function handleReject() {
     setError(null);
     if (!rejectReason.trim()) {
-      setError("Indicá un motivo para el rechazo.");
+      setError(t("rejectReasonRequired"));
       return;
     }
     startTransition(() => { void (async () => {
@@ -45,7 +47,7 @@ export function VerificationActions({ requestId }: Props) {
         setRejectReason("");
         router.refresh();
       } else {
-        setError(result.error ?? "Error.");
+        setError(result.error ?? t("genericError"));
       }
     })(); });
   }
@@ -56,9 +58,9 @@ export function VerificationActions({ requestId }: Props) {
         open={showApproveConfirm}
         onClose={() => setShowApproveConfirm(false)}
         onConfirm={confirmApprove}
-        title="Aprobar verificación"
-        description="El veterinario tendrá su matrícula validada y un badge visible para los dueños."
-        confirmLabel="Aprobar"
+        title={t("approveTitle")}
+        description={t("approveDesc")}
+        confirmLabel={t("approve")}
         loading={isPending}
       />
 
@@ -77,7 +79,7 @@ export function VerificationActions({ requestId }: Props) {
             ) : (
               <Check className="h-3.5 w-3.5" />
             )}
-            Aprobar
+            {t("approve")}
           </Button>
           <Button
             type="button"
@@ -88,7 +90,7 @@ export function VerificationActions({ requestId }: Props) {
             className="gap-1.5"
           >
             <X className="h-3.5 w-3.5" />
-            Rechazar
+            {t("reject")}
           </Button>
         </div>
       ) : (
@@ -96,7 +98,7 @@ export function VerificationActions({ requestId }: Props) {
           <Textarea
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Motivo del rechazo (visible para el vet)..."
+            placeholder={t("rejectPlaceholder")}
             rows={3}
             maxLength={500}
             disabled={isPending}
@@ -115,7 +117,7 @@ export function VerificationActions({ requestId }: Props) {
               ) : (
                 <X className="h-3.5 w-3.5" />
               )}
-              Confirmar rechazo
+              {t("confirmReject")}
             </Button>
             <Button
               type="button"
@@ -128,7 +130,7 @@ export function VerificationActions({ requestId }: Props) {
               }}
               disabled={isPending}
             >
-              Cancelar
+              {t("cancel")}
             </Button>
           </div>
         </div>

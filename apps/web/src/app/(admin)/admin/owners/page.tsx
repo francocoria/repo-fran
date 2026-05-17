@@ -1,10 +1,13 @@
 import { Users, Search } from "lucide-react";
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@pet-app/ui";
 import { prisma } from "@pet-app/db";
 import { formatDateLong } from "@pet-app/lib/utils/format";
 
-export const metadata = { title: "Dueños" };
+export async function generateMetadata() {
+  const t = await getTranslations("adminOwners");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function AdminOwnersPage({
@@ -13,6 +16,7 @@ export default async function AdminOwnersPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
+  const t = await getTranslations("adminOwners");
 
   const where: any = {};
   if (q) {
@@ -35,9 +39,9 @@ export default async function AdminOwnersPage({
   return (
     <div className="animate-fade-up space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dueños</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-muted-foreground">
-          {owners.length} resultado{owners.length !== 1 ? "s" : ""}
+          {t("results", { count: owners.length })}
         </p>
       </div>
 
@@ -48,7 +52,7 @@ export default async function AdminOwnersPage({
             type="search"
             name="q"
             defaultValue={q ?? ""}
-            placeholder="Buscar por nombre, teléfono o ciudad..."
+            placeholder={t("searchPlaceholder")}
             className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
@@ -57,7 +61,7 @@ export default async function AdminOwnersPage({
       {owners.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Sin resultados.
+            {t("noResults")}
           </CardContent>
         </Card>
       ) : (
@@ -76,8 +80,7 @@ export default async function AdminOwnersPage({
                     <p className="font-medium truncate">{o.full_name}</p>
                     <p className="text-xs text-muted-foreground">
                       {[o.city, o.phone].filter(Boolean).join(" · ") || "—"}{" "}
-                      · {o._count.animals} mascota
-                      {o._count.animals !== 1 ? "s" : ""}
+                      · {t("petsCount", { count: o._count.animals })}
                     </p>
                   </div>
                   <p className="hidden sm:block text-xs text-muted-foreground shrink-0">

@@ -11,6 +11,7 @@ import {
   Mail,
   Receipt,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, Badge } from "@pet-app/ui";
 import { prisma } from "@pet-app/db";
 import { effectivePlan } from "@pet-app/lib/utils/subscription";
@@ -18,7 +19,10 @@ import { formatDateLong } from "@pet-app/lib/utils/format";
 import { createSupabaseAdminClient } from "@pet-app/lib/supabase/admin";
 import { ActivatePremiumDialog } from "./activate-premium-dialog";
 
-export const metadata = { title: "Detalle vet" };
+export async function generateMetadata() {
+  const t = await getTranslations("adminVetDetail");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function AdminVetDetailPage({
@@ -53,6 +57,15 @@ export default async function AdminVetDetailPage({
 
   if (!vet) notFound();
 
+  const t = await getTranslations("adminVetDetail");
+  const methodLabels: Record<string, string> = {
+    transfer: t("methodTransfer"),
+    cash: t("methodCash"),
+    mp_external: t("methodMpExternal"),
+    stripe_external: t("methodStripeExternal"),
+    other: t("methodOther"),
+  };
+
   // Email del usuario
   const admin = createSupabaseAdminClient();
   const { data: userData } = await admin.auth.admin.getUserById(vet.user_id);
@@ -74,7 +87,7 @@ export default async function AdminVetDetailPage({
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="h-4 w-4" />
-        Veterinarios
+        {t("back")}
       </Link>
 
       {/* ─── HEADER ─────────────────────────────────────────────── */}
@@ -90,20 +103,20 @@ export default async function AdminVetDetailPage({
             {vet.verified && (
               <Badge variant="secondary" className="gap-1">
                 <ShieldCheck className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                Verificado
+                {t("badgeVerified")}
               </Badge>
             )}
             {plan === "premium" && (
               <Badge className="gap-1 bg-amber-500 hover:bg-amber-500/90">
                 <Crown className="h-3 w-3" />
-                Premium
+                {t("badgePremium")}
               </Badge>
             )}
             {plan === "trial" && (
-              <Badge variant="secondary">Trial</Badge>
+              <Badge variant="secondary">{t("badgeTrial")}</Badge>
             )}
             {plan === "expired" && (
-              <Badge variant="destructive">Vencido</Badge>
+              <Badge variant="destructive">{t("badgeExpired")}</Badge>
             )}
           </div>
 
@@ -132,7 +145,7 @@ export default async function AdminVetDetailPage({
             )}
             <span className="flex items-center gap-1">
               <Calendar className="h-3.5 w-3.5" />
-              Alta {formatDateLong(vet.created_at)}
+              {t("registeredAt", { date: formatDateLong(vet.created_at) })}
             </span>
           </div>
 
@@ -155,20 +168,26 @@ export default async function AdminVetDetailPage({
       {/* ─── DATOS DE PRÁCTICA ──────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DataCell
-          label="Clínica"
-          value={vet.clinic_name ?? "Sin definir"}
+          label={t("cellClinic")}
+          value={vet.clinic_name ?? t("notDefined")}
         />
         <DataCell
-          label="Matrícula"
+          label={t("cellLicense")}
           value={
             vet.license_number
-              ? `${vet.license_number} (${vet.license_country ?? "AR"})`
-              : "Sin definir"
+              ? t("licenseValue", {
+                  number: vet.license_number,
+                  country: vet.license_country ?? "AR",
+                })
+              : t("notDefined")
           }
         />
-        <DataCell label="Especialidad" value={vet.specialty ?? "General"} />
         <DataCell
-          label="Pacientes activos"
+          label={t("cellSpecialty")}
+          value={vet.specialty ?? t("specialtyGeneral")}
+        />
+        <DataCell
+          label={t("cellActivePatients")}
           value={`${vet._count.vet_accesses}`}
         />
       </div>
@@ -176,37 +195,37 @@ export default async function AdminVetDetailPage({
       {/* ─── SUSCRIPCIÓN ─────────────────────────────────────── */}
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Suscripción
+          {t("sectionSubscription")}
         </h2>
         <Card>
           <CardContent className="p-5">
             {vet.subscription ? (
               <div className="grid gap-3 sm:grid-cols-3">
                 <DataCell
-                  label="Plan actual"
+                  label={t("cellCurrentPlan")}
                   value={
                     plan === "expired"
-                      ? "Vencido"
+                      ? t("planExpired")
                       : vet.subscription.plan.charAt(0).toUpperCase() +
                         vet.subscription.plan.slice(1)
                   }
                 />
                 <DataCell
-                  label="Estado"
+                  label={t("cellStatus")}
                   value={vet.subscription.status}
                 />
                 <DataCell
-                  label="Vence"
+                  label={t("cellExpires")}
                   value={
                     vet.subscription.expires_at
                       ? formatDateLong(vet.subscription.expires_at)
-                      : "Sin fecha"
+                      : t("noExpiry")
                   }
                 />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Sin suscripción registrada (plan free).
+                {t("noSubscription")}
               </p>
             )}
           </CardContent>
@@ -218,7 +237,7 @@ export default async function AdminVetDetailPage({
         <div>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             <Receipt className="h-3.5 w-3.5" />
-            Historial de pagos
+            {t("sectionPayments")}
           </h2>
           <Card>
             <CardContent className="p-0">
@@ -232,10 +251,10 @@ export default async function AdminVetDetailPage({
                       <p className="text-sm font-medium">
                         {p.currency} {Number(p.amount).toFixed(2)}
                       </p>
-                      <p className="text-xs text-muted-foreground capitalize">
+                      <p className="text-xs text-muted-foreground">
                         {formatDateLong(p.paid_at)} ·{" "}
-                        {p.method.replace("_", " ")} · {p.months_granted} mes
-                        {p.months_granted !== 1 ? "es" : ""}
+                        {methodLabels[p.method] ?? p.method.replace("_", " ")} ·{" "}
+                        {t("paymentMonths", { count: p.months_granted })}
                       </p>
                     </div>
                     {p.notes && (
@@ -255,7 +274,7 @@ export default async function AdminVetDetailPage({
       {vet.verification_requests.length > 0 && (
         <div>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Solicitudes de verificación
+            {t("sectionVerifications")}
           </h2>
           <Card>
             <CardContent className="p-0">
@@ -267,7 +286,9 @@ export default async function AdminVetDetailPage({
                   >
                     <div>
                       <p className="text-sm font-medium">
-                        Solicitud · {formatDateLong(r.created_at)}
+                        {t("requestLabel", {
+                          date: formatDateLong(r.created_at),
+                        })}
                       </p>
                       {r.rejection_reason && (
                         <p className="text-xs text-destructive mt-0.5">
@@ -284,9 +305,9 @@ export default async function AdminVetDetailPage({
                             : "secondary"
                       }
                     >
-                      {r.status === "approved" && "Aprobada"}
-                      {r.status === "rejected" && "Rechazada"}
-                      {r.status === "pending" && "Pendiente"}
+                      {r.status === "approved" && t("statusApproved")}
+                      {r.status === "rejected" && t("statusRejected")}
+                      {r.status === "pending" && t("statusPending")}
                     </Badge>
                   </li>
                 ))}

@@ -6,12 +6,16 @@ import {
   Search,
   ChevronRight,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, Badge } from "@pet-app/ui";
 import { prisma } from "@pet-app/db";
 import { effectivePlan } from "@pet-app/lib/utils/subscription";
 import { formatDateLong } from "@pet-app/lib/utils/format";
 
-export const metadata = { title: "Veterinarios" };
+export async function generateMetadata() {
+  const t = await getTranslations("adminVets");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function AdminVetsPage({
@@ -20,6 +24,7 @@ export default async function AdminVetsPage({
   searchParams: Promise<{ q?: string; filter?: string }>;
 }) {
   const { q, filter } = await searchParams;
+  const t = await getTranslations("adminVets");
 
   const where: any = {};
   if (q) {
@@ -48,9 +53,9 @@ export default async function AdminVetsPage({
   return (
     <div className="animate-fade-up space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Veterinarios</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-muted-foreground">
-          {vets.length} resultado{vets.length !== 1 ? "s" : ""}
+          {t("results", { count: vets.length })}
         </p>
       </div>
 
@@ -62,21 +67,25 @@ export default async function AdminVetsPage({
             type="search"
             name="q"
             defaultValue={q ?? ""}
-            placeholder="Buscar por nombre, clínica o matrícula..."
+            placeholder={t("searchPlaceholder")}
             className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <FilterPill href="/admin/vets" active={!filter} label="Todos" />
+          <FilterPill
+            href="/admin/vets"
+            active={!filter}
+            label={t("filterAll")}
+          />
           <FilterPill
             href="/admin/vets?filter=verified"
             active={filter === "verified"}
-            label="Verificados"
+            label={t("filterVerified")}
           />
           <FilterPill
             href="/admin/vets?filter=unverified"
             active={filter === "unverified"}
-            label="Sin verificar"
+            label={t("filterUnverified")}
           />
         </div>
       </form>
@@ -85,7 +94,7 @@ export default async function AdminVetsPage({
       {vets.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Sin veterinarios para mostrar.
+            {t("empty")}
           </CardContent>
         </Card>
       ) : (
@@ -119,36 +128,38 @@ export default async function AdminVetsPage({
                           {v.verified && (
                             <Badge variant="secondary" className="gap-1 text-[10px] py-0 px-1.5 h-4">
                               <ShieldCheck className="h-2.5 w-2.5 text-blue-600 dark:text-blue-400" />
-                              Verificado
+                              {t("badgeVerified")}
                             </Badge>
                           )}
                           {plan === "premium" && (
                             <Badge className="gap-1 text-[10px] py-0 px-1.5 h-4 bg-amber-500 hover:bg-amber-500/90">
                               <Crown className="h-2.5 w-2.5" />
-                              Premium
+                              {t("badgePremium")}
                             </Badge>
                           )}
                           {plan === "trial" && (
                             <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4">
-                              Trial
+                              {t("badgeTrial")}
                             </Badge>
                           )}
                           {plan === "expired" && (
                             <Badge variant="destructive" className="text-[10px] py-0 px-1.5 h-4">
-                              Vencido
+                              {t("badgeExpired")}
                             </Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground truncate">
-                          {v.clinic_name ?? "Sin clínica"}
-                          {v.license_number && ` · Mat. ${v.license_number}`}
+                          {v.clinic_name ?? t("noClinic")}
+                          {v.license_number &&
+                            ` · ${t("license", { number: v.license_number })}`}
                           {" · "}
-                          {v._count.vet_accesses} paciente
-                          {v._count.vet_accesses !== 1 ? "s" : ""}
+                          {t("patientsCount", { count: v._count.vet_accesses })}
                         </p>
                       </div>
                       <p className="hidden sm:block text-xs text-muted-foreground shrink-0">
-                        Alta {formatDateLong(v.created_at)}
+                        {t("registeredAt", {
+                          date: formatDateLong(v.created_at),
+                        })}
                       </p>
                       <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                     </Link>

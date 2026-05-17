@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Crown, X, AlertCircle, Loader2, Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Button,
   Input,
@@ -22,6 +23,7 @@ export function ActivatePremiumDialog({
   vetName,
   currentExpiresAt,
 }: Props) {
+  const t = useTranslations("adminVetDetail");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -39,7 +41,7 @@ export function ActivatePremiumDialog({
         setOpen(false);
         router.refresh();
       } else {
-        setError(result.error ?? "Error al activar.");
+        setError(result.error ?? t("errorActivate"));
       }
     })(); });
   }
@@ -52,7 +54,7 @@ export function ActivatePremiumDialog({
     <>
       <Button onClick={() => setOpen(true)} className="gap-2">
         <Crown className="h-4 w-4" />
-        Activar Premium
+        {t("activatePremium")}
       </Button>
 
       {open && (
@@ -71,7 +73,7 @@ export function ActivatePremiumDialog({
               onClick={() => !isPending && setOpen(false)}
               disabled={isPending}
               className="absolute right-4 top-4 rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
-              aria-label="Cerrar"
+              aria-label={t("closeAria")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -79,17 +81,15 @@ export function ActivatePremiumDialog({
             <div className="border-b border-border p-6">
               <div className="flex items-center gap-2 mb-1">
                 <Crown className="h-5 w-5 text-amber-500" />
-                <h2 className="text-lg font-semibold">Activar Premium</h2>
+                <h2 className="text-lg font-semibold">{t("dialogTitle")}</h2>
               </div>
               <p className="text-sm text-muted-foreground">
-                Vet: <strong className="text-foreground">{vetName}</strong>
-                {currentExpiresAt && (
-                  <>
-                    {" "}
-                    · Vencimiento actual:{" "}
-                    {new Date(currentExpiresAt).toLocaleDateString("es-AR")}
-                  </>
-                )}
+                {t("dialogVet")}
+                <strong className="text-foreground">{vetName}</strong>
+                {currentExpiresAt &&
+                  t("dialogCurrentExpiry", {
+                    date: new Date(currentExpiresAt).toLocaleDateString("es-AR"),
+                  })}
               </p>
             </div>
 
@@ -97,7 +97,7 @@ export function ActivatePremiumDialog({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="monthsGranted">
-                    Meses a otorgar <span className="text-destructive">*</span>
+                    {t("fieldMonths")} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="monthsGranted"
@@ -111,7 +111,7 @@ export function ActivatePremiumDialog({
                 </div>
                 <div>
                   <Label htmlFor="paidAt">
-                    Fecha del pago <span className="text-destructive">*</span>
+                    {t("fieldPaidAt")} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="paidAt"
@@ -123,7 +123,7 @@ export function ActivatePremiumDialog({
                 </div>
                 <div>
                   <Label htmlFor="amount">
-                    Monto <span className="text-destructive">*</span>
+                    {t("fieldAmount")} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="amount"
@@ -136,7 +136,7 @@ export function ActivatePremiumDialog({
                   />
                 </div>
                 <div>
-                  <Label htmlFor="currency">Moneda</Label>
+                  <Label htmlFor="currency">{t("fieldCurrency")}</Label>
                   <Input
                     id="currency"
                     name="currency"
@@ -147,7 +147,7 @@ export function ActivatePremiumDialog({
                 </div>
                 <div className="sm:col-span-2">
                   <Label htmlFor="method">
-                    Método <span className="text-destructive">*</span>
+                    {t("fieldMethod")} <span className="text-destructive">*</span>
                   </Label>
                   <select
                     id="method"
@@ -156,20 +156,22 @@ export function ActivatePremiumDialog({
                     defaultValue="transfer"
                     className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <option value="transfer">Transferencia</option>
-                    <option value="cash">Efectivo</option>
-                    <option value="mp_external">Mercado Pago (externo)</option>
-                    <option value="stripe_external">Stripe (externo)</option>
-                    <option value="other">Otro</option>
+                    <option value="transfer">{t("methodTransfer")}</option>
+                    <option value="cash">{t("methodCash")}</option>
+                    <option value="mp_external">{t("methodMpExternal")}</option>
+                    <option value="stripe_external">
+                      {t("methodStripeExternal")}
+                    </option>
+                    <option value="other">{t("methodOther")}</option>
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <Label htmlFor="notes">Notas (opcional)</Label>
+                  <Label htmlFor="notes">{t("fieldNotes")}</Label>
                   <Textarea
                     id="notes"
                     name="notes"
                     rows={2}
-                    placeholder="Referencia del pago, cualquier observación..."
+                    placeholder={t("notesPlaceholder")}
                     maxLength={500}
                   />
                 </div>
@@ -189,7 +191,7 @@ export function ActivatePremiumDialog({
                   onClick={() => setOpen(false)}
                   disabled={isPending}
                 >
-                  Cancelar
+                  {t("cancel")}
                 </Button>
                 <Button type="submit" disabled={isPending} className="gap-2">
                   {isPending ? (
@@ -197,7 +199,7 @@ export function ActivatePremiumDialog({
                   ) : (
                     <Check className="h-4 w-4" />
                   )}
-                  Confirmar y enviar email
+                  {t("submit")}
                 </Button>
               </div>
             </form>
