@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button, Card, CardContent } from "@pet-app/ui";
 import { Camera, AlertCircle, CheckCircle2, Loader2, ScanLine, X } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ type Phase = "idle" | "scanning" | "confirming" | "submitting" | "success" | "er
 type Html5QrcodeScannerType = any;
 
 export function Scanner() {
+  const t = useTranslations("vetScan");
   const router = useRouter();
   const searchParams = useSearchParams();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -87,8 +89,8 @@ export function Scanner() {
       console.error("Scanner error:", err);
       setError(
         err?.message?.includes("NotAllowed")
-          ? "Permitinos usar la cámara para escanear el QR."
-          : "No se pudo iniciar la cámara. Probá pegando el link manualmente.",
+          ? t("errorCamPermission")
+          : t("errorCamStart"),
       );
       setPhase("error");
     }
@@ -112,18 +114,18 @@ export function Scanner() {
       const result = await requestAccessByToken(scannedToken);
       if (result.success) {
         setScannedAnimal({
-          name: result.animalName ?? "Paciente",
+          name: result.animalName ?? t("fallbackAnimal"),
           photo: result.animalPhoto ?? null,
         });
         setPhase("success");
         if (result.alreadyApproved) {
-          toast.success(`Ya tenés acceso a ${result.animalName}.`);
+          toast.success(t("toastAlreadyAccess", { name: result.animalName ?? t("fallbackAnimal") }));
           router.push(`/vet/patients/${result.animalId}`);
         } else {
-          toast.success("Solicitud enviada. Esperá la aprobación del dueño.");
+          toast.success(t("toastRequestSent"));
         }
       } else {
-        setError(result.error ?? "No se pudo solicitar acceso.");
+        setError(result.error ?? t("errorRequest"));
         setPhase("error");
       }
     })(); });
@@ -155,18 +157,18 @@ export function Scanner() {
                 <ScanLine className="h-7 w-7" />
               </div>
               <h2 className="text-xl font-semibold tracking-tight">
-                Escanear QR del paciente
+                {t("idleTitle")}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Pedile al dueño que muestre el QR de su mascota desde la app.
+                {t("idleDesc")}
               </p>
             </div>
             <Button onClick={startScanning} className="w-full gap-2">
               <Camera className="h-4 w-4" />
-              Usar cámara
+              {t("useCamera")}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              También podés pegar el link directamente en la URL.
+              {t("pasteHint")}
             </p>
           </CardContent>
         </Card>
@@ -178,13 +180,13 @@ export function Scanner() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <ScanLine className="h-4 w-4 text-primary" />
-                Apuntá al QR
+                {t("scanningAim")}
               </div>
               <button
                 type="button"
                 onClick={stopScanning}
                 className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                aria-label="Cerrar"
+                aria-label={t("close")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -195,7 +197,7 @@ export function Scanner() {
               className="overflow-hidden rounded-xl border border-border bg-black"
             />
             <p className="text-center text-xs text-muted-foreground">
-              Mantené el QR centrado y bien iluminado.
+              {t("scanningHint")}
             </p>
           </CardContent>
         </Card>
@@ -208,26 +210,29 @@ export function Scanner() {
               <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-success/10 text-success">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
-              <h2 className="text-xl font-semibold tracking-tight">QR detectado</h2>
+              <h2 className="text-xl font-semibold tracking-tight">
+                {t("qrDetected")}
+              </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Solicitás acceso al historial de este animal. El dueño lo aprueba desde su cuenta.
+                {t("qrDetectedDesc")}
               </p>
             </div>
             <div className="rounded-lg bg-secondary/40 px-3 py-2 font-mono text-xs text-muted-foreground break-all">
-              token: {scannedToken}
+              {t("tokenLabel")}
+              {scannedToken}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={reset} className="flex-1">
-                Cancelar
+                {t("cancel")}
               </Button>
               <Button onClick={confirmRequest} disabled={isPending} className="flex-1 gap-2">
                 {isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Enviando...
+                    {t("sending")}
                   </>
                 ) : (
-                  "Solicitar acceso"
+                  t("requestAccess")
                 )}
               </Button>
             </div>
@@ -239,7 +244,9 @@ export function Scanner() {
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Enviando solicitud...</p>
+            <p className="text-sm text-muted-foreground">
+              {t("submittingMsg")}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -252,19 +259,22 @@ export function Scanner() {
             </div>
             <div>
               <h2 className="text-xl font-semibold tracking-tight">
-                Solicitud enviada
+                {t("successTitle")}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Pedimos acceso a <span className="font-medium text-foreground">{scannedAnimal.name}</span>.
-                El dueño tiene que aprobar desde su app.
+                {t("successDescPre")}
+                <span className="font-medium text-foreground">
+                  {scannedAnimal.name}
+                </span>
+                {t("successDescPost")}
               </p>
             </div>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" onClick={reset} className="flex-1">
-                Escanear otro
+                {t("scanAnother")}
               </Button>
               <Button onClick={() => router.push("/vet/patients")} className="flex-1">
-                Mis pacientes
+                {t("myPatients")}
               </Button>
             </div>
           </CardContent>
@@ -278,11 +288,15 @@ export function Scanner() {
               <AlertCircle className="h-7 w-7" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold tracking-tight">No se pudo</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{error ?? "Algo salió mal."}</p>
+              <h2 className="text-xl font-semibold tracking-tight">
+                {t("errorTitle")}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {error ?? t("errorGeneric")}
+              </p>
             </div>
             <Button variant="outline" onClick={reset} className="w-full">
-              Volver a intentar
+              {t("retry")}
             </Button>
           </CardContent>
         </Card>

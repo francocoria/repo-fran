@@ -1,19 +1,20 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { Scanner } from "./scanner";
 import { ScanLine } from "lucide-react";
 
-export const metadata = {
-  title: "Escanear QR",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("vetScan");
+  return { title: t("metaTitle") };
+}
 
-export default function ScanPage() {
+export default async function ScanPage() {
+  const t = await getTranslations("vetScan");
   return (
     <div className="animate-fade-up">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Escanear QR</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Solicitá acceso al historial del paciente escaneando el QR del dueño.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <Suspense
