@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button, Card, CardContent } from "@pet-app/ui";
 import { deleteConsultTemplate } from "./actions";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -28,14 +29,15 @@ interface Props {
 }
 
 export function TemplatesList({ templates, editable }: Props) {
+  const t = useTranslations("vetTemplatesList");
   const router = useRouter();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<TemplateItem | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function requestDelete(t: TemplateItem) {
-    setConfirmTarget(t);
+  function requestDelete(tpl: TemplateItem) {
+    setConfirmTarget(tpl);
   }
 
   function confirmDelete() {
@@ -47,10 +49,10 @@ export function TemplatesList({ templates, editable }: Props) {
       const result = await deleteConsultTemplate(target.id);
       setDeletingId(null);
       if (result.success) {
-        toast.success("Plantilla eliminada");
+        toast.success(t("toastDeleted"));
         router.refresh();
       } else {
-        toast.error(result.error ?? "Error al borrar");
+        toast.error(result.error ?? t("toastError"));
       }
     })(); });
   }
@@ -61,9 +63,7 @@ export function TemplatesList({ templates, editable }: Props) {
         <CardContent className="px-5 py-8 text-center">
           <FileText className="mx-auto size-7 text-muted-foreground/50" />
           <p className="mt-2 text-sm text-muted-foreground">
-            {editable
-              ? "Empezá creando tu primera plantilla."
-              : "Pasate a Premium para crear plantillas propias."}
+            {editable ? t("emptyEditable") : t("emptyLocked")}
           </p>
         </CardContent>
       </Card>
@@ -76,42 +76,41 @@ export function TemplatesList({ templates, editable }: Props) {
         open={confirmTarget !== null}
         onClose={() => setConfirmTarget(null)}
         onConfirm={confirmDelete}
-        title={`Borrar "${confirmTarget?.name ?? ""}"`}
-        description="Esta acción no se puede deshacer."
-        confirmLabel="Borrar"
+        title={t("confirmTitle", { name: confirmTarget?.name ?? "" })}
+        description={t("confirmDescription")}
+        confirmLabel={t("confirmLabel")}
         tone="destructive"
         loading={isPending}
       />
 
       <div className="grid gap-2.5">
-        {templates.map((t) => {
-        const isOpen = expanded === t.id;
+        {templates.map((tpl) => {
+        const isOpen = expanded === tpl.id;
         const fields = [
-          { key: "examination", label: "Examen físico" },
-          { key: "diagnosis", label: "Diagnóstico" },
-          { key: "treatment", label: "Tratamiento" },
-          { key: "next_steps", label: "Próximos pasos" },
+          { key: "examination", label: t("fieldExamination") },
+          { key: "diagnosis", label: t("fieldDiagnosis") },
+          { key: "treatment", label: t("fieldTreatment") },
+          { key: "next_steps", label: t("fieldNextSteps") },
         ];
         const filledCount = fields.filter(
-          (f) => t.content[f.key] && t.content[f.key]!.trim() !== "",
+          (f) => tpl.content[f.key] && tpl.content[f.key]!.trim() !== "",
         ).length;
 
         return (
-          <Card key={t.id}>
+          <Card key={tpl.id}>
             <CardContent className="p-0">
               <button
                 type="button"
-                onClick={() => setExpanded(isOpen ? null : t.id)}
+                onClick={() => setExpanded(isOpen ? null : tpl.id)}
                 className="flex w-full items-center gap-3 p-3.5 text-left hover:bg-secondary/40"
               >
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <FileText className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{t.name}</p>
+                  <p className="text-sm font-medium">{tpl.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {filledCount} campo{filledCount !== 1 ? "s" : ""} pre-armado
-                    {filledCount !== 1 ? "s" : ""}
+                    {t("fieldsFilled", { count: filledCount })}
                   </p>
                 </div>
                 {isOpen ? (
@@ -125,7 +124,7 @@ export function TemplatesList({ templates, editable }: Props) {
                 <div className="border-t border-border bg-surface-2/40 p-4">
                   <div className="space-y-3 text-sm">
                     {fields.map((f) => {
-                      const value = t.content[f.key];
+                      const value = tpl.content[f.key];
                       if (!value || value.trim() === "") return null;
                       return (
                         <div key={f.key}>
@@ -142,24 +141,24 @@ export function TemplatesList({ templates, editable }: Props) {
                   {editable && (
                     <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3">
                       <Button size="sm" variant="outline" asChild>
-                        <Link href={`/vet/templates/${t.id}/edit`}>
+                        <Link href={`/vet/templates/${tpl.id}/edit`}>
                           <Pencil className="size-3.5" />
-                          Editar
+                          {t("edit")}
                         </Link>
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => requestDelete(t)}
-                        disabled={isPending && deletingId === t.id}
+                        onClick={() => requestDelete(tpl)}
+                        disabled={isPending && deletingId === tpl.id}
                         className="text-destructive hover:bg-destructive/10"
                       >
-                        {isPending && deletingId === t.id ? (
+                        {isPending && deletingId === tpl.id ? (
                           <Loader2 className="size-3.5 animate-spin" />
                         ) : (
                           <Trash2 className="size-3.5" />
                         )}
-                        Borrar
+                        {t("delete")}
                       </Button>
                     </div>
                   )}

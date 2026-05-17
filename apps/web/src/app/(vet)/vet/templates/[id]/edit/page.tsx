@@ -1,12 +1,16 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { getFeatureGates } from "@pet-app/lib/utils/subscription";
 import { TemplateForm } from "../../template-form";
 
-export const metadata = { title: "Editar plantilla" };
+export async function generateMetadata() {
+  const t = await getTranslations("vetTemplateEdit");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function EditTemplatePage({
@@ -40,6 +44,7 @@ export default async function EditTemplatePage({
 
   if (!tpl || tpl.vet_id !== profile.id || tpl.is_system) notFound();
 
+  const t = await getTranslations("vetTemplateEdit");
   const content = tpl.content as Record<string, string>;
 
   return (
@@ -49,11 +54,11 @@ export default async function EditTemplatePage({
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" />
-        Volver
+        {t("back")}
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Editar plantilla</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-muted-foreground">{tpl.name}</p>
       </div>
 

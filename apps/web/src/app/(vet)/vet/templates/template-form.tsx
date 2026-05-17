@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2, Save } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button, Input, Label, Textarea } from "@pet-app/ui";
 import { createConsultTemplate, updateConsultTemplate } from "./actions";
 
@@ -29,6 +30,7 @@ const EMPTY: FormData = {
 };
 
 export function TemplateForm({ mode, templateId, initialData }: Props) {
+  const t = useTranslations("vetTemplateForm");
   const router = useRouter();
   const [data, setData] = useState<FormData>(initialData ?? EMPTY);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function TemplateForm({ mode, templateId, initialData }: Props) {
         router.push("/vet/templates");
         router.refresh();
       } else {
-        setError(result.error ?? "Error al guardar");
+        setError(result.error ?? t("errorSave"));
       }
     })(); });
   }
@@ -62,81 +64,81 @@ export function TemplateForm({ mode, templateId, initialData }: Props) {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="name">
-          Nombre de la plantilla <span className="text-destructive">*</span>
+          {t("name")} <span className="text-destructive">*</span>
         </Label>
         <Input
           id="name"
           name="name"
           required
           maxLength={80}
-          placeholder="Ej: Control sano, Vacunación de cachorros..."
+          placeholder={t("namePlaceholder")}
           value={data.name}
           onChange={(e) => update("name", e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="examination">Examen físico</Label>
+        <Label htmlFor="examination">{t("examination")}</Label>
         <Textarea
           id="examination"
           name="examination"
           rows={3}
           maxLength={2000}
-          placeholder="Texto base para reutilizar..."
+          placeholder={t("examinationPlaceholder")}
           value={data.examination}
           onChange={(e) => update("examination", e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="diagnosis">Diagnóstico</Label>
+        <Label htmlFor="diagnosis">{t("diagnosis")}</Label>
         <Textarea
           id="diagnosis"
           name="diagnosis"
           rows={3}
           maxLength={2000}
-          placeholder="Texto base de diagnóstico..."
+          placeholder={t("diagnosisPlaceholder")}
           value={data.diagnosis}
           onChange={(e) => update("diagnosis", e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="treatment">Tratamiento</Label>
+        <Label htmlFor="treatment">{t("treatment")}</Label>
         <Textarea
           id="treatment"
           name="treatment"
           rows={3}
           maxLength={2000}
-          placeholder="Plan de tratamiento por defecto..."
+          placeholder={t("treatmentPlaceholder")}
           value={data.treatment}
           onChange={(e) => update("treatment", e.target.value)}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="nextSteps">Próximos pasos</Label>
+        <Label htmlFor="nextSteps">{t("nextSteps")}</Label>
         <Textarea
           id="nextSteps"
           name="nextSteps"
           rows={2}
           maxLength={1000}
-          placeholder="Recomendaciones, re-control, etc."
+          placeholder={t("nextStepsPlaceholder")}
           value={data.nextSteps}
           onChange={(e) => update("nextSteps", e.target.value)}
         />
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Tip: podés usar marcadores como{" "}
+        {t("tipPre")}
         <code className="rounded bg-surface-2 px-1 py-0.5 text-[11px]">
           {"{{paciente}}"}
         </code>
         ,{" "}
         <code className="rounded bg-surface-2 px-1 py-0.5 text-[11px]">
           {"{{dosis}}"}
-        </code>{" "}
-        — los completás en cada consulta.
+        </code>
+        {t("tipMid")}
       </p>
 
       {error && (
@@ -153,7 +155,7 @@ export function TemplateForm({ mode, templateId, initialData }: Props) {
           onClick={() => router.back()}
           disabled={isPending}
         >
-          Cancelar
+          {t("cancel")}
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending ? (
@@ -161,7 +163,7 @@ export function TemplateForm({ mode, templateId, initialData }: Props) {
           ) : (
             <Save className="size-4" />
           )}
-          {mode === "create" ? "Crear plantilla" : "Guardar cambios"}
+          {mode === "create" ? t("create") : t("saveChanges")}
         </Button>
       </div>
     </form>
