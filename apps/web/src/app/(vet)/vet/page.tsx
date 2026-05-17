@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Button, Card, CardContent, Badge, StatCard, PetAvatar } from "@pet-app/ui";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
@@ -31,11 +32,23 @@ import {
 import { formatDateLong } from "@pet-app/lib/utils/format";
 import { UpgradeModal } from "@/components/vet/upgrade-modal";
 
-export const metadata = { title: "Panel veterinario" };
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata() {
+  const t = await getTranslations("vetDashboard");
+  return { title: t("metaTitle") };
+}
+
 /** Teaser para una sección bloqueada en plan gratis — empuja a Premium. */
-function LockedSection({ title, desc }: { title: string; desc: string }) {
+function LockedSection({
+  title,
+  desc,
+  cta,
+}: {
+  title: string;
+  desc: string;
+  cta: string;
+}) {
   return (
     <Card className="border-dashed bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-950/15">
       <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
@@ -48,20 +61,30 @@ function LockedSection({ title, desc }: { title: string; desc: string }) {
             {desc}
           </p>
         </div>
-        <UpgradeModal triggerLabel="Desbloquear con Premium" />
+        <UpgradeModal triggerLabel={cta} />
       </CardContent>
     </Card>
   );
 }
 
 /** Sublabel con comparación mes-a-mes para las StatCard de métricas. */
-function MonthDelta({ current, prev }: { current: number; prev: number }) {
+function MonthDelta({
+  current,
+  prev,
+  sameLabel,
+  vsLabel,
+}: {
+  current: number;
+  prev: number;
+  sameLabel: string;
+  vsLabel: string;
+}) {
   const diff = current - prev;
   if (diff === 0) {
     return (
       <span className="inline-flex items-center gap-1 text-muted-foreground">
         <Minus className="size-3" />
-        Igual que el mes pasado
+        {sameLabel}
       </span>
     );
   }
@@ -82,7 +105,7 @@ function MonthDelta({ current, prev }: { current: number; prev: number }) {
       )}
       {up ? "+" : "−"}
       {Math.abs(diff)}
-      {pct !== null ? ` (${pct}%)` : ""} vs mes pasado
+      {pct !== null ? ` (${pct}%)` : ""} {vsLabel}
     </span>
   );
 }
@@ -91,6 +114,7 @@ export default async function VetDashboardPage() {
   const user = await requireUser();
   const profile = await getVetProfile(user.id);
   if (!profile) redirect("/onboarding/vet");
+  const t = await getTranslations("vetDashboard");
 
   const vetId = profile.id;
   const now = new Date();
@@ -223,7 +247,7 @@ export default async function VetDashboardPage() {
       animalId: v.animal.id,
       animalName: v.animal.name,
       species: v.animal.species,
-      label: `Refuerzo: ${v.name}`,
+      label: t("agendaVaccineLabel", { name: v.name }),
     })),
     ...upcomingAppointments.map((a) => ({
       id: `a-${a.id}`,
@@ -232,7 +256,7 @@ export default async function VetDashboardPage() {
       animalId: a.animal.id,
       animalName: a.animal.name,
       species: a.animal.species,
-      label: a.reason?.trim() || "Turno agendado",
+      label: a.reason?.trim() || t("agendaAppointmentLabel"),
     })),
   ]
     .sort((a, b) => a.date.getTime() - b.date.getTime())
@@ -264,28 +288,28 @@ export default async function VetDashboardPage() {
       <div>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h1 className="text-2xl font-bold tracking-tight">
-            Hola, {profile.full_name.split(" ")[0]}
+            {t("greeting", { name: profile.full_name.split(" ")[0] ?? "" })}
           </h1>
           {plan === "trial" && (
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="h-3 w-3 text-amber-500" />
-              Trial · {daysLeft ?? "?"} días restantes
+              {t("trialBadge", { days: daysLeft ?? "?" })}
             </Badge>
           )}
           {plan === "premium" && (
             <Badge className="gap-1 bg-amber-500 hover:bg-amber-500/90">
               <Crown className="h-3 w-3" />
-              Premium
+              {t("premiumBadge")}
             </Badge>
           )}
         </div>
         <p className="mt-1 text-muted-foreground">
-          Tu práctica de un vistazo —{" "}
-          {now.toLocaleDateString("es-AR", {
-            month: "long",
-            year: "numeric",
+          {t("subtitle", {
+            month: now.toLocaleDateString("es-AR", {
+              month: "long",
+              year: "numeric",
+            }),
           })}
-          .
         </p>
       </div>
 
@@ -294,15 +318,16 @@ export default async function VetDashboardPage() {
         <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
           <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-destructive">Tu plan venció</p>
+            <p className="font-semibold text-destructive">
+              {t("expiredTitle")}
+            </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Volvés al plan gratis con cap de {FREE_PATIENT_CAP} pacientes. Tu
-              historial sigue intacto, pero algunos features están bloqueados.
+              {t("expiredDesc", { cap: FREE_PATIENT_CAP })}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <UpgradeModal triggerLabel="Renovar Premium" />
+              <UpgradeModal triggerLabel={t("expiredRenew")} />
               <Button variant="outline" size="sm" asChild>
-                <Link href="/vet/plan">Ver mi plan</Link>
+                <Link href="/vet/plan">{t("expiredViewPlan")}</Link>
               </Button>
             </div>
           </div>
@@ -314,16 +339,15 @@ export default async function VetDashboardPage() {
           <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-amber-900 dark:text-amber-200">
-              Tu trial termina en {daysLeft} día{daysLeft !== 1 ? "s" : ""}
+              {t("trialEndingTitle", { count: daysLeft ?? 0 })}
             </p>
             <p className="mt-1 text-sm text-amber-800/80 dark:text-amber-300/80">
-              Pasá a Premium ahora para no perder pacientes ilimitados ni los
-              certificados.
+              {t("trialEndingDesc")}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <UpgradeModal triggerLabel="Activar Premium" />
+              <UpgradeModal triggerLabel={t("trialActivate")} />
               <Button variant="outline" size="sm" asChild>
-                <Link href="/vet/plan">Ver beneficios</Link>
+                <Link href="/vet/plan">{t("trialViewBenefits")}</Link>
               </Button>
             </div>
           </div>
@@ -334,13 +358,15 @@ export default async function VetDashboardPage() {
         <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4">
           <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <p className="font-semibold">Llegaste al límite del plan gratis</p>
+            <p className="font-semibold">{t("atCapTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {activeAccessCount} de {FREE_PATIENT_CAP} pacientes activos. Para
-              vincular un nuevo paciente, archivá uno o pasá a Premium.
+              {t("atCapDesc", {
+                current: activeAccessCount,
+                cap: FREE_PATIENT_CAP,
+              })}
             </p>
             <div className="mt-3">
-              <UpgradeModal triggerLabel="Quitar el límite" />
+              <UpgradeModal triggerLabel={t("atCapCta")} />
             </div>
           </div>
         </div>
@@ -350,12 +376,10 @@ export default async function VetDashboardPage() {
         <div className="flex items-start gap-3 rounded-xl border border-amber-300/40 bg-amber-50/50 dark:bg-amber-950/20 p-4">
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium">
-              Te queda 1 paciente disponible en tu plan gratis.
-            </p>
+            <p className="font-medium">{t("nearCapTitle")}</p>
             <p className="mt-1 text-muted-foreground">
-              <UpgradeModal triggerLabel="Pasate a Premium" variant="link" /> y
-              olvidate del cap.
+              <UpgradeModal triggerLabel={t("nearCapCta")} variant="link" />
+              {t("nearCapSuffix")}
             </p>
           </div>
         </div>
@@ -368,11 +392,10 @@ export default async function VetDashboardPage() {
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold">
-              {pendingRequests} solicitud{pendingRequests !== 1 ? "es" : ""} de
-              acceso pendiente{pendingRequests !== 1 ? "s" : ""}
+              {t("pendingRequests", { count: pendingRequests })}
             </p>
             <p className="text-xs text-muted-foreground">
-              Esperando que el dueño apruebe el vínculo desde su app.
+              {t("pendingRequestsDesc")}
             </p>
           </div>
         </div>
@@ -381,12 +404,12 @@ export default async function VetDashboardPage() {
       {/* ─── MÉTRICAS DEL MES ───────────────────────────────────── */}
       <section>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Resumen del mes
+          {t("monthSummary")}
         </h2>
         {features.practiceStats ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              label="Consultas"
+              label={t("statConsults")}
               value={consultsThisMonth}
               icon={Stethoscope}
               accent="primary"
@@ -394,11 +417,13 @@ export default async function VetDashboardPage() {
                 <MonthDelta
                   current={consultsThisMonth}
                   prev={consultsPrevMonth}
+                  sameLabel={t("deltaSame")}
+                  vsLabel={t("deltaVs")}
                 />
               }
             />
             <StatCard
-              label="Vacunas aplicadas"
+              label={t("statVaccines")}
               value={vaccinesThisMonth}
               icon={Syringe}
               accent="emerald"
@@ -406,11 +431,13 @@ export default async function VetDashboardPage() {
                 <MonthDelta
                   current={vaccinesThisMonth}
                   prev={vaccinesPrevMonth}
+                  sameLabel={t("deltaSame")}
+                  vsLabel={t("deltaVs")}
                 />
               }
             />
             <StatCard
-              label="Pacientes nuevos"
+              label={t("statNewPatients")}
               value={newPatientsThisMonth}
               icon={Users}
               accent="accent"
@@ -418,25 +445,28 @@ export default async function VetDashboardPage() {
                 <MonthDelta
                   current={newPatientsThisMonth}
                   prev={newPatientsPrevMonth}
+                  sameLabel={t("deltaSame")}
+                  vsLabel={t("deltaVs")}
                 />
               }
             />
             <StatCard
-              label="Certificados"
+              label={t("statCertificates")}
               value={certsThisMonth}
               icon={FileCheck}
               accent="amber"
               sublabel={
                 <span className="text-muted-foreground">
-                  Emitidos este mes
+                  {t("certsSublabel")}
                 </span>
               }
             />
           </div>
         ) : (
           <LockedSection
-            title="Estadísticas de práctica"
-            desc="Consultas, vacunas aplicadas, pacientes nuevos y certificados del mes — con comparación contra el mes anterior. Disponible en Premium."
+            title={t("lockedStatsTitle")}
+            desc={t("lockedStatsDesc")}
+            cta={t("lockedCta")}
           />
         )}
       </section>
@@ -505,8 +535,9 @@ export default async function VetDashboardPage() {
           </h2>
           {!features.practiceStats ? (
             <LockedSection
-              title="Agenda de próximas visitas"
-              desc="Refuerzos de vacunas a vencer y turnos de tus pacientes, ordenados por fecha. Disponible en Premium."
+              title={t("lockedAgendaTitle")}
+              desc={t("lockedAgendaDesc")}
+              cta={t("lockedCta")}
             />
           ) : agenda.length === 0 ? (
             <Card className="border-dashed">
