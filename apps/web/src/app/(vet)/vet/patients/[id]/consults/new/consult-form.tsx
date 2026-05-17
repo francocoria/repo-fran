@@ -17,6 +17,7 @@ import {
   Sparkles,
   Plus,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createConsult } from "../../consult-actions";
 import { COMMON_DIAGNOSES } from "@pet-app/lib/constants";
 
@@ -40,6 +41,7 @@ const TEMPLATE_FIELDS = [
 ] as const;
 
 export function ConsultForm({ animalId, templates }: ConsultFormProps) {
+  const t = useTranslations("vetConsultNew");
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
         router.push(`/vet/patients/${animalId}`);
         router.refresh();
       } else {
-        setError(result.error ?? "Error al crear la consulta.");
+        setError(result.error ?? t("errorCreate"));
       }
     })(); });
   }
@@ -110,7 +112,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
           <div className="mb-2 flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              Plantilla rápida
+              {t("templateQuick")}
             </Label>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -139,7 +141,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
       <section className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="visitDate">
-            Fecha de la consulta <span className="text-destructive">*</span>
+            {t("visitDate")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="visitDate"
@@ -151,13 +153,13 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
         </div>
         <div>
           <Label htmlFor="reason">
-            Motivo <span className="text-destructive">*</span>
+            {t("reason")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="reason"
             name="reason"
             type="text"
-            placeholder="Ej: Control anual, herida en pata..."
+            placeholder={t("reasonPlaceholder")}
             maxLength={200}
             required
           />
@@ -166,24 +168,24 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
 
       {/* Examen físico */}
       <div>
-        <Label htmlFor="examination">Examen físico</Label>
+        <Label htmlFor="examination">{t("examination")}</Label>
         <Textarea
           id="examination"
           name="examination"
           rows={4}
-          placeholder="Hallazgos del examen clínico..."
+          placeholder={t("examinationPlaceholder")}
           maxLength={2000}
         />
       </div>
 
       {/* Diagnóstico */}
       <div>
-        <Label htmlFor="diagnosis">Diagnóstico</Label>
+        <Label htmlFor="diagnosis">{t("diagnosis")}</Label>
         <Textarea
           id="diagnosis"
           name="diagnosis"
           rows={3}
-          placeholder="Diagnóstico presuntivo o definitivo..."
+          placeholder={t("diagnosisPlaceholder")}
           maxLength={2000}
         />
         <DiagnosisChips />
@@ -191,24 +193,24 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
 
       {/* Tratamiento */}
       <div>
-        <Label htmlFor="treatment">Tratamiento</Label>
+        <Label htmlFor="treatment">{t("treatment")}</Label>
         <Textarea
           id="treatment"
           name="treatment"
           rows={4}
-          placeholder="Medicaciones, indicaciones, dosis..."
+          placeholder={t("treatmentPlaceholder")}
           maxLength={2000}
         />
       </div>
 
       {/* Próximos pasos */}
       <div>
-        <Label htmlFor="nextSteps">Próximos pasos</Label>
+        <Label htmlFor="nextSteps">{t("nextSteps")}</Label>
         <Textarea
           id="nextSteps"
           name="nextSteps"
           rows={2}
-          placeholder="Re-control, estudios pendientes, derivaciones..."
+          placeholder={t("nextStepsPlaceholder")}
           maxLength={1000}
         />
       </div>
@@ -217,17 +219,17 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
       <div>
         <Label htmlFor="publicNotes" className="flex items-center gap-1.5">
           <Stethoscope className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-          Notas visibles para el dueño
+          {t("publicNotes")}
         </Label>
         <Textarea
           id="publicNotes"
           name="publicNotes"
           rows={2}
-          placeholder="Recomendaciones, cuidados en casa, etc."
+          placeholder={t("publicNotesPlaceholder")}
           maxLength={2000}
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          Esta información la verá el dueño en su app.
+          {t("publicNotesHint")}
         </p>
       </div>
 
@@ -235,18 +237,18 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
       <div>
         <Label htmlFor="privateNotes" className="flex items-center gap-1.5">
           <Lock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-          Notas privadas (solo vos)
+          {t("privateNotes")}
         </Label>
         <Textarea
           id="privateNotes"
           name="privateNotes"
           rows={3}
-          placeholder="Anotaciones internas, hipótesis, recordatorios..."
+          placeholder={t("privateNotesPlaceholder")}
           maxLength={2000}
           className="border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/10"
         />
         <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-          El dueño y otros vets NO ven estas notas.
+          {t("privateNotesHint")}
         </p>
       </div>
 
@@ -264,7 +266,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
           onClick={() => router.back()}
           disabled={isPending}
         >
-          Cancelar
+          {t("cancel")}
         </Button>
         <Button type="submit" disabled={isPending} className="gap-2">
           {isPending ? (
@@ -272,7 +274,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
           ) : (
             <Save className="h-4 w-4" />
           )}
-          Guardar consulta
+          {t("save")}
         </Button>
       </div>
     </form>
@@ -284,6 +286,7 @@ export function ConsultForm({ animalId, templates }: ConsultFormProps) {
  * El vet puede seguir tipeando libremente después.
  */
 function DiagnosisChips() {
+  const t = useTranslations("vetConsultNew");
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? COMMON_DIAGNOSES : COMMON_DIAGNOSES.slice(0, 8);
 
@@ -304,7 +307,7 @@ function DiagnosisChips() {
   return (
     <div className="mt-2">
       <p className="mb-1.5 text-[11px] font-medium text-muted-foreground">
-        Diagnósticos comunes (click para agregar):
+        {t("commonDiagnoses")}
       </p>
       <div className="flex flex-wrap gap-1.5">
         {visible.map((dx) => (
@@ -324,7 +327,7 @@ function DiagnosisChips() {
             onClick={() => setShowAll(true)}
             className="inline-flex items-center rounded-full border border-dashed border-border-strong px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary"
           >
-            +{COMMON_DIAGNOSES.length - 8} más
+            {t("showMore", { count: COMMON_DIAGNOSES.length - 8 })}
           </button>
         )}
         {showAll && (
@@ -333,7 +336,7 @@ function DiagnosisChips() {
             onClick={() => setShowAll(false)}
             className="inline-flex items-center rounded-full border border-dashed border-border-strong px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
-            Mostrar menos
+            {t("showLess")}
           </button>
         )}
       </div>

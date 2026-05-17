@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { ConsultForm } from "./consult-form";
 
-export const metadata = { title: "Nueva consulta" };
+export async function generateMetadata() {
+  const t = await getTranslations("vetConsultNew");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function NewConsultPage({
@@ -44,6 +48,8 @@ export default async function NewConsultPage({
 
   if (!animal) notFound();
 
+  const t = await getTranslations("vetConsultNew");
+
   const templates = await prisma.consultTemplate.findMany({
     where: {
       OR: [{ is_system: true }, { vet_id: profile.id }],
@@ -64,13 +70,14 @@ export default async function NewConsultPage({
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="h-4 w-4" />
-        Volver al paciente
+        {t("back")}
       </Link>
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Nueva consulta</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Paciente: <span className="font-medium text-foreground">{animal.name}</span>
+          {t("patient")}
+          <span className="font-medium text-foreground">{animal.name}</span>
           {animal.breed && <> · {animal.breed}</>}
         </p>
       </div>
@@ -78,7 +85,7 @@ export default async function NewConsultPage({
       {animal.allergies.length > 0 && (
         <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-destructive">
-            ⚠️ Alergias severas registradas
+            {t("severeAllergiesTitle")}
           </p>
           <p className="mt-2 text-sm">
             {animal.allergies.map((a) => a.allergen).join(", ")}
