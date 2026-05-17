@@ -8,8 +8,8 @@ import {
   Sparkles,
   ShieldCheck,
   Receipt,
-  TrendingUp,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { Button, Card, CardContent, Badge } from "@pet-app/ui";
@@ -23,40 +23,19 @@ import { formatDateLong } from "@pet-app/lib/utils/format";
 import { UpgradeModal } from "@/components/vet/upgrade-modal";
 import { activatePremiumFromPayment } from "@/lib/premium-activation";
 
-export const metadata = { title: "Mi plan" };
+export async function generateMetadata() {
+  const t = await getTranslations("vetPlan");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 const ALL_FEATURES = [
-  {
-    key: "unlimitedPatients",
-    label: "Pacientes ilimitados",
-    desc: `En el plan gratis tenés un cap de ${FREE_PATIENT_CAP} pacientes activos.`,
-  },
-  {
-    key: "certificates",
-    label: "Certificados profesionales",
-    desc: "Salud, antirrábico, viaje. PDFs con tu branding.",
-  },
-  {
-    key: "brandedPrescriptions",
-    label: "Recetas sin marca de agua",
-    desc: "Logo y datos de tu clínica en cada receta.",
-  },
-  {
-    key: "verificationBadge",
-    label: "Verificación de matrícula",
-    desc: "Badge azul visible para que los dueños te elijan con confianza.",
-  },
-  {
-    key: "practiceStats",
-    label: "Estadísticas de práctica",
-    desc: "Pacientes, consultas, vacunaciones del mes.",
-  },
-  {
-    key: "customTemplates",
-    label: "Plantillas propias",
-    desc: "Guardá tus diagnósticos y tratamientos más usados.",
-  },
+  { gate: "unlimitedPatients", tKey: "featUnlimitedPatients" },
+  { gate: "certificates", tKey: "featCertificates" },
+  { gate: "brandedPrescriptions", tKey: "featBrandedPrescriptions" },
+  { gate: "verificationBadge", tKey: "featVerificationBadge" },
+  { gate: "practiceStats", tKey: "featPracticeStats" },
+  { gate: "customTemplates", tKey: "featCustomTemplates" },
 ] as const;
 
 export default async function VetPlanPage({
@@ -72,6 +51,7 @@ export default async function VetPlanPage({
   const user = await requireUser();
   const profile = await getVetProfile(user.id);
   if (!profile) redirect("/onboarding/vet");
+  const t = await getTranslations("vetPlan");
 
   const params = await searchParams;
   let checkoutFlash = params.checkout;
@@ -123,11 +103,11 @@ export default async function VetPlanPage({
     orderBy: { created_at: "desc" },
   });
 
-  const planLabel = {
-    free: "Gratis",
-    trial: "Trial",
-    premium: "Premium",
-    expired: "Vencido",
+  const planLabelKey = {
+    free: "planFree",
+    trial: "planTrial",
+    premium: "planPremium",
+    expired: "planExpired",
   }[plan];
 
   const planColor = {
@@ -140,10 +120,8 @@ export default async function VetPlanPage({
   return (
     <div className="animate-fade-up max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Mi plan</h1>
-        <p className="mt-1 text-muted-foreground">
-          Gestioná tu plan, beneficios y pagos.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="mt-1 text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       {checkoutFlash === "success" && (
@@ -151,11 +129,10 @@ export default async function VetPlanPage({
           <Check className="size-5 shrink-0 text-emerald-700 dark:text-emerald-400" />
           <div>
             <p className="font-semibold text-emerald-900 dark:text-emerald-200">
-              ¡Pago aprobado! Premium activado.
+              {t("flashSuccessTitle")}
             </p>
             <p className="mt-0.5 text-emerald-900/80 dark:text-emerald-100/80">
-              Ya tenés acceso a todos los beneficios. Te mandamos el
-              comprobante por email.
+              {t("flashSuccessDesc")}
             </p>
           </div>
         </div>
@@ -166,11 +143,10 @@ export default async function VetPlanPage({
           <X className="size-5 shrink-0 text-rose-700 dark:text-rose-400" />
           <div>
             <p className="font-semibold text-rose-900 dark:text-rose-200">
-              Pago rechazado
+              {t("flashFailureTitle")}
             </p>
             <p className="mt-0.5 text-rose-900/80 dark:text-rose-100/80">
-              Mercado Pago no aprobó la operación. Probá con otra tarjeta o
-              método de pago.
+              {t("flashFailureDesc")}
             </p>
           </div>
         </div>
@@ -181,11 +157,10 @@ export default async function VetPlanPage({
           <CalendarClock className="size-5 shrink-0 text-amber-700 dark:text-amber-400" />
           <div>
             <p className="font-semibold text-amber-900 dark:text-amber-200">
-              Pago pendiente
+              {t("flashPendingTitle")}
             </p>
             <p className="mt-0.5 text-amber-900/80 dark:text-amber-100/80">
-              Mercado Pago está procesando tu pago. Te avisamos por email
-              cuando se confirme (hasta 24hs).
+              {t("flashPendingDesc")}
             </p>
           </div>
         </div>
@@ -200,45 +175,49 @@ export default async function VetPlanPage({
                 <Badge variant={planColor} className="gap-1 text-xs">
                   {plan === "premium" && <Crown className="h-3 w-3" />}
                   {plan === "trial" && <Sparkles className="h-3 w-3" />}
-                  Plan {planLabel}
+                  {t("planBadge", { label: t(planLabelKey) })}
                 </Badge>
                 {profile.verified && (
                   <Badge variant="secondary" className="gap-1 text-xs">
                     <ShieldCheck className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                    Matrícula verificada
+                    {t("verifiedBadge")}
                   </Badge>
                 )}
               </div>
               <h2 className="text-xl font-semibold">
-                {plan === "premium" && "Premium activo"}
+                {plan === "premium" && t("statePremium")}
                 {plan === "trial" &&
-                  `Trial activo${daysLeft !== null ? ` · ${daysLeft} días` : ""}`}
-                {plan === "free" && "Plan gratuito"}
-                {plan === "expired" && "Tu plan venció"}
+                  (daysLeft !== null
+                    ? t("stateTrialDays", { days: daysLeft })
+                    : t("stateTrial"))}
+                {plan === "free" && t("stateFree")}
+                {plan === "expired" && t("stateExpired")}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 {subscription?.expires_at && plan !== "free" && (
                   <span className="flex items-center gap-1">
                     <CalendarClock className="h-3.5 w-3.5" />
-                    {plan === "expired" ? "Venció" : "Vence"} el{" "}
-                    {formatDateLong(subscription.expires_at)}
+                    {plan === "expired"
+                      ? t("expiredOn", {
+                          date: formatDateLong(subscription.expires_at),
+                        })
+                      : t("expiresOn", {
+                          date: formatDateLong(subscription.expires_at),
+                        })}
                   </span>
                 )}
                 {plan === "free" && (
-                  <span>
-                    Hasta {FREE_PATIENT_CAP} pacientes activos. Sin límite de
-                    tiempo.
-                  </span>
+                  <span>{t("freeCapInfo", { cap: FREE_PATIENT_CAP })}</span>
                 )}
               </p>
             </div>
 
             {plan === "free" || plan === "expired" ? (
-              <UpgradeModal triggerLabel="Pasar a Premium" />
+              <UpgradeModal triggerLabel={t("ctaToPremium")} />
             ) : plan === "trial" ? (
-              <UpgradeModal triggerLabel="Activar Premium ahora" />
+              <UpgradeModal triggerLabel={t("ctaActivateNow")} />
             ) : (
-              <UpgradeModal triggerLabel="Renovar 1 mes" />
+              <UpgradeModal triggerLabel={t("ctaRenew")} />
             )}
           </div>
         </CardContent>
@@ -252,29 +231,29 @@ export default async function VetPlanPage({
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold">Verificación de matrícula</h3>
+              <h3 className="font-semibold">{t("verificationTitle")}</h3>
               <p className="mt-1 text-sm text-muted-foreground">
-                Subí una foto de tu matrícula profesional. Una vez aprobada
-                manualmente, vas a tener un badge azul visible para los dueños.
+                {t("verificationDesc")}
               </p>
 
               {profile.verified ? (
                 <div className="mt-3 flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
                   <Check className="h-4 w-4" />
-                  Tu matrícula está verificada.
+                  {t("verificationVerified")}
                 </div>
               ) : verificationRequest?.status === "pending" ? (
                 <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
                   <CalendarClock className="h-4 w-4" />
-                  En revisión — te avisamos cuando esté aprobada.
+                  {t("verificationPending")}
                 </div>
               ) : verificationRequest?.status === "rejected" ? (
                 <div className="mt-3">
                   <p className="text-sm text-destructive">
-                    Solicitud rechazada
-                    {verificationRequest.rejection_reason && (
-                      <>: {verificationRequest.rejection_reason}</>
-                    )}
+                    {verificationRequest.rejection_reason
+                      ? t("verificationRejectedReason", {
+                          reason: verificationRequest.rejection_reason,
+                        })
+                      : t("verificationRejected")}
                   </p>
                   <Button
                     variant="outline"
@@ -282,12 +261,16 @@ export default async function VetPlanPage({
                     asChild
                     className="mt-2"
                   >
-                    <Link href="/vet/plan/verify">Volver a solicitar</Link>
+                    <Link href="/vet/plan/verify">
+                      {t("verificationReapply")}
+                    </Link>
                   </Button>
                 </div>
               ) : (
                 <Button variant="outline" size="sm" asChild className="mt-3">
-                  <Link href="/vet/plan/verify">Solicitar verificación</Link>
+                  <Link href="/vet/plan/verify">
+                    {t("verificationRequest")}
+                  </Link>
                 </Button>
               )}
             </div>
@@ -298,15 +281,15 @@ export default async function VetPlanPage({
       {/* ─── BENEFICIOS ──────────────────────────────────────── */}
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Beneficios incluidos
+          {t("benefitsTitle")}
         </h2>
         <Card>
           <CardContent className="p-0">
             <ul className="divide-y divide-border/60">
               {ALL_FEATURES.map((f) => {
-                const enabled = features[f.key as keyof typeof features];
+                const enabled = features[f.gate as keyof typeof features];
                 return (
-                  <li key={f.key} className="flex items-start gap-3 p-4">
+                  <li key={f.gate} className="flex items-start gap-3 p-4">
                     <span
                       className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
                         enabled
@@ -324,9 +307,11 @@ export default async function VetPlanPage({
                       <p
                         className={`text-sm font-medium ${enabled ? "" : "text-muted-foreground"}`}
                       >
-                        {f.label}
+                        {t(f.tKey)}
                       </p>
-                      <p className="text-xs text-muted-foreground">{f.desc}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t(`${f.tKey}Desc`, { cap: FREE_PATIENT_CAP })}
+                      </p>
                     </div>
                   </li>
                 );
@@ -341,7 +326,7 @@ export default async function VetPlanPage({
         <div>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             <Receipt className="h-3.5 w-3.5" />
-            Historial de pagos
+            {t("paymentsTitle")}
           </h2>
           <Card>
             <CardContent className="p-0">
@@ -356,13 +341,13 @@ export default async function VetPlanPage({
                         {p.currency} {Number(p.amount).toFixed(2)}
                       </p>
                       <p className="text-xs text-muted-foreground capitalize">
-                        {formatDateLong(p.paid_at)} · {p.method.replace("_", " ")}{" "}
-                        · {p.months_granted} mes
-                        {p.months_granted !== 1 ? "es" : ""}
+                        {formatDateLong(p.paid_at)} ·{" "}
+                        {p.method.replace("_", " ")} ·{" "}
+                        {t("paymentMonths", { count: p.months_granted })}
                       </p>
                     </div>
                     <Badge variant="secondary" className="text-xs">
-                      Pagado
+                      {t("paymentPaid")}
                     </Badge>
                   </li>
                 ))}
@@ -378,21 +363,17 @@ export default async function VetPlanPage({
           <CardContent className="p-6 text-center">
             <Crown className="mx-auto h-10 w-10 text-amber-500" />
             <h3 className="mt-3 text-lg font-semibold">
-              {plan === "trial"
-                ? "Activá Premium antes de que termine tu prueba"
-                : "Llevá tu práctica al siguiente nivel"}
+              {plan === "trial" ? t("ctaTrialTitle") : t("ctaUpgradeTitle")}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-              {plan === "trial"
-                ? "Cuando se acabe la prueba gratis perdés el acceso a pacientes ilimitados, certificados y branding. Activalo ahora y seguís sin interrupciones."
-                : "Premium te permite atender a todos tus pacientes sin restricciones y emitir documentos profesionales."}
+              {plan === "trial" ? t("ctaTrialDesc") : t("ctaUpgradeDesc")}
             </p>
             <div className="mt-4">
               <UpgradeModal
                 triggerLabel={
                   plan === "trial"
-                    ? "Activar Premium ahora"
-                    : "Quiero pasarme a Premium"
+                    ? t("ctaTrialButton")
+                    : t("ctaUpgradeButton")
                 }
               />
             </div>
