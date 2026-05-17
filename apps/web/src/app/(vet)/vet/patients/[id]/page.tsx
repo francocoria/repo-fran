@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { Button, Badge, PetAvatar } from "@pet-app/ui";
@@ -11,24 +12,10 @@ import {
   FileText,
   Plus,
   ChevronLeft,
-  User,
-  Phone,
   Activity,
   MessageCircle,
 } from "lucide-react";
 import { getAge, formatDateLong } from "@pet-app/lib/utils/format";
-
-const speciesLabels: Record<string, string> = {
-  dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo",
-  rodent: "Roedor", reptile: "Reptil", fish: "Pez", exotic: "Exótico", other: "Otro",
-};
-
-const allergyTypeLabels: Record<string, string> = {
-  food: "alimentaria",
-  medication: "medicamento",
-  environmental: "ambiental",
-  other: "otra",
-};
 
 const severityColor: Record<string, string> = {
   severe: "bg-destructive/15 text-destructive border-destructive/30",
@@ -90,6 +77,27 @@ export default async function VetPatientView({
 
   if (!animal) notFound();
 
+  const t = await getTranslations("vetPatientDetail");
+
+  const speciesLabels: Record<string, string> = {
+    dog: t("speciesDog"),
+    cat: t("speciesCat"),
+    bird: t("speciesBird"),
+    rabbit: t("speciesRabbit"),
+    rodent: t("speciesRodent"),
+    reptile: t("speciesReptile"),
+    fish: t("speciesFish"),
+    exotic: t("speciesExotic"),
+    other: t("speciesOther"),
+  };
+
+  const allergyTypeLabels: Record<string, string> = {
+    food: t("allergyFood"),
+    medication: t("allergyMedication"),
+    environmental: t("allergyEnvironmental"),
+    other: t("allergyOther"),
+  };
+
   // Filtrar private_notes: si NO es del vet actual → null
   const records = animal.medical_records.map((r) => ({
     ...r,
@@ -108,7 +116,7 @@ export default async function VetPatientView({
         className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="h-4 w-4" />
-        Mis pacientes
+        {t("backToPatients")}
       </Link>
 
       {/* ─── HEADER PACIENTE ────────────────────────────────────── */}
@@ -127,7 +135,7 @@ export default async function VetPatientView({
               {animal.name}
             </h1>
             {access.archived_by_vet && (
-              <Badge variant="secondary">Archivado</Badge>
+              <Badge variant="secondary">{t("badgeArchived")}</Badge>
             )}
           </div>
 
@@ -143,7 +151,7 @@ export default async function VetPatientView({
               </span>
             )}
             {animal.sex !== "unknown" && (
-              <span>{animal.sex === "male" ? "♂ Macho" : "♀ Hembra"}</span>
+              <span>{animal.sex === "male" ? t("sexMale") : t("sexFemale")}</span>
             )}
             {animal.weight_kg && (
               <span className="flex items-center gap-1">
@@ -157,7 +165,7 @@ export default async function VetPatientView({
 
           {animal.microchip && (
             <p className="mt-1 font-mono text-[11px] text-subtle">
-              Chip: {animal.microchip}
+              {t("chip", { value: animal.microchip })}
             </p>
           )}
         </div>
@@ -165,7 +173,7 @@ export default async function VetPatientView({
         <Button asChild className="shrink-0" variant="accent">
           <Link href={`/vet/patients/${animal.id}/consults/new`}>
             <Plus className="size-4" />
-            Nueva consulta
+            {t("newConsult")}
           </Link>
         </Button>
       </div>
@@ -201,7 +209,7 @@ export default async function VetPatientView({
               asChild
               size="icon"
               variant="whatsapp"
-              aria-label="WhatsApp al dueño"
+              aria-label={t("whatsappAria")}
             >
               <a
                 href={`https://wa.me/${animal.owner_profile.phone.replace(/\D/g, "")}`}
@@ -223,7 +231,7 @@ export default async function VetPatientView({
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="h-4 w-4 text-destructive" />
                 <h2 className="text-sm font-semibold text-destructive">
-                  Alergias severas — leer antes de prescribir
+                  {t("severeAllergiesTitle")}
                 </h2>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -246,7 +254,7 @@ export default async function VetPatientView({
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Pill className="h-4 w-4 text-violet-500" />
-                <h2 className="text-sm font-semibold">Medicación activa</h2>
+                <h2 className="text-sm font-semibold">{t("activeMedication")}</h2>
               </div>
               <ul className="space-y-1.5 text-sm">
                 {animal.medications.map((m) => (
@@ -267,7 +275,7 @@ export default async function VetPatientView({
       {otherAllergies.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Otras alergias
+            {t("otherAllergies")}
           </h2>
           <div className="flex flex-wrap gap-2">
             {otherAllergies.map((a) => (
@@ -286,7 +294,7 @@ export default async function VetPatientView({
       {animal.vaccines.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Últimas vacunas
+            {t("lastVaccines")}
           </h2>
           <ul className="space-y-1 text-sm">
             {animal.vaccines.slice(0, 5).map((v) => (
@@ -295,7 +303,7 @@ export default async function VetPatientView({
                 <span className="text-muted-foreground">{formatDateLong(v.applied_date)}</span>
                 {v.next_dose_date && (
                   <span className="text-muted-foreground">
-                    · próx. {formatDateLong(v.next_dose_date)}
+                    {t("nextDose", { date: formatDateLong(v.next_dose_date) })}
                   </span>
                 )}
               </li>
@@ -309,7 +317,7 @@ export default async function VetPatientView({
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             <Stethoscope className="h-4 w-4" />
-            Historial de consultas
+            {t("consultHistory")}
           </h2>
           <span className="text-xs text-muted-foreground">{records.length}</span>
         </div>
@@ -318,12 +326,12 @@ export default async function VetPatientView({
           <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
             <FileText className="mx-auto h-8 w-8 text-muted-foreground/50" />
             <p className="mt-3 text-sm text-muted-foreground">
-              Todavía no hay consultas registradas.
+              {t("noConsultsTitle")}
             </p>
             <Button asChild size="sm" className="mt-4 gap-2">
               <Link href={`/vet/patients/${animal.id}/consults/new`}>
                 <Plus className="h-3.5 w-3.5" />
-                Crear primera consulta
+                {t("createFirstConsult")}
               </Link>
             </Button>
           </div>
@@ -341,26 +349,28 @@ export default async function VetPatientView({
                     <p className="text-sm font-semibold">{r.reason}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateLong(r.visit_date)} ·{" "}
-                      {r.is_mine ? "Vos" : `Dr/a. ${r.vet.full_name}`}
+                      {r.is_mine
+                        ? t("consultByYou")
+                        : t("consultByVet", { name: r.vet.full_name })}
                     </p>
                   </div>
                   {r.is_mine && (
                     <Badge variant="default" className="text-[10px]">
-                      Tuya
+                      {t("badgeMine")}
                     </Badge>
                   )}
                 </header>
 
                 {r.diagnosis && (
                   <div className="mt-2">
-                    <p className="text-xs font-medium text-muted-foreground">Diagnóstico</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t("diagnosis")}</p>
                     <p className="text-sm">{r.diagnosis}</p>
                   </div>
                 )}
 
                 {r.treatment && (
                   <div className="mt-2">
-                    <p className="text-xs font-medium text-muted-foreground">Tratamiento</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t("treatment")}</p>
                     <p className="text-sm whitespace-pre-wrap">{r.treatment}</p>
                   </div>
                 )}
@@ -368,7 +378,7 @@ export default async function VetPatientView({
                 {r.private_notes && (
                   <div className="mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 p-2.5">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                      Notas privadas (solo vos)
+                      {t("privateNotesTitle")}
                     </p>
                     <p className="mt-1 text-sm text-amber-900 dark:text-amber-200 whitespace-pre-wrap">
                       {r.private_notes}
