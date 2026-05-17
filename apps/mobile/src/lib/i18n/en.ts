@@ -1,0 +1,20 @@
+export const en = {
+  common: {
+    save: "Save",
+    saveChanges: "Save changes",
+    cancel: "Cancel",
+    delete: "Delete",
+    edit: "Edit",
+    back: "Back",
+    loading: "Loading...",
+    error: "Error",
+    retry: "Retry",
+    close: "Close",
+    confirm: "Confirm",
+    continue: "Continue",
+    search: "Search",
+    required: "Required",
+    done: "Done",
+    networkError: "Network error",
+  },
+};

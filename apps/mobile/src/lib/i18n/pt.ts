@@ -1,0 +1,20 @@
+export const pt = {
+  common: {
+    save: "Salvar",
+    saveChanges: "Salvar alterações",
+    cancel: "Cancelar",
+    delete: "Excluir",
+    edit: "Editar",
+    back: "Voltar",
+    loading: "Carregando...",
+    error: "Erro",
+    retry: "Tentar de novo",
+    close: "Fechar",
+    confirm: "Confirmar",
+    continue: "Continuar",
+    search: "Buscar",
+    required: "Obrigatório",
+    done: "Pronto",
+    networkError: "Erro de rede",
+  },
+};
