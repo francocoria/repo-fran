@@ -9,10 +9,12 @@ import {
   Loader2,
   CheckCircle2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@pet-app/ui";
 import { requestVerification } from "./actions";
 
 export function VerifyForm() {
+  const t = useTranslations("vetVerify");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -43,7 +45,7 @@ export function VerifyForm() {
     e.preventDefault();
     setError(null);
     if (!file) {
-      setError("Subí una foto.");
+      setError(t("errorNoPhoto"));
       return;
     }
 
@@ -56,7 +58,7 @@ export function VerifyForm() {
         router.push("/vet/plan");
         router.refresh();
       } else {
-        setError(result.error ?? "Error al enviar.");
+        setError(result.error ?? t("errorSend"));
       }
     })(); });
   }
@@ -70,9 +72,9 @@ export function VerifyForm() {
         >
           <Upload className="h-8 w-8 text-muted-foreground" />
           <div className="text-center">
-            <p className="text-sm font-medium">Subí tu matrícula</p>
+            <p className="text-sm font-medium">{t("uploadTitle")}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Click acá o arrastrá la foto · JPG/PNG/WebP/HEIC · Máx 8 MB
+              {t("uploadHint")}
             </p>
           </div>
         </label>
@@ -81,7 +83,7 @@ export function VerifyForm() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={previewUrl}
-            alt="Preview matrícula"
+            alt={t("previewAlt")}
             className="w-full max-h-96 object-contain bg-secondary"
           />
           <button
@@ -123,7 +125,7 @@ export function VerifyForm() {
           ) : (
             <CheckCircle2 className="h-4 w-4" />
           )}
-          Enviar para revisión
+          {t("submit")}
         </Button>
       </div>
     </form>
