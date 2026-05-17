@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Search, Loader2, X, CornerDownLeft } from "lucide-react";
 import { PetAvatar } from "@pet-app/ui";
 import { ModalPortal } from "@/components/modal-portal";
@@ -21,6 +22,7 @@ type Result = {
  * Se abre con el botón, con Ctrl/Cmd+K o con la tecla "/".
  */
 export function VetSearch() {
+  const t = useTranslations("vetSearch");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -118,10 +120,10 @@ export function VetSearch() {
         type="button"
         onClick={() => setOpen(true)}
         className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface-3 hover:text-foreground"
-        aria-label="Buscar pacientes"
+        aria-label={t("triggerAria")}
       >
         <Search className="size-4" />
-        <span className="hidden lg:inline">Buscar paciente</span>
+        <span className="hidden lg:inline">{t("trigger")}</span>
         <kbd className="hidden lg:inline rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px]">
           /
         </kbd>
@@ -146,7 +148,7 @@ export function VetSearch() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={onKeyDown}
-                  placeholder="Buscar por mascota o dueño..."
+                  placeholder={t("inputPlaceholder")}
                   className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
                 {loading && (
@@ -156,7 +158,7 @@ export function VetSearch() {
                   type="button"
                   onClick={() => setOpen(false)}
                   className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
-                  aria-label="Cerrar"
+                  aria-label={t("close")}
                 >
                   <X className="size-4" />
                 </button>
@@ -166,11 +168,11 @@ export function VetSearch() {
               <div className="max-h-[55vh] overflow-y-auto p-2">
                 {query.trim().length < 2 ? (
                   <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                    Escribí al menos 2 letras para buscar entre tus pacientes.
+                    {t("minChars")}
                   </p>
                 ) : !loading && results.length === 0 ? (
                   <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                    Sin resultados para “{query.trim()}”.
+                    {t("noResults", { query: query.trim() })}
                   </p>
                 ) : (
                   <ul>
@@ -195,7 +197,7 @@ export function VetSearch() {
                               <span className="truncate">{r.name}</span>
                               {r.archived && (
                                 <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                                  Archivado
+                                  {t("badgeArchived")}
                                 </span>
                               )}
                             </p>
@@ -220,19 +222,19 @@ export function VetSearch() {
                   <kbd className="rounded border border-border px-1 font-mono">
                     ↑↓
                   </kbd>
-                  navegar
+                  {t("hintNavigate")}
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="rounded border border-border px-1 font-mono">
                     ↵
                   </kbd>
-                  abrir
+                  {t("hintOpen")}
                 </span>
                 <span className="flex items-center gap-1">
                   <kbd className="rounded border border-border px-1 font-mono">
                     esc
                   </kbd>
-                  cerrar
+                  {t("hintClose")}
                 </span>
               </div>
             </div>

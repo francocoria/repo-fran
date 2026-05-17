@@ -1,59 +1,80 @@
 import { Card, CardContent } from "@pet-app/ui";
 import { ShieldCheck, Mail, FileBadge, Phone, Building2 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { DeleteAccountSection } from "@/components/delete-account-section";
 import { LogoutButton } from "@/components/logout-button";
 
-export const metadata = { title: "Configuración" };
+export async function generateMetadata() {
+  const t = await getTranslations("vetSettings");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function VetSettingsPage() {
   const user = await requireUser();
   const profile = await getVetProfile(user.id);
   if (!profile) return null;
+  const t = await getTranslations("vetSettings");
 
   const verified = profile.verification_status === "approved";
 
   return (
     <div className="animate-fade-up max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Mi cuenta</h1>
-        <p className="mt-1 text-muted-foreground">
-          Información profesional y configuración de cuenta.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+        <p className="mt-1 text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <Card>
         <CardContent className="space-y-4 pt-6">
-          <h2 className="font-semibold">Perfil profesional</h2>
+          <h2 className="font-semibold">{t("professionalProfile")}</h2>
 
           <div className="space-y-3 text-sm">
-            <Row icon={ShieldCheck} label="Nombre" value={profile.full_name} />
-            <Row icon={Mail} label="Email" value={user.email ?? "—"} mono />
+            <Row
+              icon={ShieldCheck}
+              label={t("rowName")}
+              value={profile.full_name}
+            />
+            <Row
+              icon={Mail}
+              label={t("rowEmail")}
+              value={user.email ?? "—"}
+              mono
+            />
             <Row
               icon={FileBadge}
-              label="Matrícula"
+              label={t("rowLicense")}
               value={profile.license_number ?? "—"}
               badge={
                 verified
-                  ? { text: "Verificada", tone: "emerald" }
+                  ? { text: t("badgeVerified"), tone: "emerald" }
                   : profile.verification_status === "pending"
-                    ? { text: "En revisión", tone: "amber" }
+                    ? { text: t("badgePending"), tone: "amber" }
                     : profile.verification_status === "rejected"
-                      ? { text: "Rechazada", tone: "rose" }
+                      ? { text: t("badgeRejected"), tone: "rose" }
                       : null
               }
             />
             {profile.clinic_name && (
-              <Row icon={Building2} label="Clínica" value={profile.clinic_name} />
+              <Row
+                icon={Building2}
+                label={t("rowClinic")}
+                value={profile.clinic_name}
+              />
             )}
             {profile.phone && (
-              <Row icon={Phone} label="Teléfono" value={profile.phone} mono />
+              <Row
+                icon={Phone}
+                label={t("rowPhone")}
+                value={profile.phone}
+                mono
+              />
             )}
           </div>
 
           <p className="rounded-lg border border-border bg-secondary/30 p-3 text-xs text-muted-foreground">
-            Para editar nombre, matrícula o datos de la clínica, escribinos a{" "}
+            {t("editHintPre")}
             <a
               href="mailto:1133985163f@gmail.com"
               className="text-primary hover:underline"
@@ -67,10 +88,8 @@ export default async function VetSettingsPage() {
 
       <Card>
         <CardContent className="space-y-3 pt-6">
-          <h2 className="font-semibold">Sesión</h2>
-          <p className="text-sm text-muted-foreground">
-            Cerrá tu sesión activa en este dispositivo.
-          </p>
+          <h2 className="font-semibold">{t("sessionTitle")}</h2>
+          <p className="text-sm text-muted-foreground">{t("sessionDesc")}</p>
           <LogoutButton />
         </CardContent>
       </Card>

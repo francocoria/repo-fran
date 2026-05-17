@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button, Badge } from "@pet-app/ui";
 import {
   Sparkles,
@@ -32,50 +33,28 @@ const PRICE_MONTHLY_ARS = Number(
 );
 
 const FEATURES = [
-  {
-    icon: InfinityIcon,
-    title: "Pacientes ilimitados",
-    desc: "Sin tope de 5 — todos los pacientes que necesites.",
-  },
-  {
-    icon: FileText,
-    title: "Certificados profesionales",
-    desc: "Salud, antirrábico, viaje. PDFs con tu branding.",
-  },
-  {
-    icon: Palette,
-    title: "Recetas con tu marca",
-    desc: "Sin marca de agua. Logo y datos de tu clínica.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Verificación de matrícula",
-    desc: "Badge visible para que los dueños te elijan con confianza.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Estadísticas de tu práctica",
-    desc: "Pacientes, consultas, vacunaciones del mes.",
-  },
-  {
-    icon: Sparkles,
-    title: "Plantillas de consulta propias",
-    desc: "Guardá tus diagnósticos y tratamientos más usados.",
-  },
-];
+  { icon: InfinityIcon, key: "featUnlimitedPatients" },
+  { icon: FileText, key: "featCertificates" },
+  { icon: Palette, key: "featBrandedPrescriptions" },
+  { icon: ShieldCheck, key: "featVerification" },
+  { icon: TrendingUp, key: "featStats" },
+  { icon: Sparkles, key: "featTemplates" },
+] as const;
 
 export function UpgradeModal({
-  triggerLabel = "Pasar a Premium",
+  triggerLabel,
   variant = "button",
   className = "",
   externalOpen,
   onExternalClose,
 }: UpgradeModalProps) {
+  const t = useTranslations("upgradeModal");
   const [internalOpen, setInternalOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const open = externalOpen ?? internalOpen;
   const close = onExternalClose ?? (() => setInternalOpen(false));
+  const label = triggerLabel ?? t("defaultTrigger");
 
   async function handleMercadoPagoCheckout() {
     setError(null);
@@ -84,21 +63,21 @@ export function UpgradeModal({
       const res = await fetch("/api/checkout/create", { method: "POST" });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(body.error ?? "No pudimos generar el checkout.");
+        setError(body.error ?? t("errorCheckout"));
         setPaying(false);
         return;
       }
       // El backend ya nos devuelve la URL correcta (sandbox o prod).
       const target = body.checkoutUrl;
       if (!target) {
-        setError("Respuesta inesperada del checkout.");
+        setError(t("errorUnexpected"));
         setPaying(false);
         return;
       }
       window.location.href = target;
     } catch (err) {
       console.error("[checkout] failed:", err);
-      setError("Error de red. Reintentá.");
+      setError(t("errorNetwork"));
       setPaying(false);
     }
   }
@@ -113,7 +92,7 @@ export function UpgradeModal({
         className={`gap-2 ${className}`}
       >
         <Crown className="h-4 w-4" />
-        {triggerLabel}
+        {label}
       </Button>
     ) : variant === "link" ? (
       <button
@@ -121,7 +100,7 @@ export function UpgradeModal({
         onClick={() => setInternalOpen(true)}
         className={`text-sm font-medium text-primary underline-offset-4 hover:underline ${className}`}
       >
-        {triggerLabel}
+        {label}
       </button>
     ) : null;
 
@@ -147,7 +126,7 @@ export function UpgradeModal({
               type="button"
               onClick={close}
               className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-              aria-label="Cerrar"
+              aria-label={t("close")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -158,17 +137,16 @@ export function UpgradeModal({
               <div className="relative">
                 <Badge variant="secondary" className="gap-1 mb-3">
                   <Crown className="h-3 w-3 text-amber-500" />
-                  Premium
+                  {t("badge")}
                 </Badge>
                 <h2
                   id="upgrade-modal-title"
                   className="text-2xl font-bold tracking-tight"
                 >
-                  Llevá tu práctica al siguiente nivel
+                  {t("heroTitle")}
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground max-w-lg">
-                  Desbloqueá pacientes ilimitados, certificados, branding
-                  propio y herramientas pensadas para profesionales.
+                  {t("heroDesc")}
                 </p>
               </div>
             </div>
@@ -177,31 +155,35 @@ export function UpgradeModal({
             <div className="px-8 py-6 border-b border-border">
               <div className="rounded-xl border-2 border-primary bg-primary/5 p-5 relative max-w-sm">
                 <p className="text-xs text-primary font-medium uppercase tracking-wide">
-                  Plan mensual
+                  {t("planMonthly")}
                 </p>
                 <p className="mt-1">
                   <span className="text-3xl font-bold">ARS {priceMonthly}</span>
-                  <span className="text-sm text-muted-foreground"> /mes</span>
+                  <span className="text-sm text-muted-foreground">
+                    {t("perMonth")}
+                  </span>
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Sin compromiso. Cancelás cuando quieras desde Mercado Pago.
+                  {t("noCommitment")}
                 </p>
               </div>
             </div>
 
             {/* Features */}
             <div className="px-8 py-6">
-              <h3 className="mb-3 text-sm font-semibold">¿Qué incluye?</h3>
+              <h3 className="mb-3 text-sm font-semibold">
+                {t("whatsIncluded")}
+              </h3>
               <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
                 {FEATURES.map((f) => (
-                  <li key={f.title} className="flex items-start gap-2.5">
+                  <li key={f.key} className="flex items-start gap-2.5">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                       <Check className="h-3 w-3" />
                     </span>
                     <div>
-                      <p className="text-sm font-medium">{f.title}</p>
+                      <p className="text-sm font-medium">{t(f.key)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {f.desc}
+                        {t(`${f.key}Desc`)}
                       </p>
                     </div>
                   </li>
@@ -222,7 +204,7 @@ export function UpgradeModal({
                 ) : (
                   <CreditCard className="h-4 w-4" />
                 )}
-                Pagar con Mercado Pago
+                {t("payWithMP")}
               </Button>
 
               {error && (
@@ -233,8 +215,7 @@ export function UpgradeModal({
               )}
 
               <p className="text-xs text-center text-muted-foreground">
-                Pagás con tarjeta (crédito o débito), dinero en cuenta MP o
-                transferencia. Activación automática al confirmar el pago.
+                {t("paymentInfo")}
               </p>
             </div>
           </div>
