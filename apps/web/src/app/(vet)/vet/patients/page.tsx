@@ -1,25 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
-import { Dog, Cat, Bird, Rabbit, ScanLine, Archive, AlertCircle } from "lucide-react";
-import { Button, Badge } from "@pet-app/ui";
+import { ScanLine, AlertCircle } from "lucide-react";
+import { Button } from "@pet-app/ui";
 import { effectivePlan, FREE_PATIENT_CAP } from "@pet-app/lib/utils/subscription";
 import { PatientsSearch } from "./patients-search";
 
-const speciesIcons: Record<string, React.ReactNode> = {
-  dog: <Dog className="h-5 w-5" />,
-  cat: <Cat className="h-5 w-5" />,
-  bird: <Bird className="h-5 w-5" />,
-  rabbit: <Rabbit className="h-5 w-5" />,
-};
-
-const speciesLabels: Record<string, string> = {
-  dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo",
-  rodent: "Roedor", reptile: "Reptil", fish: "Pez", exotic: "Exótico", other: "Otro",
-};
-
-export const metadata = { title: "Mis pacientes" };
+export async function generateMetadata() {
+  const t = await getTranslations("vetPatients");
+  return { title: t("metaTitle") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function PatientsPage() {
@@ -27,6 +19,7 @@ export default async function PatientsPage() {
   const profile = await getVetProfile(user.id);
 
   if (!profile) redirect("/onboarding/vet");
+  const t = await getTranslations("vetPatients");
 
   const subscription = await prisma.subscription.findUnique({
     where: { vet_id: profile.id },
@@ -81,25 +74,25 @@ export default async function PatientsPage() {
     <div className="animate-fade-up">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Mis pacientes</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {active.length} activos
+            {t("countActive", { count: active.length })}
             {!isPremium && (
               <>
-                {" "}
-                de {FREE_PATIENT_CAP} ·{" "}
+                {t("countOfCap", { cap: FREE_PATIENT_CAP })}
                 <Link href="/vet/plan" className="underline-offset-4 hover:underline">
-                  Pasar a premium
+                  {t("toPremium")}
                 </Link>
               </>
             )}
-            {archived.length > 0 && ` · ${archived.length} archivados`}
+            {archived.length > 0 &&
+              t("countArchived", { count: archived.length })}
           </p>
         </div>
         <Button asChild>
           <Link href="/vet/scan" className="gap-2">
             <ScanLine className="h-4 w-4" />
-            Escanear QR
+            {t("scanQr")}
           </Link>
         </Button>
       </div>
@@ -108,14 +101,16 @@ export default async function PatientsPage() {
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4">
           <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-medium">Llegaste al límite de tu plan gratis.</p>
+            <p className="font-medium">{t("atCapTitle")}</p>
             <p className="mt-1 text-muted-foreground">
-              Estás usando {active.length} de {FREE_PATIENT_CAP} pacientes activos. Podés archivar
-              alguno o{" "}
+              {t("atCapDescPre", {
+                current: active.length,
+                cap: FREE_PATIENT_CAP,
+              })}
               <Link href="/vet/plan" className="underline underline-offset-2 hover:text-foreground">
-                pasar a Premium
-              </Link>{" "}
-              para pacientes ilimitados.
+                {t("atCapDescLink")}
+              </Link>
+              {t("atCapDescPost")}
             </p>
           </div>
         </div>
@@ -143,14 +138,14 @@ export default async function PatientsPage() {
       {accesses.length === 0 && (
         <div className="rounded-xl border border-dashed border-border/60 px-6 py-16 text-center">
           <ScanLine className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <h2 className="mt-4 text-lg font-semibold">Sin pacientes todavía</h2>
+          <h2 className="mt-4 text-lg font-semibold">{t("emptyTitle")}</h2>
           <p className="mt-2 max-w-sm mx-auto text-sm text-muted-foreground">
-            Pedile al dueño que te muestre el QR de su mascota desde la app y escaneálo desde acá.
+            {t("emptyDesc")}
           </p>
           <Button asChild className="mt-5 gap-2">
             <Link href="/vet/scan">
               <ScanLine className="h-4 w-4" />
-              Escanear QR
+              {t("scanQr")}
             </Link>
           </Button>
         </div>

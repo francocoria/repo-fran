@@ -3,6 +3,7 @@
 import { useState, useMemo, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Input, Button, Badge } from "@pet-app/ui";
 import {
   Search,
@@ -29,9 +30,16 @@ const speciesIcons: Record<string, React.ReactNode> = {
   rabbit: <Rabbit className="h-5 w-5" />,
 };
 
-const speciesLabels: Record<string, string> = {
-  dog: "Perro", cat: "Gato", bird: "Ave", rabbit: "Conejo",
-  rodent: "Roedor", reptile: "Reptil", fish: "Pez", exotic: "Exótico", other: "Otro",
+const SPECIES_KEY: Record<string, string> = {
+  dog: "speciesDog",
+  cat: "speciesCat",
+  bird: "speciesBird",
+  rabbit: "speciesRabbit",
+  rodent: "speciesRodent",
+  reptile: "speciesReptile",
+  fish: "speciesFish",
+  exotic: "speciesExotic",
+  other: "speciesOther",
 };
 
 interface PatientRow {
@@ -51,6 +59,7 @@ interface PatientRow {
 }
 
 export function PatientsSearch({ accesses }: { accesses: PatientRow[] }) {
+  const t = useTranslations("vetPatientsSearch");
   const [query, setQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
 
@@ -81,7 +90,7 @@ export function PatientsSearch({ accesses }: { accesses: PatientRow[] }) {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por nombre, dueño o raza..."
+            placeholder={t("searchPlaceholder")}
             className="pl-9"
           />
         </div>
@@ -91,7 +100,7 @@ export function PatientsSearch({ accesses }: { accesses: PatientRow[] }) {
           onClick={() => setShowArchived(false)}
           className="shrink-0"
         >
-          Activos ({activeCount})
+          {t("active", { count: activeCount })}
         </Button>
         {archivedCount > 0 && (
           <Button
@@ -100,7 +109,7 @@ export function PatientsSearch({ accesses }: { accesses: PatientRow[] }) {
             onClick={() => setShowArchived(true)}
             className="shrink-0"
           >
-            Archivados ({archivedCount})
+            {t("archived", { count: archivedCount })}
           </Button>
         )}
       </div>
@@ -108,10 +117,10 @@ export function PatientsSearch({ accesses }: { accesses: PatientRow[] }) {
       {filtered.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border/60 py-10 text-center text-sm text-muted-foreground">
           {query
-            ? "Ningún paciente coincide con la búsqueda."
+            ? t("noMatch")
             : showArchived
-              ? "Sin pacientes archivados."
-              : "Sin pacientes activos."}
+              ? t("noArchived")
+              : t("noActive")}
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -125,22 +134,27 @@ export function PatientsSearch({ accesses }: { accesses: PatientRow[] }) {
 }
 
 function PatientCard({ row }: { row: PatientRow }) {
+  const t = useTranslations("vetPatientsSearch");
   const [isPending, startTransition] = useTransition();
   const Icon = speciesIcons[row.animal.species] ?? <Dog className="h-5 w-5" />;
 
   function handleArchive(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    startTransition(() => { void (async () => {
-      const result = row.archived
-        ? await unarchivePatient(row.id)
-        : await archivePatient(row.id);
-      if (result.success) {
-        toast.success(row.archived ? "Paciente reactivado." : "Paciente archivado.");
-      } else {
-        toast.error(result.error ?? "No se pudo procesar.");
-      }
-    })(); });
+    startTransition(() => {
+      void (async () => {
+        const result = row.archived
+          ? await unarchivePatient(row.id)
+          : await archivePatient(row.id);
+        if (result.success) {
+          toast.success(
+            row.archived ? t("toastReactivated") : t("toastArchived"),
+          );
+        } else {
+          toast.error(result.error ?? t("toastError"));
+        }
+      })();
+    });
   }
 
   return (
@@ -167,7 +181,7 @@ function PatientCard({ row }: { row: PatientRow }) {
             {row.animal.severeAllergiesCount > 0 && (
               <div
                 className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow"
-                title="Alergias severas"
+                title={t("severeAllergies")}
               >
                 <AlertTriangle className="h-3 w-3" />
               </div>
@@ -179,12 +193,12 @@ function PatientCard({ row }: { row: PatientRow }) {
               <h3 className="font-semibold truncate">{row.animal.name}</h3>
               {row.archived && (
                 <Badge variant="secondary" className="text-[10px]">
-                  Archivado
+                  {t("badgeArchived")}
                 </Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {speciesLabels[row.animal.species] ?? row.animal.species}
+              {t(SPECIES_KEY[row.animal.species] ?? "speciesOther")}
               {row.animal.breed && ` · ${row.animal.breed}`}
             </p>
             <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
@@ -204,9 +218,9 @@ function PatientCard({ row }: { row: PatientRow }) {
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <Stethoscope className="h-3 w-3 shrink-0" />
             {row.lastVisit ? (
-              <>Última visita {formatRelative(row.lastVisit)}</>
+              t("lastVisit", { when: formatRelative(row.lastVisit) })
             ) : (
-              <span className="italic">Sin consultas registradas</span>
+              <span className="italic">{t("noConsults")}</span>
             )}
           </span>
           <button
@@ -220,12 +234,12 @@ function PatientCard({ row }: { row: PatientRow }) {
             ) : row.archived ? (
               <>
                 <ArchiveRestore className="h-3 w-3" />
-                Reactivar
+                {t("reactivate")}
               </>
             ) : (
               <>
                 <Archive className="h-3 w-3" />
-                Archivar
+                {t("archive")}
               </>
             )}
           </button>
