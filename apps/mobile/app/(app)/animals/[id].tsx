@@ -22,6 +22,7 @@ import {
   Scale,
   X,
   Share2,
+  CheckCircle2,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,6 +41,7 @@ import {
   uploadAnimalPhoto,
 } from "../../../src/lib/photo-upload";
 import { InviteCoOwnerModal } from "../../../src/components/invite-co-owner-modal";
+import { LostModeModal } from "../../../src/components/lost-mode-modal";
 
 interface HealthCounts {
   vaccines: number;
@@ -59,6 +61,64 @@ export default function AnimalProfileScreen() {
   const [qrOpen, setQrOpen] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [lostModalOpen, setLostModalOpen] = useState(false);
+  const [lostSlug, setLostSlug] = useState<string | null>(null);
+  const [markingFound, setMarkingFound] = useState(false);
+
+  function refreshAnimal() {
+    void queryClient.invalidateQueries({ queryKey: ["animal", id] });
+    void queryClient.invalidateQueries({ queryKey: ["animals"] });
+  }
+
+  async function handleMarkFound() {
+    if (!id || markingFound) return;
+    Alert.alert(
+      "¿La encontraste?",
+      "Se desactiva la página pública de búsqueda y la mascota vuelve a estado normal.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sí, la encontré",
+          onPress: async () => {
+            setMarkingFound(true);
+            try {
+              const {
+                data: { session },
+              } = await supabase.auth.getSession();
+              if (!session?.access_token) {
+                Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
+                return;
+              }
+              const res = await fetch(`${env.APP_URL}/api/lost-mode`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                  animalId: id,
+                  action: "deactivate",
+                  asFound: true,
+                }),
+              });
+              const body = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                Alert.alert("Error", body.error ?? "No se pudo actualizar.");
+                return;
+              }
+              setLostSlug(null);
+              refreshAnimal();
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Error de red";
+              Alert.alert("Error", msg);
+            } finally {
+              setMarkingFound(false);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   async function handlePhotoChange() {
     if (!id || uploadingPhoto) return;
@@ -100,13 +160,20 @@ export default function AnimalProfileScreen() {
   useEffect(() => {
     if (!id) return;
     (async () => {
-      const [vaccines, meds, allergies, studies, consults] = await Promise.all([
-        supabase.from("vaccines").select("id", { count: "exact", head: true }).eq("animal_id", id),
-        supabase.from("medications").select("id", { count: "exact", head: true }).eq("animal_id", id).eq("active", true),
-        supabase.from("allergies").select("id, allergen, severity").eq("animal_id", id),
-        supabase.from("studies").select("id", { count: "exact", head: true }).eq("animal_id", id),
-        supabase.from("medical_records").select("id", { count: "exact", head: true }).eq("animal_id", id),
-      ]);
+      const [vaccines, meds, allergies, studies, consults, lostAlert] =
+        await Promise.all([
+          supabase.from("vaccines").select("id", { count: "exact", head: true }).eq("animal_id", id),
+          supabase.from("medications").select("id", { count: "exact", head: true }).eq("animal_id", id).eq("active", true),
+          supabase.from("allergies").select("id, allergen, severity").eq("animal_id", id),
+          supabase.from("studies").select("id", { count: "exact", head: true }).eq("animal_id", id),
+          supabase.from("medical_records").select("id", { count: "exact", head: true }).eq("animal_id", id),
+          supabase
+            .from("lost_pet_alerts")
+            .select("public_slug")
+            .eq("animal_id", id)
+            .eq("status", "active")
+            .maybeSingle(),
+        ]);
 
       setCounts({
         vaccines: vaccines.count ?? 0,
@@ -116,6 +183,7 @@ export default function AnimalProfileScreen() {
         consults: consults.count ?? 0,
         severeAllergies: (allergies.data ?? []).filter((a) => a.severity === "severe"),
       });
+      setLostSlug(lostAlert.data?.public_slug ?? null);
     })();
   }, [id]);
 
@@ -268,6 +336,62 @@ export default function AnimalProfileScreen() {
           </Card>
         </View>
 
+        {/* Modo perdido */}
+        <View className="mt-6 px-3">
+          <Text className="mb-2 px-2 text-[11px] uppercase tracking-wider text-subtle">
+            Modo perdido
+          </Text>
+          {isLost ? (
+            <Card className="gap-3">
+              <View className="flex-row items-center gap-2">
+                <AlertTriangle size={18} color="#e11d48" />
+                <Text className="flex-1 text-[13px] font-semibold text-rose">
+                  {animal.name} está reportada como perdida
+                </Text>
+              </View>
+              <Text className="text-[12px] text-muted">
+                La página pública de búsqueda está activa. Compartila para
+                llegar a más gente.
+              </Text>
+              {lostSlug && (
+                <Button
+                  label="Compartir búsqueda"
+                  variant="rose"
+                  icon={Share2}
+                  fullWidth
+                  onPress={() => {
+                    void Share.share({
+                      message: `🔴 SE PERDIÓ ${animal.name}. Ayudanos a encontrarla:\n${env.APP_URL}/lost/${lostSlug}`,
+                    });
+                  }}
+                />
+              )}
+              <Button
+                label="Marcar como encontrada"
+                variant="outline"
+                icon={CheckCircle2}
+                fullWidth
+                loading={markingFound}
+                onPress={handleMarkFound}
+              />
+            </Card>
+          ) : (
+            <Card className="gap-2">
+              <Text className="text-[13px] text-muted">
+                Si {animal.name} se pierde, activá el modo perdido: generamos
+                una página pública para que quien la encuentre te contacte.
+              </Text>
+              <Button
+                label="Reportar como perdida"
+                variant="rose"
+                icon={AlertTriangle}
+                fullWidth
+                onPress={() => setLostModalOpen(true)}
+              />
+            </Card>
+          )}
+        </View>
+
         {/* Co-dueños */}
         <View className="mt-6 px-3">
           <Text className="mb-2 px-2 text-[11px] uppercase tracking-wider text-subtle">
@@ -301,6 +425,14 @@ export default function AnimalProfileScreen() {
       <InviteCoOwnerModal
         visible={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
+        animalId={animal.id}
+        animalName={animal.name}
+      />
+
+      <LostModeModal
+        visible={lostModalOpen}
+        onClose={() => setLostModalOpen(false)}
+        onActivated={refreshAnimal}
         animalId={animal.id}
         animalName={animal.name}
       />
