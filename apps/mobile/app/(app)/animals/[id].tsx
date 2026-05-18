@@ -24,6 +24,7 @@ import {
   Bug,
   FileText,
   Stethoscope,
+  Plus,
   X,
   Share2,
   CheckCircle2,
@@ -47,6 +48,10 @@ import {
 } from "../../../src/lib/photo-upload";
 import { InviteCoOwnerModal } from "../../../src/components/invite-co-owner-modal";
 import { LostModeModal } from "../../../src/components/lost-mode-modal";
+import {
+  AddRecordModal,
+  type RecordType,
+} from "../../../src/components/add-record-modal";
 
 interface Vaccine {
   id: string;
@@ -126,6 +131,7 @@ export default function AnimalProfileScreen() {
   const [lostModalOpen, setLostModalOpen] = useState(false);
   const [lostSlug, setLostSlug] = useState<string | null>(null);
   const [markingFound, setMarkingFound] = useState(false);
+  const [addType, setAddType] = useState<RecordType | null>(null);
 
   function refreshAnimal() {
     void queryClient.invalidateQueries({ queryKey: ["animal", id] });
@@ -459,7 +465,11 @@ export default function AnimalProfileScreen() {
         </View>
 
         {/* ─── VACUNAS ─────────────────────────────────────────── */}
-        <Section icon={Syringe} title={t("animalDetail.sectionVaccines")}>
+        <Section
+          icon={Syringe}
+          title={t("animalDetail.sectionVaccines")}
+          onAdd={() => setAddType("vaccine")}
+        >
           {health.vaccines.length === 0 ? (
             <EmptyLine text={t("animalDetail.emptyVaccines")} />
           ) : (
@@ -481,7 +491,11 @@ export default function AnimalProfileScreen() {
         </Section>
 
         {/* ─── MEDICACIÓN ──────────────────────────────────────── */}
-        <Section icon={Pill} title={t("animalDetail.sectionMedications")}>
+        <Section
+          icon={Pill}
+          title={t("animalDetail.sectionMedications")}
+          onAdd={() => setAddType("medication")}
+        >
           {health.medications.length === 0 ? (
             <EmptyLine text={t("animalDetail.emptyMedications")} />
           ) : (
@@ -496,7 +510,11 @@ export default function AnimalProfileScreen() {
         </Section>
 
         {/* ─── ALERGIAS ────────────────────────────────────────── */}
-        <Section icon={AlertTriangle} title={t("animalDetail.sectionAllergies")}>
+        <Section
+          icon={AlertTriangle}
+          title={t("animalDetail.sectionAllergies")}
+          onAdd={() => setAddType("allergy")}
+        >
           {health.allergies.length === 0 ? (
             <EmptyLine text={t("animalDetail.emptyAllergies")} />
           ) : (
@@ -514,7 +532,11 @@ export default function AnimalProfileScreen() {
         </Section>
 
         {/* ─── ANTIPARASITARIOS ────────────────────────────────── */}
-        <Section icon={Bug} title={t("animalDetail.sectionDewormings")}>
+        <Section
+          icon={Bug}
+          title={t("animalDetail.sectionDewormings")}
+          onAdd={() => setAddType("deworming")}
+        >
           {health.dewormings.length === 0 ? (
             <EmptyLine text={t("animalDetail.emptyDewormings")} />
           ) : (
@@ -555,7 +577,11 @@ export default function AnimalProfileScreen() {
         </Section>
 
         {/* ─── PESO ────────────────────────────────────────────── */}
-        <Section icon={Scale} title={t("animalDetail.sectionWeight")}>
+        <Section
+          icon={Scale}
+          title={t("animalDetail.sectionWeight")}
+          onAdd={() => setAddType("weight")}
+        >
           {health.weights.length === 0 ? (
             <EmptyLine text={t("animalDetail.emptyWeight")} />
           ) : (
@@ -718,6 +744,17 @@ export default function AnimalProfileScreen() {
         animalId={animal.id}
         animalName={animal.name}
       />
+
+      <AddRecordModal
+        visible={addType !== null}
+        type={addType}
+        animalId={animal.id}
+        onClose={() => setAddType(null)}
+        onCreated={() => {
+          void loadHealth();
+          refreshAnimal();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -749,19 +786,31 @@ function MiniStat({
 function Section({
   icon: Icon,
   title,
+  onAdd,
   children,
 }: {
   icon: typeof Scale;
   title: string;
+  onAdd?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <View className="mt-5 px-5">
       <View className="mb-2 flex-row items-center gap-1.5">
         <Icon size={13} color="#78716c" />
-        <Text className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
+        <Text className="flex-1 text-[11px] font-semibold uppercase tracking-wider text-subtle">
           {title}
         </Text>
+        {onAdd && (
+          <Pressable
+            onPress={onAdd}
+            hitSlop={8}
+            className="size-7 items-center justify-center rounded-lg bg-primary/10"
+            style={{ width: 28, height: 28 }}
+          >
+            <Plus size={16} color="#7c3aed" />
+          </Pressable>
+        )}
       </View>
       <Card className="gap-2.5">{children}</Card>
     </View>
