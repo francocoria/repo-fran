@@ -15,10 +15,12 @@ import { Button } from "../../src/components/ui/button";
 import { useAnimals, type AnimalListItem } from "../../src/hooks/use-animals";
 import { useSession, useProfile } from "../../src/lib/session";
 import { usePendingCoOwnerInvites } from "../../src/hooks/use-co-owner-invites";
-import { getAge, speciesLabel } from "../../src/lib/format";
+import { useTranslation } from "../../src/lib/i18n";
+import { useLocaleFormat } from "../../src/lib/i18n/format";
 
 export default function OwnerHome() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { session } = useSession();
   const { data: animals = [], isLoading, refetch, isRefetching } = useAnimals();
   const { data: profile } = useProfile(session?.user.id);
@@ -42,14 +44,16 @@ export default function OwnerHome() {
       ListHeaderComponent={
         <View>
           <View className="px-5 pt-2 pb-3">
-            <Text className="text-[13px] text-muted">Hola de nuevo,</Text>
+            <Text className="text-[13px] text-muted">
+              {t("owner.home.greeting")}
+            </Text>
             <Text className="text-[28px] font-bold tracking-tight text-foreground">
               {firstName || "👋"}
             </Text>
             <Text className="mt-1.5 text-[14px] text-muted">
               {animals.length === 0
-                ? "Empezá registrando tu primera mascota."
-                : `Tenés ${animals.length} ${animals.length === 1 ? "mascota" : "mascotas"} registrada${animals.length === 1 ? "" : "s"}.`}
+                ? t("owner.home.emptySubtitle")
+                : t("owner.home.countSubtitle", { count: animals.length })}
             </Text>
           </View>
 
@@ -72,12 +76,12 @@ export default function OwnerHome() {
               </View>
               <View className="flex-1">
                 <Text className="text-[14px] font-semibold text-foreground">
-                  {pendingInvitesCount === 1
-                    ? "Tenés 1 invitación pendiente"
-                    : `Tenés ${pendingInvitesCount} invitaciones pendientes`}
+                  {t("owner.home.invitesPending", {
+                    count: pendingInvitesCount,
+                  })}
                 </Text>
                 <Text className="mt-0.5 text-[12px] text-muted">
-                  Co-dueño · Tocá para ver y responder
+                  {t("owner.home.invitesHint")}
                 </Text>
               </View>
               <ChevronRight size={18} color="#78716c" />
@@ -92,15 +96,14 @@ export default function OwnerHome() {
       ListEmptyComponent={
         <View className="mx-5 mt-8 items-center rounded-2xl border-2 border-dashed border-border-strong p-8">
           <Text className="text-[16px] font-semibold text-foreground">
-            Todavía no registraste mascotas
+            {t("owner.home.emptyTitle")}
           </Text>
           <Text className="mt-2 text-center text-[13px] text-muted">
-            Empezá registrando a tu primera mascota para llevar el control de
-            sus vacunas, turnos e historial.
+            {t("owner.home.emptyDesc")}
           </Text>
           <View className="mt-5">
             <Button
-              label="Registrar mi primera mascota"
+              label={t("owner.home.registerFirst")}
               icon={PlusCircle}
               onPress={() => router.push("/(app)/animals/new" as never)}
             />
@@ -116,7 +119,7 @@ export default function OwnerHome() {
             >
               <Plus size={18} color="#78716c" />
               <Text className="text-[14px] font-medium text-muted">
-                Agregar mascota
+                {t("owner.home.addPet")}
               </Text>
             </Pressable>
           </View>
@@ -141,16 +144,34 @@ function PetRow({
   animal: AnimalListItem;
   onPress: () => void;
 }) {
-  const age = animal.birth_date ? getAge(animal.birth_date) : null;
+  const { t } = useTranslation();
+  const { ageLabel, speciesLabel } = useLocaleFormat();
+  const age = animal.birth_date ? ageLabel(animal.birth_date) : null;
   const isLost = animal.status === "lost";
 
   const stateBadge = isLost
-    ? { label: "PERDIDA", tone: "rose" as const, icon: AlertTriangle }
+    ? {
+        label: t("owner.home.badgeLost"),
+        tone: "rose" as const,
+        icon: AlertTriangle,
+      }
     : animal.has_severe_allergy
-      ? { label: "Alergia severa", tone: "amber" as const, icon: AlertTriangle }
+      ? {
+          label: t("owner.home.badgeSevereAllergy"),
+          tone: "amber" as const,
+          icon: AlertTriangle,
+        }
       : animal.has_overdue_vaccine
-        ? { label: "Vacuna vencida", tone: "rose" as const, icon: AlertTriangle }
-        : { label: "Al día", tone: "emerald" as const, icon: CheckCircle2 };
+        ? {
+            label: t("owner.home.badgeOverdueVaccine"),
+            tone: "rose" as const,
+            icon: AlertTriangle,
+          }
+        : {
+            label: t("owner.home.badgeOk"),
+            tone: "emerald" as const,
+            icon: CheckCircle2,
+          };
 
   return (
     <Pressable
@@ -173,7 +194,7 @@ function PetRow({
           {age && <Text className="text-[12px] text-subtle">· {age}</Text>}
         </View>
         <Text className="text-[12.5px] text-muted">
-          {animal.breed ?? speciesLabel[animal.species] ?? animal.species}
+          {animal.breed ?? speciesLabel(animal.species)}
           {animal.sex !== "unknown" && (animal.sex === "male" ? " · ♂" : " · ♀")}
         </Text>
         <View className="mt-2 flex-row items-center gap-2">

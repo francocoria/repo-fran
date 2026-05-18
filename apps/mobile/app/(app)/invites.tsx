@@ -18,21 +18,12 @@ import {
   useRespondCoOwnerInvite,
   type CoOwnerInvite,
 } from "../../src/hooks/use-co-owner-invites";
-
-const SPECIES_LABELS: Record<string, string> = {
-  dog: "Perro",
-  cat: "Gato",
-  bird: "Ave",
-  rabbit: "Conejo",
-  rodent: "Roedor",
-  reptile: "Reptil",
-  fish: "Pez",
-  exotic: "Exótico",
-  other: "Otro",
-};
+import { useTranslation } from "../../src/lib/i18n";
+import { useLocaleFormat } from "../../src/lib/i18n/format";
 
 export default function InvitesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data, isLoading, refetch, isRefetching } = usePendingCoOwnerInvites();
   const invites = data?.invites ?? [];
 
@@ -44,10 +35,12 @@ export default function InvitesScreen() {
           className="flex-row items-center gap-1"
         >
           <ChevronLeft size={22} color="#0c0a09" />
-          <Text className="text-[15px] text-foreground">Atrás</Text>
+          <Text className="text-[15px] text-foreground">
+            {t("owner.invites.back")}
+          </Text>
         </Pressable>
         <Text className="text-[15px] font-semibold text-foreground">
-          Invitaciones
+          {t("owner.invites.title")}
         </Text>
         <View style={{ width: 60 }} />
       </View>
@@ -60,10 +53,10 @@ export default function InvitesScreen() {
         <View className="flex-1 items-center justify-center px-8">
           <PawPrint size={36} color="#a8a29e" />
           <Text className="mt-3 text-center text-[15px] font-medium text-foreground">
-            Sin invitaciones pendientes
+            {t("owner.invites.emptyTitle")}
           </Text>
           <Text className="mt-1 text-center text-[13px] text-muted">
-            Cuando alguien te invite a cuidar a su mascota, va a aparecer acá.
+            {t("owner.invites.emptyDesc")}
           </Text>
         </View>
       ) : (
@@ -81,6 +74,8 @@ export default function InvitesScreen() {
 }
 
 function InviteCard({ invite }: { invite: CoOwnerInvite }) {
+  const { t } = useTranslation();
+  const { speciesLabel } = useLocaleFormat();
   const respond = useRespondCoOwnerInvite();
   const [action, setAction] = useState<"accept" | "decline" | null>(null);
 
@@ -94,8 +89,8 @@ function InviteCard({ invite }: { invite: CoOwnerInvite }) {
         },
         onError: (err) => {
           setAction(null);
-          const msg = err instanceof Error ? err.message : "Error";
-          Alert.alert("Error", msg);
+          const msg = err instanceof Error ? err.message : t("common.error");
+          Alert.alert(t("common.error"), msg);
         },
       },
     );
@@ -121,14 +116,16 @@ function InviteCard({ invite }: { invite: CoOwnerInvite }) {
           <View className="flex-row items-center gap-1.5">
             <UserPlus size={13} color="#7c3aed" />
             <Text className="text-[12px] font-medium text-primary">
-              {invite.inviter.full_name ?? "Alguien"} te invitó
+              {t("owner.invites.invitedYou", {
+                name: invite.inviter.full_name ?? t("owner.invites.someone"),
+              })}
             </Text>
           </View>
           <Text className="mt-0.5 text-[16px] font-semibold text-foreground">
             {invite.animal.name}
           </Text>
           <Text className="text-[12px] text-muted">
-            {SPECIES_LABELS[invite.animal.species] ?? invite.animal.species}
+            {speciesLabel(invite.animal.species)}
             {invite.animal.breed && ` · ${invite.animal.breed}`}
           </Text>
         </View>
@@ -137,7 +134,7 @@ function InviteCard({ invite }: { invite: CoOwnerInvite }) {
       <View className="mt-3 flex-row gap-2">
         <View style={{ flex: 1 }}>
           <Button
-            label="Aceptar"
+            label={t("owner.invites.accept")}
             icon={Check}
             onPress={() => handle("accept")}
             loading={respond.isPending && action === "accept"}
@@ -147,7 +144,7 @@ function InviteCard({ invite }: { invite: CoOwnerInvite }) {
         </View>
         <View style={{ flex: 1 }}>
           <Button
-            label="Rechazar"
+            label={t("owner.invites.decline")}
             variant="outline"
             icon={X}
             onPress={() => handle("decline")}

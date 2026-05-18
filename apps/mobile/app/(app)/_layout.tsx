@@ -14,26 +14,27 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import { useSession, useProfile } from "../../src/lib/session";
+import { useTranslation } from "../../src/lib/i18n";
 
 type Role = "owner" | "vet";
 
 interface Tab {
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
   href: string;
 }
 
 const OWNER_TABS: Tab[] = [
-  { label: "Mascotas", icon: Home, href: "/(app)/" },
-  { label: "Recordatorios", icon: Bell, href: "/(app)/notifications" },
-  { label: "Yo", icon: User, href: "/(app)/settings" },
+  { labelKey: "nav.pets", icon: Home, href: "/(app)/" },
+  { labelKey: "nav.reminders", icon: Bell, href: "/(app)/notifications" },
+  { labelKey: "nav.me", icon: User, href: "/(app)/settings" },
 ];
 
 const VET_TABS: Tab[] = [
-  { label: "Inicio", icon: Home, href: "/(app)/vet" },
-  { label: "Pacientes", icon: Users, href: "/(app)/vet/patients" },
-  { label: "Plan", icon: Crown, href: "/(app)/vet/plan" },
-  { label: "Yo", icon: User, href: "/(app)/vet/settings" },
+  { labelKey: "nav.home", icon: Home, href: "/(app)/vet" },
+  { labelKey: "nav.patients", icon: Users, href: "/(app)/vet/patients" },
+  { labelKey: "nav.plan", icon: Crown, href: "/(app)/vet/plan" },
+  { labelKey: "nav.me", icon: User, href: "/(app)/vet/settings" },
 ];
 
 export default function AppLayout() {
@@ -138,6 +139,7 @@ function TabButton({
   accent: string;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
   const Icon = tab.icon;
   const active = activePath === tab.href.replace("/(app)", "") || activePath === tab.href;
   const color = active ? accent : "#78716c";
@@ -148,7 +150,7 @@ function TabButton({
         className="text-[10.5px]"
         style={{ color, fontWeight: active ? "600" : "500" }}
       >
-        {tab.label}
+        {t(tab.labelKey)}
       </Text>
     </Pressable>
   );

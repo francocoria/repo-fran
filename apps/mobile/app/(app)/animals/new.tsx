@@ -25,20 +25,22 @@ import { randomUUID } from "expo-crypto";
 import { Button } from "../../../src/components/ui/button";
 import { Input } from "../../../src/components/ui/input";
 import { supabase } from "../../../src/lib/supabase";
+import { useTranslation } from "../../../src/lib/i18n";
 
-const SPECIES: { value: string; label: string; icon: LucideIcon }[] = [
-  { value: "dog", label: "Perro", icon: Dog },
-  { value: "cat", label: "Gato", icon: Cat },
-  { value: "bird", label: "Ave", icon: Bird },
-  { value: "rabbit", label: "Conejo", icon: Rabbit },
-  { value: "rodent", label: "Roedor", icon: PawPrint },
-  { value: "reptile", label: "Reptil", icon: PawPrint },
-  { value: "fish", label: "Pez", icon: Fish },
-  { value: "other", label: "Otra", icon: Plus },
+const SPECIES: { value: string; icon: LucideIcon }[] = [
+  { value: "dog", icon: Dog },
+  { value: "cat", icon: Cat },
+  { value: "bird", icon: Bird },
+  { value: "rabbit", icon: Rabbit },
+  { value: "rodent", icon: PawPrint },
+  { value: "reptile", icon: PawPrint },
+  { value: "fish", icon: Fish },
+  { value: "other", icon: Plus },
 ];
 
 export default function NewAnimalScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [species, setSpecies] = useState("dog");
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
@@ -49,20 +51,23 @@ export default function NewAnimalScreen() {
 
   async function handleCreate() {
     if (!name.trim() || name.trim().length < 1) {
-      Alert.alert("Falta nombre", "Ingresá el nombre de tu mascota.");
+      Alert.alert(
+        t("owner.newPet.missingNameTitle"),
+        t("owner.newPet.missingNameBody"),
+      );
       return;
     }
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No autenticado");
+      if (!user) throw new Error(t("owner.newPet.notAuth"));
 
       const { data: profile } = await supabase
         .from("owner_profiles")
         .select("id")
         .eq("user_id", user.id)
         .single();
-      if (!profile) throw new Error("No se encontró el perfil");
+      if (!profile) throw new Error(t("owner.newPet.noProfile"));
 
       const id = randomUUID();
       const urlToken = randomUUID();
@@ -83,7 +88,7 @@ export default function NewAnimalScreen() {
 
       router.replace(`/(app)/animals/${id}` as never);
     } catch (e: any) {
-      Alert.alert("Error", e?.message ?? "No se pudo crear la mascota.");
+      Alert.alert(t("common.error"), e?.message ?? t("owner.newPet.createError"));
     } finally {
       setLoading(false);
     }
@@ -97,19 +102,19 @@ export default function NewAnimalScreen() {
       >
         <Pressable onPress={() => router.back()} className="flex-row items-center gap-1 px-4 py-3">
           <ChevronLeft size={20} color="#57534e" />
-          <Text className="text-[15px] text-muted">Volver</Text>
+          <Text className="text-[15px] text-muted">{t("common.back")}</Text>
         </Pressable>
 
         <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled">
           <Text className="text-[28px] font-bold tracking-tight text-foreground">
-            Nueva mascota
+            {t("owner.newPet.title")}
           </Text>
           <Text className="mt-1 text-[14px] text-muted">
-            Datos básicos para crear su perfil.
+            {t("owner.newPet.subtitle")}
           </Text>
 
           <Text className="mt-6 mb-2 text-[13px] font-medium text-foreground">
-            Especie
+            {t("owner.newPet.speciesLabel")}
           </Text>
           <View className="flex-row flex-wrap gap-2">
             {SPECIES.map((sp) => {
@@ -132,7 +137,7 @@ export default function NewAnimalScreen() {
                       selected ? "text-primary" : "text-muted"
                     }`}
                   >
-                    {sp.label}
+                    {t(`format.species.${sp.value}`)}
                   </Text>
                 </Pressable>
               );
@@ -141,29 +146,29 @@ export default function NewAnimalScreen() {
 
           <View className="mt-6 gap-4">
             <Input
-              label="Nombre"
+              label={t("owner.newPet.nameLabel")}
               required
               value={name}
               onChangeText={setName}
-              placeholder="Firu"
+              placeholder={t("owner.newPet.namePlaceholder")}
             />
             <Input
-              label="Raza"
+              label={t("owner.newPet.breedLabel")}
               value={breed}
               onChangeText={setBreed}
-              placeholder="Mestizo, Labrador..."
-              hint="Opcional. Escribí libremente."
+              placeholder={t("owner.newPet.breedPlaceholder")}
+              hint={t("owner.newPet.breedHint")}
             />
 
             <View>
               <Text className="mb-1.5 text-[13px] font-medium text-foreground">
-                Sexo
+                {t("owner.newPet.sexLabel")}
               </Text>
               <View className="flex-row gap-2">
                 {([
-                  ["male", "♂ Macho"],
-                  ["female", "♀ Hembra"],
-                  ["unknown", "—"],
+                  ["male", t("owner.newPet.sexMale")],
+                  ["female", t("owner.newPet.sexFemale")],
+                  ["unknown", t("owner.newPet.sexUnknown")],
                 ] as const).map(([value, label]) => (
                   <Pressable
                     key={value}
@@ -187,23 +192,23 @@ export default function NewAnimalScreen() {
             </View>
 
             <Input
-              label="Color"
+              label={t("owner.newPet.colorLabel")}
               value={color}
               onChangeText={setColor}
-              placeholder="Negro, atigrado..."
+              placeholder={t("owner.newPet.colorPlaceholder")}
             />
             <Input
-              label="Peso (kg)"
+              label={t("owner.newPet.weightLabel")}
               value={weight}
               onChangeText={setWeight}
-              placeholder="Ej: 12.5"
+              placeholder={t("owner.newPet.weightPlaceholder")}
               keyboardType="decimal-pad"
             />
           </View>
 
           <View className="mt-8 mb-12">
             <Button
-              label="Crear perfil"
+              label={t("owner.newPet.createProfile")}
               onPress={handleCreate}
               loading={loading}
               fullWidth

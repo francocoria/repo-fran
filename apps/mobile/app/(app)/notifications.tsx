@@ -4,7 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Bell, Stethoscope, Crown, ShieldCheck, AlertTriangle } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { supabase } from "../../src/lib/supabase";
-import { formatDate } from "../../src/lib/format";
+import { useTranslation } from "../../src/lib/i18n";
+import { useLocaleFormat } from "../../src/lib/i18n/format";
 
 interface NotificationItem {
   id: string;
@@ -25,6 +26,8 @@ const ICONS: Record<string, LucideIcon> = {
 };
 
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
+  const { formatDate } = useLocaleFormat();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,16 +62,16 @@ export default function NotificationsScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
       <View className="px-5 pt-4 pb-2">
         <Text className="text-[24px] font-bold tracking-tight text-foreground">
-          Notificaciones
+          {t("owner.notifications.title")}
         </Text>
         <Text className="mt-1 text-[13px] text-muted">
           {loading
-            ? "Cargando..."
+            ? t("common.loading")
             : items.length === 0
-              ? "Sin notificaciones"
+              ? t("owner.notifications.empty")
               : unreadCount > 0
-                ? `${unreadCount} sin leer`
-                : "Todas leídas"}
+                ? t("owner.notifications.unread", { count: unreadCount })
+                : t("owner.notifications.allRead")}
         </Text>
       </View>
 
@@ -78,7 +81,7 @@ export default function NotificationsScreen() {
         <View className="flex-1 items-center justify-center px-8">
           <Bell size={40} color="#d6d3d1" />
           <Text className="mt-3 text-center text-[14px] text-muted">
-            Cuando haya algo nuevo, va a aparecer acá.
+            {t("owner.notifications.emptyHint")}
           </Text>
         </View>
       ) : (

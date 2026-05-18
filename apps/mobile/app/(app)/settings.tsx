@@ -9,9 +9,11 @@ import { Card } from "../../src/components/ui/card";
 import { useSession, signOut } from "../../src/lib/session";
 import { supabase } from "../../src/lib/supabase";
 import { env } from "../../src/lib/env";
+import { useTranslation } from "../../src/lib/i18n";
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { session } = useSession();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -39,7 +41,10 @@ export default function SettingsScreen() {
   async function handleSave() {
     if (!profileId) return;
     if (!fullName.trim()) {
-      Alert.alert("Falta tu nombre", "El nombre no puede estar vacío.");
+      Alert.alert(
+        t("owner.settings.missingNameTitle"),
+        t("owner.settings.missingNameBody"),
+      );
       return;
     }
     setSaving(true);
@@ -53,17 +58,20 @@ export default function SettingsScreen() {
       .eq("id", profileId);
     setSaving(false);
     if (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert(t("common.error"), error.message);
       return;
     }
-    Alert.alert("Listo", "Cambios guardados.");
+    Alert.alert(t("common.done"), t("owner.settings.savedBody"));
   }
 
   async function handleSignOut() {
-    Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
-      { text: "Cancelar", style: "cancel" },
+    Alert.alert(
+      t("owner.settings.signOutTitle"),
+      t("owner.settings.signOutBody"),
+      [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Salir",
+        text: t("owner.settings.signOutConfirm"),
         style: "destructive",
         onPress: async () => {
           await signOut();
@@ -79,7 +87,10 @@ export default function SettingsScreen() {
         data: { session: current },
       } = await supabase.auth.getSession();
       if (!current?.access_token) {
-        Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
+        Alert.alert(
+          t("owner.settings.sessionExpiredTitle"),
+          t("owner.settings.sessionExpiredBody"),
+        );
         return;
       }
       const res = await fetch(`${env.APP_URL}/api/account/delete`, {
@@ -88,14 +99,17 @@ export default function SettingsScreen() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        Alert.alert("Error", body.error ?? "No pudimos eliminar la cuenta.");
+        Alert.alert(
+          t("common.error"),
+          body.error ?? t("owner.settings.deleteFailBody"),
+        );
         return;
       }
       await signOut();
       router.replace("/login");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error de red";
-      Alert.alert("Error", msg);
+      const msg = err instanceof Error ? err.message : t("common.networkError");
+      Alert.alert(t("common.error"), msg);
     }
   }
 
@@ -103,28 +117,28 @@ export default function SettingsScreen() {
     // Doble confirmación. En iOS pedimos escribir "ELIMINAR" (Alert.prompt).
     // En Android (sin prompt nativo) usamos dos alerts simples.
     Alert.alert(
-      "¿Eliminar cuenta?",
-      "Se borrarán tu perfil, todas tus mascotas, vacunas, alergias, accesos a veterinarios y suscripciones. Esta acción NO se puede deshacer.",
+      t("owner.settings.deleteConfirmTitle"),
+      t("owner.settings.deleteConfirmBody"),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Continuar",
+          text: t("common.continue"),
           style: "destructive",
           onPress: () => {
             if (Platform.OS === "ios") {
               Alert.prompt(
-                "Última confirmación",
-                'Escribí "ELIMINAR" (en mayúsculas) para confirmar.',
+                t("owner.settings.deleteLastTitle"),
+                t("owner.settings.deleteLastBodyIos"),
                 [
-                  { text: "Cancelar", style: "cancel" },
+                  { text: t("common.cancel"), style: "cancel" },
                   {
-                    text: "Eliminar",
+                    text: t("common.delete"),
                     style: "destructive",
                     onPress: (value?: string) => {
                       if (value?.trim() !== "ELIMINAR") {
                         Alert.alert(
-                          "No coincide",
-                          'Tenías que escribir "ELIMINAR" exacto.',
+                          t("owner.settings.deleteMismatchTitle"),
+                          t("owner.settings.deleteMismatchBody"),
                         );
                         return;
                       }
@@ -136,12 +150,12 @@ export default function SettingsScreen() {
               );
             } else {
               Alert.alert(
-                "Última confirmación",
-                "Tocá 'Eliminar' para borrar tu cuenta y todos los datos.",
+                t("owner.settings.deleteLastTitle"),
+                t("owner.settings.deleteLastBodyAndroid"),
                 [
-                  { text: "Cancelar", style: "cancel" },
+                  { text: t("common.cancel"), style: "cancel" },
                   {
-                    text: "Eliminar",
+                    text: t("common.delete"),
                     style: "destructive",
                     onPress: () => void performAccountDeletion(),
                   },
@@ -159,64 +173,73 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="px-5 pt-4 pb-2">
           <Text className="text-[24px] font-bold tracking-tight text-foreground">
-            Configuración
+            {t("owner.settings.title")}
           </Text>
           <Text className="mt-1 text-[13px] text-muted">
-            Gestioná tu información personal.
+            {t("owner.settings.subtitle")}
           </Text>
         </View>
 
         <View className="px-3 pt-4">
           <Card className="gap-4">
             <Input
-              label="Nombre completo"
+              label={t("owner.settings.fullNameLabel")}
               required
               value={fullName}
               onChangeText={setFullName}
-              placeholder="Tu nombre"
+              placeholder={t("owner.settings.fullNamePlaceholder")}
             />
             <View className="gap-1">
-              <Text className="text-[13px] font-medium text-foreground">Email</Text>
+              <Text className="text-[13px] font-medium text-foreground">
+                {t("owner.settings.emailLabel")}
+              </Text>
               <View className="flex-row items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2.5">
                 <Mail size={14} color="#78716c" />
                 <Text className="flex-1 text-[14px] text-muted">{session?.user.email}</Text>
               </View>
-              <Text className="text-xs text-subtle">El email no se puede cambiar.</Text>
+              <Text className="text-xs text-subtle">
+                {t("owner.settings.emailCantChange")}
+              </Text>
             </View>
             <Input
-              label="Teléfono"
+              label={t("owner.settings.phoneLabel")}
               value={phone}
               onChangeText={setPhone}
-              placeholder="+54 11 1234-5678"
+              placeholder={t("owner.settings.phonePlaceholder")}
               keyboardType="phone-pad"
             />
             <Input
-              label="Ciudad"
+              label={t("owner.settings.cityLabel")}
               value={city}
               onChangeText={setCity}
-              placeholder="Buenos Aires"
+              placeholder={t("owner.settings.cityPlaceholder")}
             />
-            <Button label="Guardar cambios" onPress={handleSave} loading={saving} fullWidth />
+            <Button
+              label={t("common.saveChanges")}
+              onPress={handleSave}
+              loading={saving}
+              fullWidth
+            />
           </Card>
         </View>
 
         <View className="mt-6 gap-3 px-3">
           <Button
-            label="Cerrar sesión"
+            label={t("owner.settings.signOut")}
             onPress={handleSignOut}
             variant="outline"
             icon={LogOut}
             fullWidth
           />
           <Button
-            label="Eliminar mi cuenta"
+            label={t("owner.settings.deleteAccount")}
             onPress={handleDeleteAccount}
             variant="rose"
             icon={Trash2}
             fullWidth
           />
           <Text className="px-1 text-center text-[11px] text-subtle">
-            Esta acción es irreversible. Se borran tus mascotas y todo el historial.
+            {t("owner.settings.deleteWarning")}
           </Text>
         </View>
       </ScrollView>
