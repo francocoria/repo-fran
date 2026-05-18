@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { UserPlus, X } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { env } from "../lib/env";
+import { useTranslation } from "../lib/i18n";
 
 interface InviteCoOwnerModalProps {
   visible: boolean;
@@ -32,6 +33,7 @@ export function InviteCoOwnerModal({
   animalId,
   animalName,
 }: InviteCoOwnerModalProps) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -42,11 +44,17 @@ export function InviteCoOwnerModal({
 
   async function handleSend() {
     if (!email.trim()) {
-      Alert.alert("Falta email", "Ingresá el email de la persona.");
+      Alert.alert(
+        t("components.inviteCoOwner.missingEmailTitle"),
+        t("components.inviteCoOwner.missingEmailBody"),
+      );
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      Alert.alert("Email inválido", "Revisá la dirección que pusiste.");
+      Alert.alert(
+        t("components.inviteCoOwner.invalidEmailTitle"),
+        t("components.inviteCoOwner.invalidEmailBody"),
+      );
       return;
     }
     setSending(true);
@@ -55,7 +63,10 @@ export function InviteCoOwnerModal({
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
+        Alert.alert(
+          t("components.inviteCoOwner.sessionExpiredTitle"),
+          t("components.inviteCoOwner.sessionExpiredBody"),
+        );
         return;
       }
       const res = await fetch(`${env.APP_URL}/api/co-owner/invite`, {
@@ -68,15 +79,21 @@ export function InviteCoOwnerModal({
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        Alert.alert("Error", body.error ?? "No pudimos enviar la invitación.");
+        Alert.alert(
+          t("common.error"),
+          body.error ?? t("components.inviteCoOwner.sendFailBody"),
+        );
         return;
       }
-      Alert.alert("Listo", body.message ?? "Invitación enviada.");
+      Alert.alert(
+        t("common.done"),
+        body.message ?? t("components.inviteCoOwner.sentBody"),
+      );
       reset();
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error de red";
-      Alert.alert("Error", msg);
+      const msg = err instanceof Error ? err.message : t("common.networkError");
+      Alert.alert(t("common.error"), msg);
     } finally {
       setSending(false);
     }
@@ -107,7 +124,7 @@ export function InviteCoOwnerModal({
             <X size={20} color="#0c0a09" />
           </Pressable>
           <Text className="text-[15px] font-semibold text-foreground">
-            Invitar co-dueño
+            {t("components.inviteCoOwner.title")}
           </Text>
           <Pressable
             onPress={handleSend}
@@ -127,7 +144,7 @@ export function InviteCoOwnerModal({
               <Text
                 style={{ color: "#ffffff", fontSize: 13, fontWeight: "600" }}
               >
-                Enviar
+                {t("components.inviteCoOwner.send")}
               </Text>
             )}
           </Pressable>
@@ -156,18 +173,18 @@ export function InviteCoOwnerModal({
                   {animalName}
                 </Text>
                 <Text className="mt-0.5 text-[12px] text-muted">
-                  Va a poder ver todo el historial y agregar info.
+                  {t("components.inviteCoOwner.intro")}
                 </Text>
               </View>
             </View>
 
             <Text className="mb-2 text-[12px] uppercase tracking-wider text-subtle">
-              Email del co-dueño
+              {t("components.inviteCoOwner.emailLabel")}
             </Text>
             <TextInput
               value={email}
               onChangeText={setEmail}
-              placeholder="pareja@ejemplo.com"
+              placeholder={t("components.inviteCoOwner.emailPlaceholder")}
               placeholderTextColor="#a8a29e"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -187,9 +204,7 @@ export function InviteCoOwnerModal({
               }}
             />
             <Text className="mt-3 text-[12px] text-subtle leading-5">
-              Le va a llegar un email para confirmar. Si todavía no tiene cuenta
-              en PetApp, le mandamos un invite para que se registre y
-              automáticamente quede como co-dueño.
+              {t("components.inviteCoOwner.footer")}
             </Text>
           </View>
         </KeyboardAvoidingView>

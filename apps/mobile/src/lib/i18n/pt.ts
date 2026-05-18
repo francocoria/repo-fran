@@ -345,4 +345,59 @@ export const pt = {
       deleteMismatchBody: 'Você tinha que digitar "ELIMINAR" exato.',
     },
   },
+  language: {
+    title: "Idioma",
+  },
+  components: {
+    lostMode: {
+      title: "Reportar como perdido",
+      activate: "Ativar",
+      intro:
+        "Geramos uma página pública com estas informações para que quem encontrar possa te contatar.",
+      contactNameLabel: "Nome de contato *",
+      contactNamePlaceholder: "Seu nome",
+      contactPhoneLabel: "Telefone de contato *",
+      contactPhonePlaceholder: "+54 11 1234-5678",
+      contactEmailLabel: "E-mail de contato",
+      contactEmailPlaceholder: "voce@email.com (opcional)",
+      lastSeenLabel: "Última localização vista",
+      lastSeenPlaceholder: "Praça, bairro, esquina... (opcional)",
+      rewardLabel: "Recompensa",
+      rewardPlaceholder: "Se você oferece recompensa (opcional)",
+      infoLabel: "Informações adicionais",
+      infoPlaceholder: "Detalhes que ajudem a identificá-lo (opcional)",
+      footer:
+        "Quando encontrar, marque como encontrado na tela do pet e a página pública é desativada na hora.",
+      missingDataTitle: "Faltam dados",
+      missingDataBody:
+        "O nome e o telefone de contato são obrigatórios.",
+      sessionExpiredTitle: "Sessão expirada",
+      sessionExpiredBody: "Entre novamente.",
+      activateFailBody: "Não foi possível ativar o modo perdido.",
+      activatedTitle: "Modo perdido ativado",
+      activatedBody:
+        "A página pública de busca está online. Compartilhe em todo lugar.",
+      shareNow: "Compartilhar agora",
+      later: "Depois",
+      shareMessage:
+        "🔴 {name} ESTÁ PERDIDO. Ajude-nos a encontrá-lo:\n{url}",
+    },
+    inviteCoOwner: {
+      title: "Convidar co-dono",
+      send: "Enviar",
+      intro: "Vai poder ver todo o histórico e adicionar informações.",
+      emailLabel: "E-mail do co-dono",
+      emailPlaceholder: "parceiro@exemplo.com",
+      footer:
+        "Vai receber um e-mail para confirmar. Se ainda não tiver conta no PetApp, enviamos um convite para se cadastrar e automaticamente vira co-dono.",
+      missingEmailTitle: "Falta o e-mail",
+      missingEmailBody: "Digite o e-mail da pessoa.",
+      invalidEmailTitle: "E-mail inválido",
+      invalidEmailBody: "Confira o endereço que você colocou.",
+      sessionExpiredTitle: "Sessão expirada",
+      sessionExpiredBody: "Entre novamente.",
+      sendFailBody: "Não foi possível enviar o convite.",
+      sentBody: "Convite enviado.",
+    },
+  },
 };

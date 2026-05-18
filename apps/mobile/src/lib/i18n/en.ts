@@ -345,4 +345,58 @@ export const en = {
       deleteMismatchBody: 'You had to type "ELIMINAR" exactly.',
     },
   },
+  language: {
+    title: "Language",
+  },
+  components: {
+    lostMode: {
+      title: "Report as lost",
+      activate: "Activate",
+      intro:
+        "We generate a public page with this info so anyone who finds them can contact you.",
+      contactNameLabel: "Contact name *",
+      contactNamePlaceholder: "Your name",
+      contactPhoneLabel: "Contact phone *",
+      contactPhonePlaceholder: "+54 11 1234-5678",
+      contactEmailLabel: "Contact email",
+      contactEmailPlaceholder: "you@email.com (optional)",
+      lastSeenLabel: "Last seen location",
+      lastSeenPlaceholder: "Park, neighborhood, corner... (optional)",
+      rewardLabel: "Reward",
+      rewardPlaceholder: "If you offer a reward (optional)",
+      infoLabel: "Additional information",
+      infoPlaceholder: "Details that help identify them (optional)",
+      footer:
+        "When you find them, mark them as found from the pet screen and the public page is disabled instantly.",
+      missingDataTitle: "Missing data",
+      missingDataBody:
+        "The contact name and phone are required.",
+      sessionExpiredTitle: "Session expired",
+      sessionExpiredBody: "Sign in again.",
+      activateFailBody: "We couldn't activate lost mode.",
+      activatedTitle: "Lost mode activated",
+      activatedBody:
+        "The public search page is online. Share it everywhere.",
+      shareNow: "Share now",
+      later: "Later",
+      shareMessage: "🔴 {name} IS LOST. Help us find them:\n{url}",
+    },
+    inviteCoOwner: {
+      title: "Invite co-owner",
+      send: "Send",
+      intro: "They will be able to see all history and add info.",
+      emailLabel: "Co-owner's email",
+      emailPlaceholder: "partner@example.com",
+      footer:
+        "They will get an email to confirm. If they don't have a PetApp account yet, we send them an invite to sign up and they automatically become a co-owner.",
+      missingEmailTitle: "Email missing",
+      missingEmailBody: "Enter the person's email.",
+      invalidEmailTitle: "Invalid email",
+      invalidEmailBody: "Check the address you entered.",
+      sessionExpiredTitle: "Session expired",
+      sessionExpiredBody: "Sign in again.",
+      sendFailBody: "We couldn't send the invitation.",
+      sentBody: "Invitation sent.",
+    },
+  },
 };

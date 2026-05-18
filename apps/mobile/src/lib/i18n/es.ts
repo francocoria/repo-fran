@@ -345,4 +345,58 @@ export const es = {
       deleteMismatchBody: 'Tenías que escribir "ELIMINAR" exacto.',
     },
   },
+  language: {
+    title: "Idioma",
+  },
+  components: {
+    lostMode: {
+      title: "Reportar como perdida",
+      activate: "Activar",
+      intro:
+        "Generamos una página pública con esta info para que cualquiera que la encuentre te pueda contactar.",
+      contactNameLabel: "Nombre de contacto *",
+      contactNamePlaceholder: "Tu nombre",
+      contactPhoneLabel: "Teléfono de contacto *",
+      contactPhonePlaceholder: "+54 11 1234-5678",
+      contactEmailLabel: "Email de contacto",
+      contactEmailPlaceholder: "tu@email.com (opcional)",
+      lastSeenLabel: "Última ubicación vista",
+      lastSeenPlaceholder: "Plaza, barrio, esquina... (opcional)",
+      rewardLabel: "Recompensa",
+      rewardPlaceholder: "Si ofrecés recompensa (opcional)",
+      infoLabel: "Información adicional",
+      infoPlaceholder: "Detalles que ayuden a identificarla (opcional)",
+      footer:
+        "Cuando la encuentres, marcala como encontrada desde la pantalla de la mascota y la página pública se desactiva al instante.",
+      missingDataTitle: "Faltan datos",
+      missingDataBody:
+        "El nombre y el teléfono de contacto son obligatorios.",
+      sessionExpiredTitle: "Sesión expirada",
+      sessionExpiredBody: "Volvé a iniciar sesión.",
+      activateFailBody: "No pudimos activar el modo perdido.",
+      activatedTitle: "Modo perdido activado",
+      activatedBody:
+        "Ya está online la página pública de búsqueda. Compartila por todos lados.",
+      shareNow: "Compartir ahora",
+      later: "Después",
+      shareMessage: "🔴 SE PERDIÓ {name}. Ayudanos a encontrarla:\n{url}",
+    },
+    inviteCoOwner: {
+      title: "Invitar co-dueño",
+      send: "Enviar",
+      intro: "Va a poder ver todo el historial y agregar info.",
+      emailLabel: "Email del co-dueño",
+      emailPlaceholder: "pareja@ejemplo.com",
+      footer:
+        "Le va a llegar un email para confirmar. Si todavía no tiene cuenta en PetApp, le mandamos un invite para que se registre y automáticamente quede como co-dueño.",
+      missingEmailTitle: "Falta email",
+      missingEmailBody: "Ingresá el email de la persona.",
+      invalidEmailTitle: "Email inválido",
+      invalidEmailBody: "Revisá la dirección que pusiste.",
+      sessionExpiredTitle: "Sesión expirada",
+      sessionExpiredBody: "Volvé a iniciar sesión.",
+      sendFailBody: "No pudimos enviar la invitación.",
+      sentBody: "Invitación enviada.",
+    },
+  },
 };

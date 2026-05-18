@@ -10,6 +10,7 @@ import { useSession, signOut } from "../../../src/lib/session";
 import { supabase } from "../../../src/lib/supabase";
 import { env } from "../../../src/lib/env";
 import { useTranslation } from "../../../src/lib/i18n";
+import { LanguageSwitcher } from "../../../src/components/language-switcher";
 
 export default function VetSettingsScreen() {
   const router = useRouter();
@@ -225,6 +226,10 @@ export default function VetSettingsScreen() {
               fullWidth
             />
           </Card>
+        </View>
+
+        <View className="mt-4">
+          <LanguageSwitcher />
         </View>
 
         <View className="mt-6 gap-3 px-3">

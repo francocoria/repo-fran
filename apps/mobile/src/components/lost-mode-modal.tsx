@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AlertTriangle, X } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { env } from "../lib/env";
+import { useTranslation } from "../lib/i18n";
 
 interface LostModeModalProps {
   visible: boolean;
@@ -48,6 +49,7 @@ export function LostModeModal({
   animalId,
   animalName,
 }: LostModeModalProps) {
+  const { t } = useTranslation();
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
@@ -71,8 +73,8 @@ export function LostModeModal({
   async function handleSubmit() {
     if (!canSubmit) {
       Alert.alert(
-        "Faltan datos",
-        "El nombre y el teléfono de contacto son obligatorios.",
+        t("components.lostMode.missingDataTitle"),
+        t("components.lostMode.missingDataBody"),
       );
       return;
     }
@@ -82,7 +84,10 @@ export function LostModeModal({
         data: { session },
       } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
+        Alert.alert(
+          t("components.lostMode.sessionExpiredTitle"),
+          t("components.lostMode.sessionExpiredBody"),
+        );
         return;
       }
       const res = await fetch(`${env.APP_URL}/api/lost-mode`, {
@@ -104,7 +109,10 @@ export function LostModeModal({
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        Alert.alert("Error", body.error ?? "No pudimos activar el modo perdido.");
+        Alert.alert(
+          t("common.error"),
+          body.error ?? t("components.lostMode.activateFailBody"),
+        );
         return;
       }
       const publicUrl = body.slug ? `${env.APP_URL}/lost/${body.slug}` : null;
@@ -113,24 +121,27 @@ export function LostModeModal({
       onClose();
       if (publicUrl) {
         Alert.alert(
-          "Modo perdido activado",
-          "Ya está online la página pública de búsqueda. Compartila por todos lados.",
+          t("components.lostMode.activatedTitle"),
+          t("components.lostMode.activatedBody"),
           [
             {
-              text: "Compartir ahora",
+              text: t("components.lostMode.shareNow"),
               onPress: () => {
                 void Share.share({
-                  message: `🔴 SE PERDIÓ ${animalName}. Ayudanos a encontrarla:\n${publicUrl}`,
+                  message: t("components.lostMode.shareMessage", {
+                    name: animalName,
+                    url: publicUrl,
+                  }),
                 });
               },
             },
-            { text: "Después", style: "cancel" },
+            { text: t("components.lostMode.later"), style: "cancel" },
           ],
         );
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error de red";
-      Alert.alert("Error", msg);
+      const msg = err instanceof Error ? err.message : t("common.networkError");
+      Alert.alert(t("common.error"), msg);
     } finally {
       setSending(false);
     }
@@ -161,7 +172,7 @@ export function LostModeModal({
             <X size={20} color="#0c0a09" />
           </Pressable>
           <Text className="text-[15px] font-semibold text-foreground">
-            Reportar como perdida
+            {t("components.lostMode.title")}
           </Text>
           <Pressable
             onPress={handleSubmit}
@@ -179,7 +190,7 @@ export function LostModeModal({
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <Text style={{ color: "#ffffff", fontSize: 13, fontWeight: "600" }}>
-                Activar
+                {t("components.lostMode.activate")}
               </Text>
             )}
           </Pressable>
@@ -211,62 +222,60 @@ export function LostModeModal({
                   {animalName}
                 </Text>
                 <Text className="mt-0.5 text-[12px] text-muted">
-                  Generamos una página pública con esta info para que
-                  cualquiera que la encuentre te pueda contactar.
+                  {t("components.lostMode.intro")}
                 </Text>
               </View>
             </View>
 
             <Field
-              label="Nombre de contacto *"
+              label={t("components.lostMode.contactNameLabel")}
               value={contactName}
               onChangeText={setContactName}
-              placeholder="Tu nombre"
+              placeholder={t("components.lostMode.contactNamePlaceholder")}
               editable={!sending}
             />
             <Field
-              label="Teléfono de contacto *"
+              label={t("components.lostMode.contactPhoneLabel")}
               value={contactPhone}
               onChangeText={setContactPhone}
-              placeholder="+54 11 1234-5678"
+              placeholder={t("components.lostMode.contactPhonePlaceholder")}
               keyboardType="phone-pad"
               editable={!sending}
             />
             <Field
-              label="Email de contacto"
+              label={t("components.lostMode.contactEmailLabel")}
               value={contactEmail}
               onChangeText={setContactEmail}
-              placeholder="tu@email.com (opcional)"
+              placeholder={t("components.lostMode.contactEmailPlaceholder")}
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!sending}
             />
             <Field
-              label="Última ubicación vista"
+              label={t("components.lostMode.lastSeenLabel")}
               value={lastSeenLocation}
               onChangeText={setLastSeenLocation}
-              placeholder="Plaza, barrio, esquina... (opcional)"
+              placeholder={t("components.lostMode.lastSeenPlaceholder")}
               editable={!sending}
             />
             <Field
-              label="Recompensa"
+              label={t("components.lostMode.rewardLabel")}
               value={reward}
               onChangeText={setReward}
-              placeholder="Si ofrecés recompensa (opcional)"
+              placeholder={t("components.lostMode.rewardPlaceholder")}
               editable={!sending}
             />
             <Field
-              label="Información adicional"
+              label={t("components.lostMode.infoLabel")}
               value={info}
               onChangeText={setInfo}
-              placeholder="Detalles que ayuden a identificarla (opcional)"
+              placeholder={t("components.lostMode.infoPlaceholder")}
               editable={!sending}
               multiline
             />
 
             <Text className="mt-2 text-[12px] text-subtle leading-5">
-              Cuando la encuentres, marcala como encontrada desde la pantalla
-              de la mascota y la página pública se desactiva al instante.
+              {t("components.lostMode.footer")}
             </Text>
           </ScrollView>
         </KeyboardAvoidingView>
