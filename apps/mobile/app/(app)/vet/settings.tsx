@@ -9,9 +9,11 @@ import { Card } from "../../../src/components/ui/card";
 import { useSession, signOut } from "../../../src/lib/session";
 import { supabase } from "../../../src/lib/supabase";
 import { env } from "../../../src/lib/env";
+import { useTranslation } from "../../../src/lib/i18n";
 
 export default function VetSettingsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { session } = useSession();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
@@ -41,7 +43,10 @@ export default function VetSettingsScreen() {
   async function handleSave() {
     if (!profileId) return;
     if (!fullName.trim()) {
-      Alert.alert("Falta tu nombre", "El nombre no puede estar vacío.");
+      Alert.alert(
+        t("vet.settings.missingNameTitle"),
+        t("vet.settings.missingNameBody"),
+      );
       return;
     }
     setSaving(true);
@@ -56,17 +61,20 @@ export default function VetSettingsScreen() {
       .eq("id", profileId);
     setSaving(false);
     if (error) {
-      Alert.alert("Error", error.message);
+      Alert.alert(t("common.error"), error.message);
       return;
     }
-    Alert.alert("Listo", "Cambios guardados.");
+    Alert.alert(t("common.done"), t("vet.settings.savedBody"));
   }
 
   async function handleSignOut() {
-    Alert.alert("Cerrar sesión", "¿Seguro que querés salir?", [
-      { text: "Cancelar", style: "cancel" },
+    Alert.alert(
+      t("vet.settings.signOutTitle"),
+      t("vet.settings.signOutBody"),
+      [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Salir",
+        text: t("vet.settings.signOutConfirm"),
         style: "destructive",
         onPress: async () => {
           await signOut();
@@ -82,7 +90,10 @@ export default function VetSettingsScreen() {
         data: { session: current },
       } = await supabase.auth.getSession();
       if (!current?.access_token) {
-        Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
+        Alert.alert(
+          t("vet.settings.sessionExpiredTitle"),
+          t("vet.settings.sessionExpiredBody"),
+        );
         return;
       }
       const res = await fetch(`${env.APP_URL}/api/account/delete`, {
@@ -91,41 +102,44 @@ export default function VetSettingsScreen() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        Alert.alert("Error", body.error ?? "No pudimos eliminar la cuenta.");
+        Alert.alert(
+          t("common.error"),
+          body.error ?? t("vet.settings.deleteFailBody"),
+        );
         return;
       }
       await signOut();
       router.replace("/login");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error de red";
-      Alert.alert("Error", msg);
+      const msg = err instanceof Error ? err.message : t("common.networkError");
+      Alert.alert(t("common.error"), msg);
     }
   }
 
   async function handleDeleteAccount() {
     Alert.alert(
-      "¿Eliminar cuenta?",
-      "Se borrarán tu perfil profesional, suscripción premium y todos los accesos a animales. Esta acción NO se puede deshacer.",
+      t("vet.settings.deleteConfirmTitle"),
+      t("vet.settings.deleteConfirmBody"),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Continuar",
+          text: t("common.continue"),
           style: "destructive",
           onPress: () => {
             if (Platform.OS === "ios") {
               Alert.prompt(
-                "Última confirmación",
-                'Escribí "ELIMINAR" para confirmar.',
+                t("vet.settings.deleteLastTitle"),
+                t("vet.settings.deleteLastBodyIos"),
                 [
-                  { text: "Cancelar", style: "cancel" },
+                  { text: t("common.cancel"), style: "cancel" },
                   {
-                    text: "Eliminar",
+                    text: t("common.delete"),
                     style: "destructive",
                     onPress: (value?: string) => {
                       if (value?.trim() !== "ELIMINAR") {
                         Alert.alert(
-                          "No coincide",
-                          'Tenías que escribir "ELIMINAR" exacto.',
+                          t("vet.settings.deleteMismatchTitle"),
+                          t("vet.settings.deleteMismatchBody"),
                         );
                         return;
                       }
@@ -137,12 +151,12 @@ export default function VetSettingsScreen() {
               );
             } else {
               Alert.alert(
-                "Última confirmación",
-                "Tocá 'Eliminar' para borrar tu cuenta y todos los datos.",
+                t("vet.settings.deleteLastTitle"),
+                t("vet.settings.deleteLastBodyAndroid"),
                 [
-                  { text: "Cancelar", style: "cancel" },
+                  { text: t("common.cancel"), style: "cancel" },
                   {
-                    text: "Eliminar",
+                    text: t("common.delete"),
                     style: "destructive",
                     onPress: () => void performAccountDeletion(),
                   },
@@ -160,69 +174,76 @@ export default function VetSettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="px-5 pt-4 pb-2">
           <Text className="text-[24px] font-bold tracking-tight text-foreground">
-            Configuración
+            {t("vet.settings.title")}
           </Text>
           <Text className="mt-1 text-[13px] text-muted">
-            Tu información profesional.
+            {t("vet.settings.subtitle")}
           </Text>
         </View>
 
         <View className="px-3 pt-4">
           <Card className="gap-4">
             <Input
-              label="Nombre completo"
+              label={t("vet.settings.fullNameLabel")}
               required
               value={fullName}
               onChangeText={setFullName}
-              placeholder="Dra. Camila Martínez"
+              placeholder={t("vet.settings.fullNamePlaceholder")}
             />
             <View className="gap-1">
-              <Text className="text-[13px] font-medium text-foreground">Email</Text>
+              <Text className="text-[13px] font-medium text-foreground">
+                {t("vet.settings.emailLabel")}
+              </Text>
               <View className="flex-row items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2.5">
                 <Mail size={14} color="#78716c" />
                 <Text className="flex-1 text-[14px] text-muted">{session?.user.email}</Text>
               </View>
             </View>
             <Input
-              label="Clínica"
+              label={t("vet.settings.clinicLabel")}
               value={clinicName}
               onChangeText={setClinicName}
-              placeholder="Veterinaria Palermo"
+              placeholder={t("vet.settings.clinicPlaceholder")}
             />
             <Input
-              label="Matrícula"
+              label={t("vet.settings.licenseLabel")}
               value={licenseNumber}
               onChangeText={setLicenseNumber}
-              placeholder="Ej: 12345"
+              placeholder={t("vet.settings.licensePlaceholder")}
             />
             <Input
-              label="Teléfono"
+              label={t("vet.settings.phoneLabel")}
               value={phone}
               onChangeText={setPhone}
-              placeholder="+54 11 1234-5678"
+              placeholder={t("vet.settings.phonePlaceholder")}
               keyboardType="phone-pad"
             />
-            <Button label="Guardar cambios" onPress={handleSave} loading={saving} fullWidth />
+            <Button
+              label={t("common.saveChanges")}
+              onPress={handleSave}
+              loading={saving}
+              fullWidth
+            />
           </Card>
         </View>
 
         <View className="mt-6 gap-3 px-3">
           <Button
-            label="Cerrar sesión"
+            label={t("vet.settings.signOut")}
             onPress={handleSignOut}
             variant="outline"
             icon={LogOut}
             fullWidth
           />
           <Button
-            label="Eliminar mi cuenta"
+            label={t("vet.settings.deleteAccount")}
             onPress={handleDeleteAccount}
             variant="rose"
             icon={Trash2}
             fullWidth
           />
           <Text className="px-1 text-center text-[11px] text-subtle">
-            Esta acción es irreversible.
+            {t("vet.settings.deleteWarning")}
           </Text>
         </View>
       </ScrollView>

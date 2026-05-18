@@ -28,7 +28,8 @@ import { Button } from "../../../../src/components/ui/button";
 import { supabase } from "../../../../src/lib/supabase";
 import { useSession } from "../../../../src/lib/session";
 import { env } from "../../../../src/lib/env";
-import { formatDate, getAge, speciesLabel } from "../../../../src/lib/format";
+import { useTranslation } from "../../../../src/lib/i18n";
+import { useLocaleFormat } from "../../../../src/lib/i18n/format";
 
 interface PatientData {
   animal: any;
@@ -47,6 +48,8 @@ interface PatientData {
 
 export default function VetPatientView() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { ageLabel, speciesLabel, formatDate } = useLocaleFormat();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [data, setData] = useState<PatientData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,7 +118,7 @@ export default function VetPatientView() {
   }
 
   const { animal, owner, severeAllergies, records } = data;
-  const ageText = animal.birth_date ? getAge(animal.birth_date) : null;
+  const ageText = animal.birth_date ? ageLabel(animal.birth_date) : null;
   const cleanPhone = owner?.phone?.replace(/\D/g, "");
 
   return (
@@ -123,7 +126,9 @@ export default function VetPatientView() {
       <View className="flex-row items-center justify-between px-4 py-2">
         <Pressable onPress={() => router.back()} className="flex-row items-center gap-1">
           <ChevronLeft size={22} color="#0c0a09" />
-          <Text className="text-[15px] text-foreground">Pacientes</Text>
+          <Text className="text-[15px] text-foreground">
+            {t("vet.patientDetail.back")}
+          </Text>
         </Pressable>
       </View>
 
@@ -141,7 +146,7 @@ export default function VetPatientView() {
               {animal.name}
             </Text>
             <Text className="text-[12.5px] text-muted">
-              {speciesLabel[animal.species] ?? animal.species}
+              {speciesLabel(animal.species)}
               {animal.breed && ` · ${animal.breed}`}
               {ageText && ` · ${ageText}`}
             </Text>
@@ -207,7 +212,7 @@ export default function VetPatientView() {
               <AlertTriangle size={20} color="#fff" strokeWidth={2.4} />
               <View className="flex-1">
                 <Text className="text-[11px] font-bold uppercase tracking-wider text-white/90">
-                  Alergia grave
+                  {t("vet.patientDetail.severeAllergyTitle")}
                 </Text>
                 <Text className="text-[14px] font-semibold text-white">
                   {severeAllergies.map((a) => a.allergen).join(", ")}
@@ -220,10 +225,12 @@ export default function VetPatientView() {
         <View className="mt-4 px-5">
           <View className="flex-row items-center justify-between">
             <Text className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
-              Historial
+              {t("vet.patientDetail.history")}
             </Text>
             <Text className="text-[11px] text-subtle">
-              {records.length} consultas
+              {t("vet.patientDetail.consultsCount", {
+                count: records.length,
+              })}
             </Text>
           </View>
         </View>
@@ -234,7 +241,7 @@ export default function VetPatientView() {
               <View className="items-center py-4">
                 <Stethoscope size={28} color="#d6d3d1" />
                 <Text className="mt-2 text-[13px] text-muted">
-                  Sin consultas todavía
+                  {t("vet.patientDetail.noConsults")}
                 </Text>
               </View>
             </Card>
@@ -250,7 +257,9 @@ export default function VetPatientView() {
                   <Text className="font-mono text-[11px] text-subtle">
                     {formatDate(r.visit_date, { short: true })}
                   </Text>
-                  {r.is_mine && <Badge label="Tuya" tone="accent" />}
+                  {r.is_mine && (
+                    <Badge label={t("vet.patientDetail.badgeMine")} tone="accent" />
+                  )}
                 </View>
                 <Text className="mt-1 text-[14px] font-semibold text-foreground">
                   {r.reason}
@@ -267,7 +276,7 @@ export default function VetPatientView() {
 
         <View className="mt-6 mx-3">
           <Button
-            label="Nueva consulta"
+            label={t("vet.patientDetail.newConsult")}
             variant="accent"
             fullWidth
             size="lg"
@@ -308,6 +317,7 @@ function NewConsultModal({
   animalName,
   onCreated,
 }: NewConsultModalProps) {
+  const { t } = useTranslation();
   const { session } = useSession();
   const [reason, setReason] = useState("");
   const [examination, setExamination] = useState("");
@@ -330,11 +340,17 @@ function NewConsultModal({
 
   async function handleSubmit() {
     if (!reason.trim()) {
-      Alert.alert("Falta motivo", "Ingresá el motivo de la consulta.");
+      Alert.alert(
+        t("vet.patientDetail.missingReasonTitle"),
+        t("vet.patientDetail.missingReasonBody"),
+      );
       return;
     }
     if (!session?.user.id) {
-      Alert.alert("Sesión inválida", "Volvé a iniciar sesión.");
+      Alert.alert(
+        t("vet.patientDetail.invalidSessionTitle"),
+        t("vet.patientDetail.invalidSessionBody"),
+      );
       return;
     }
 
@@ -349,7 +365,7 @@ function NewConsultModal({
 
     if (vetErr || !vetProfile) {
       setSaving(false);
-      Alert.alert("Error", "No encontramos tu perfil de veterinario.");
+      Alert.alert(t("common.error"), t("vet.patientDetail.noVetProfileBody"));
       return;
     }
 
@@ -373,8 +389,8 @@ function NewConsultModal({
     if (insertErr) {
       console.error("[newConsult] insert error:", insertErr);
       Alert.alert(
-        "Error",
-        insertErr.message ?? "No pudimos guardar la consulta.",
+        t("common.error"),
+        insertErr.message ?? t("vet.patientDetail.saveError"),
       );
       return;
     }
@@ -400,7 +416,7 @@ function NewConsultModal({
             <X size={20} color="#0c0a09" />
           </Pressable>
           <Text className="text-[15px] font-semibold text-foreground">
-            Nueva consulta
+            {t("vet.patientDetail.newConsult")}
           </Text>
           <Pressable
             onPress={handleSubmit}
@@ -418,7 +434,7 @@ function NewConsultModal({
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>
-                Guardar
+                {t("common.save")}
               </Text>
             )}
           </Pressable>
@@ -429,7 +445,7 @@ function NewConsultModal({
           keyboardShouldPersistTaps="handled"
         >
           <Text className="mb-2 text-[12px] uppercase tracking-wider text-subtle">
-            Paciente
+            {t("vet.patientDetail.patient")}
           </Text>
           <View className="mb-5 rounded-lg border border-border bg-surface-2/40 px-3 py-2">
             <Text className="text-[14px] font-medium text-foreground">
@@ -437,71 +453,73 @@ function NewConsultModal({
             </Text>
           </View>
 
-          <FieldLabel required>Motivo de la consulta</FieldLabel>
+          <FieldLabel required>
+            {t("vet.patientDetail.reasonLabel")}
+          </FieldLabel>
           <ConsultInput
             value={reason}
             onChangeText={setReason}
-            placeholder="Control anual, vómitos, vacuna, etc."
+            placeholder={t("vet.patientDetail.reasonPlaceholder")}
             multiline={false}
           />
 
-          <FieldLabel>Examen físico</FieldLabel>
+          <FieldLabel>{t("vet.patientDetail.examinationLabel")}</FieldLabel>
           <ConsultInput
             value={examination}
             onChangeText={setExamination}
-            placeholder="Estado general, temperatura, frecuencia cardíaca..."
+            placeholder={t("vet.patientDetail.examinationPlaceholder")}
             multiline
           />
 
-          <FieldLabel>Diagnóstico</FieldLabel>
+          <FieldLabel>{t("vet.patientDetail.diagnosisLabel")}</FieldLabel>
           <ConsultInput
             value={diagnosis}
             onChangeText={setDiagnosis}
-            placeholder="Otitis externa, dermatitis alérgica..."
+            placeholder={t("vet.patientDetail.diagnosisPlaceholder")}
             multiline
           />
 
-          <FieldLabel>Tratamiento</FieldLabel>
+          <FieldLabel>{t("vet.patientDetail.treatmentLabel")}</FieldLabel>
           <ConsultInput
             value={treatment}
             onChangeText={setTreatment}
-            placeholder="Medicación, dosis, duración..."
+            placeholder={t("vet.patientDetail.treatmentPlaceholder")}
             multiline
           />
 
-          <FieldLabel>Próximos pasos</FieldLabel>
+          <FieldLabel>{t("vet.patientDetail.nextStepsLabel")}</FieldLabel>
           <ConsultInput
             value={nextSteps}
             onChangeText={setNextSteps}
-            placeholder="Control en 7 días, análisis pendiente..."
+            placeholder={t("vet.patientDetail.nextStepsPlaceholder")}
             multiline
           />
 
-          <FieldLabel>Notas para el dueño</FieldLabel>
+          <FieldLabel>{t("vet.patientDetail.publicNotesLabel")}</FieldLabel>
           <ConsultInput
             value={publicNotes}
             onChangeText={setPublicNotes}
-            placeholder="Indicaciones de cuidado, alimentación..."
+            placeholder={t("vet.patientDetail.publicNotesPlaceholder")}
             multiline
           />
           <Text className="-mt-2 mb-3 text-[11px] text-subtle">
-            Las ve el dueño en su perfil.
+            {t("vet.patientDetail.publicNotesHint")}
           </Text>
 
           <View className="flex-row items-center gap-1.5 mt-2">
             <Lock size={12} color="#78716c" />
             <Text className="text-[11px] uppercase tracking-wider text-subtle">
-              Notas privadas
+              {t("vet.patientDetail.privateNotesLabel")}
             </Text>
           </View>
           <ConsultInput
             value={privateNotes}
             onChangeText={setPrivateNotes}
-            placeholder="Sólo vos las ves..."
+            placeholder={t("vet.patientDetail.privateNotesPlaceholder")}
             multiline
           />
           <Text className="-mt-2 text-[11px] text-subtle">
-            El dueño y otros vets NO las ven. Sólo tu cuenta.
+            {t("vet.patientDetail.privateNotesHint")}
           </Text>
         </ScrollView>
       </SafeAreaView>

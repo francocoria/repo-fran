@@ -7,9 +7,11 @@ import { Camera, ChevronLeft, ScanLine } from "lucide-react-native";
 import { randomUUID } from "expo-crypto";
 import { Button } from "../../../src/components/ui/button";
 import { supabase } from "../../../src/lib/supabase";
+import { useTranslation } from "../../../src/lib/i18n";
 
 export default function ScanScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -38,16 +40,16 @@ export default function ScanScreen() {
 
       if (error || !animal) {
         Alert.alert(
-          "QR no reconocido",
-          "El código no corresponde a una mascota de PetApp.",
-          [{ text: "Reintentar", onPress: () => setScanning(true) }],
+          t("vet.scan.qrNotRecognizedTitle"),
+          t("vet.scan.qrNotRecognizedBody"),
+          [{ text: t("common.retry"), onPress: () => setScanning(true) }],
         );
         return;
       }
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        Alert.alert("Error", "No estás autenticado.");
+        Alert.alert(t("common.error"), t("vet.scan.notAuthBody"));
         return;
       }
 
@@ -58,7 +60,7 @@ export default function ScanScreen() {
         .single();
 
       if (!vetProfile) {
-        Alert.alert("Error", "No se encontró tu perfil de vet.");
+        Alert.alert(t("common.error"), t("vet.scan.noVetProfileBody"));
         return;
       }
 
@@ -76,8 +78,8 @@ export default function ScanScreen() {
 
       if (existing?.status === "pending") {
         Alert.alert(
-          "Ya solicitaste acceso",
-          `Esperando aprobación del dueño de ${animal.name}.`,
+          t("vet.scan.alreadyRequestedTitle"),
+          t("vet.scan.alreadyRequestedBody", { name: animal.name }),
         );
         router.back();
         return;
@@ -91,17 +93,17 @@ export default function ScanScreen() {
       });
 
       if (insertError) {
-        Alert.alert("Error", insertError.message);
+        Alert.alert(t("common.error"), insertError.message);
         return;
       }
 
       Alert.alert(
-        "Solicitud enviada",
-        `Le pedimos acceso al dueño de ${animal.name}. Cuando apruebe, va a aparecer en tus pacientes.`,
-        [{ text: "OK", onPress: () => router.back() }],
+        t("vet.scan.requestSentTitle"),
+        t("vet.scan.requestSentBody", { name: animal.name }),
+        [{ text: t("vet.scan.ok"), onPress: () => router.back() }],
       );
     } catch (e: any) {
-      Alert.alert("Error", e?.message ?? "Algo salió mal.");
+      Alert.alert(t("common.error"), e?.message ?? t("vet.scan.somethingWrong"));
       setScanning(true);
     } finally {
       setProcessing(false);
@@ -111,7 +113,7 @@ export default function ScanScreen() {
   if (!permission) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-muted">Cargando cámara...</Text>
+        <Text className="text-muted">{t("vet.scan.loadingCamera")}</Text>
       </View>
     );
   }
@@ -121,18 +123,21 @@ export default function ScanScreen() {
       <SafeAreaView className="flex-1 bg-background">
         <Pressable onPress={() => router.back()} className="flex-row items-center gap-1 px-4 py-3">
           <ChevronLeft size={20} color="#57534e" />
-          <Text className="text-[15px] text-muted">Volver</Text>
+          <Text className="text-[15px] text-muted">{t("common.back")}</Text>
         </Pressable>
         <View className="flex-1 items-center justify-center px-6">
           <Camera size={56} color="#d6d3d1" />
           <Text className="mt-4 text-center text-[16px] font-semibold text-foreground">
-            Necesitamos acceso a la cámara
+            {t("vet.scan.permissionTitle")}
           </Text>
           <Text className="mt-2 text-center text-[13px] text-muted">
-            Para escanear los QR de las mascotas necesitamos permiso de cámara.
+            {t("vet.scan.permissionBody")}
           </Text>
           <View className="mt-6">
-            <Button label="Dar permiso" onPress={requestPermission} />
+            <Button
+              label={t("vet.scan.grantPermission")}
+              onPress={requestPermission}
+            />
           </View>
         </View>
       </SafeAreaView>
@@ -174,9 +179,7 @@ export default function ScanScreen() {
           <View className="flex-row items-center justify-center gap-2 rounded-full bg-black/60 px-4 py-3">
             <ScanLine size={18} color="#fff" />
             <Text className="text-[14px] font-medium text-white">
-              {processing
-                ? "Procesando..."
-                : "Apuntá al QR de la mascota"}
+              {processing ? t("vet.scan.processing") : t("vet.scan.aimQr")}
             </Text>
           </View>
         </View>

@@ -5,18 +5,21 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Card } from "../../../src/components/ui/card";
 import { Badge } from "../../../src/components/ui/badge";
 import { useVetPlan } from "../../../src/hooks/use-vet-data";
-import { formatDate } from "../../../src/lib/format";
+import { useTranslation } from "../../../src/lib/i18n";
+import { useLocaleFormat } from "../../../src/lib/i18n/format";
 
-const FEATURES = [
-  { label: "Pacientes ilimitados", premium: true },
-  { label: "Recetas con tu marca", premium: true },
-  { label: "Certificados profesionales", premium: true },
-  { label: "Verificación de matrícula", premium: true },
-  { label: "Estadísticas de práctica", premium: true },
-  { label: "Plantillas propias", premium: true },
+const FEATURE_KEYS = [
+  "featUnlimited",
+  "featBranded",
+  "featCertificates",
+  "featVerification",
+  "featStats",
+  "featTemplates",
 ];
 
 export default function VetPlanScreen() {
+  const { t } = useTranslation();
+  const { formatDate } = useLocaleFormat();
   const { data, isLoading } = useVetPlan();
 
   if (isLoading || !data) {
@@ -38,10 +41,10 @@ export default function VetPlanScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="px-5 pt-4 pb-2">
           <Text className="text-[24px] font-bold tracking-tight text-foreground">
-            Mi plan
+            {t("vet.plan.title")}
           </Text>
           <Text className="mt-1 text-[13px] text-muted">
-            Gestioná tu suscripción y beneficios.
+            {t("vet.plan.subtitle")}
           </Text>
         </View>
 
@@ -52,12 +55,12 @@ export default function VetPlanScreen() {
                 <Badge
                   label={
                     expired
-                      ? "Vencido"
+                      ? t("vet.plan.badgeExpired")
                       : subscription?.plan === "premium"
-                        ? "Premium"
+                        ? t("vet.plan.badgePremium")
                         : subscription?.plan === "trial"
-                          ? "Trial"
-                          : "Free"
+                          ? t("vet.plan.badgeTrial")
+                          : t("vet.plan.badgeFree")
                   }
                   tone={
                     expired
@@ -72,14 +75,20 @@ export default function VetPlanScreen() {
                 />
                 <Text className="mt-2 text-[18px] font-bold text-foreground">
                   {isPremium
-                    ? "Premium activo"
+                    ? t("vet.plan.statusPremium")
                     : expired
-                      ? "Tu plan venció"
-                      : "Plan gratuito"}
+                      ? t("vet.plan.statusExpired")
+                      : t("vet.plan.statusFree")}
                 </Text>
                 {expiresAt && (
                   <Text className="mt-0.5 text-[12px] text-muted">
-                    {expired ? "Venció " : "Vence "} el {formatDate(expiresAt)}
+                    {expired
+                      ? t("vet.plan.expiredOn", {
+                          date: formatDate(expiresAt),
+                        })
+                      : t("vet.plan.expiresOn", {
+                          date: formatDate(expiresAt),
+                        })}
                   </Text>
                 )}
               </View>
@@ -89,14 +98,14 @@ export default function VetPlanScreen() {
 
         <View className="mt-5 px-5">
           <Text className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-subtle">
-            Beneficios
+            {t("vet.plan.benefits")}
           </Text>
         </View>
 
         <View className="px-3">
           <Card className="gap-3">
-            {FEATURES.map((f) => (
-              <View key={f.label} className="flex-row items-center gap-3">
+            {FEATURE_KEYS.map((key) => (
+              <View key={key} className="flex-row items-center gap-3">
                 <View
                   className={`size-6 items-center justify-center rounded-md ${
                     isPremium ? "bg-emerald/15" : "bg-surface-2"
@@ -114,7 +123,7 @@ export default function VetPlanScreen() {
                     isPremium ? "text-foreground" : "text-muted"
                   }`}
                 >
-                  {f.label}
+                  {t(`vet.plan.${key}`)}
                 </Text>
               </View>
             ))}
@@ -131,13 +140,13 @@ export default function VetPlanScreen() {
             >
               <Crown size={32} color="#fff" />
               <Text className="mt-2 text-[18px] font-bold text-white">
-                Plan Premium
+                {t("vet.plan.premiumCardTitle")}
               </Text>
               <Text className="mt-1 text-center text-[13px] text-white/90">
-                Pacientes ilimitados, certificados profesionales y branding.
+                {t("vet.plan.premiumCardDesc")}
               </Text>
               <Text className="mt-3 text-center text-[12px] text-white/75">
-                Las suscripciones se gestionan desde la cuenta web. Próximamente compras dentro de la app.
+                {t("vet.plan.premiumCardNote")}
               </Text>
             </LinearGradient>
           </View>

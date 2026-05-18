@@ -6,10 +6,12 @@ import { PetAvatar } from "../../../src/components/pet-avatar";
 import { Badge } from "../../../src/components/ui/badge";
 import { Button } from "../../../src/components/ui/button";
 import { useVetPatients, type VetPatient } from "../../../src/hooks/use-vet-data";
-import { speciesLabel } from "../../../src/lib/format";
+import { useTranslation } from "../../../src/lib/i18n";
+import { useLocaleFormat } from "../../../src/lib/i18n/format";
 
 export default function VetPatientsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data: patients = [], isLoading, refetch, isRefetching } = useVetPatients();
 
   const active = patients.filter((p) => !p.archived);
@@ -19,11 +21,12 @@ export default function VetPatientsScreen() {
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
       <View className="px-5 pt-4 pb-2">
         <Text className="text-[24px] font-bold tracking-tight text-foreground">
-          Mis pacientes
+          {t("vet.patients.title")}
         </Text>
         <Text className="mt-1 text-[13px] text-muted">
-          {active.length} activos
-          {archived.length > 0 && ` · ${archived.length} archivados`}
+          {t("vet.patients.countActive", { count: active.length })}
+          {archived.length > 0 &&
+            t("vet.patients.countArchived", { count: archived.length })}
         </Text>
       </View>
 
@@ -33,15 +36,14 @@ export default function VetPatientsScreen() {
         <View className="flex-1 items-center justify-center px-8">
           <ScanLine size={40} color="#d6d3d1" />
           <Text className="mt-3 text-center text-[15px] font-semibold text-foreground">
-            Sin pacientes todavía
+            {t("vet.patients.emptyTitle")}
           </Text>
           <Text className="mt-1.5 text-center text-[13px] text-muted">
-            Pedile al dueño que te muestre el QR de su mascota y escanealo desde
-            la app.
+            {t("vet.patients.emptyDesc")}
           </Text>
           <View className="mt-5">
             <Button
-              label="Escanear QR"
+              label={t("vet.patients.scanQr")}
               icon={ScanLine}
               onPress={() => router.push("/(app)/vet/scan" as never)}
             />
@@ -79,6 +81,8 @@ function PatientRow({
   patient: VetPatient;
   onPress: () => void;
 }) {
+  const { t } = useTranslation();
+  const { speciesLabel } = useLocaleFormat();
   return (
     <Pressable
       onPress={onPress}
@@ -97,11 +101,15 @@ function PatientRow({
             {patient.animal_name}
           </Text>
           {patient.archived && (
-            <Badge label="Archivado" tone="neutral" icon={Archive} />
+            <Badge
+              label={t("vet.patients.badgeArchived")}
+              tone="neutral"
+              icon={Archive}
+            />
           )}
         </View>
         <Text className="text-[12.5px] text-muted">
-          {patient.animal_breed ?? speciesLabel[patient.animal_species]}
+          {patient.animal_breed ?? speciesLabel(patient.animal_species)}
         </Text>
         <Text className="text-[11.5px] text-subtle">
           {patient.owner_name}

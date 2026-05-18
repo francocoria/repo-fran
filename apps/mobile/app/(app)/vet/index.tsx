@@ -13,12 +13,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Badge } from "../../../src/components/ui/badge";
 import { Card } from "../../../src/components/ui/card";
 import { useVetPlan } from "../../../src/hooks/use-vet-data";
-import { formatDate } from "../../../src/lib/format";
+import { useTranslation } from "../../../src/lib/i18n";
 
 const FREE_CAP = 5;
 
 export default function VetHomeScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { data, isLoading } = useVetPlan();
 
   if (isLoading || !data) {
@@ -47,7 +48,9 @@ export default function VetHomeScreen() {
       <View className="px-5 pt-4">
         <View className="flex-row items-end justify-between">
           <View className="flex-1">
-            <Text className="text-[13px] text-muted">Hola,</Text>
+            <Text className="text-[13px] text-muted">
+              {t("vet.home.greeting")}
+            </Text>
             <Text className="text-[26px] font-bold tracking-tight text-foreground">
               {firstName}
             </Text>
@@ -79,17 +82,22 @@ export default function VetHomeScreen() {
               <View className="flex-1">
                 <Text className="text-[14px] font-semibold text-foreground">
                   {expired
-                    ? "Tu plan venció"
+                    ? t("vet.home.planExpiredTitle")
                     : trialEndingSoon
-                      ? `Tu trial termina en ${daysLeft} día${daysLeft !== 1 ? "s" : ""}`
-                      : "Llegaste al límite del plan gratis"}
+                      ? t("vet.home.trialEndingTitle", {
+                          count: daysLeft ?? 0,
+                        })
+                      : t("vet.home.atCapTitle")}
                 </Text>
                 <Text className="mt-0.5 text-[12.5px] text-muted">
                   {expired
-                    ? "Renová para no perder pacientes activos."
+                    ? t("vet.home.planExpiredDesc")
                     : trialEndingSoon
-                      ? "Activá Premium para mantener todos tus pacientes."
-                      : `${activeCount} de ${FREE_CAP} activos. Pasate a Premium para ilimitados.`}
+                      ? t("vet.home.trialEndingDesc")
+                      : t("vet.home.atCapDesc", {
+                          active: activeCount,
+                          cap: FREE_CAP,
+                        })}
                 </Text>
               </View>
             </View>
@@ -131,9 +139,11 @@ export default function VetHomeScreen() {
             <QrCode size={26} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="text-[16px] font-bold text-white">Escanear QR</Text>
+            <Text className="text-[16px] font-bold text-white">
+              {t("vet.home.scanQr")}
+            </Text>
             <Text className="text-[12.5px] text-white/90">
-              Apuntá al código del animal
+              {t("vet.home.scanQrSub")}
             </Text>
           </View>
         </LinearGradient>
@@ -142,17 +152,21 @@ export default function VetHomeScreen() {
       <View className="mt-4 px-3">
         <View className="flex-row gap-2">
           <MiniStat
-            label="Activos"
+            label={t("vet.home.statActive")}
             value={isPremium ? `${activeCount}` : `${activeCount} / ${FREE_CAP}`}
             icon={Users}
           />
-          <MiniStat label="Plan" value={subscription?.plan ?? "free"} icon={Crown} />
+          <MiniStat
+            label={t("vet.home.statPlan")}
+            value={subscription?.plan ?? "free"}
+            icon={Crown}
+          />
         </View>
       </View>
 
       <View className="mt-5 px-5">
         <Text className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-subtle">
-          Acciones
+          {t("vet.home.actions")}
         </Text>
       </View>
 
@@ -169,10 +183,10 @@ export default function VetHomeScreen() {
           </View>
           <View className="flex-1">
             <Text className="text-[14px] font-semibold text-foreground">
-              Mis pacientes
+              {t("vet.home.myPatients")}
             </Text>
             <Text className="text-[12px] text-muted">
-              Ver listado completo
+              {t("vet.home.myPatientsSub")}
             </Text>
           </View>
         </Pressable>
@@ -197,10 +211,12 @@ export default function VetHomeScreen() {
           </LinearGradient>
           <View className="flex-1">
             <Text className="text-[14px] font-semibold text-foreground">
-              Mi plan
+              {t("vet.home.myPlan")}
             </Text>
             <Text className="text-[12px] text-muted">
-              {isPremium ? "Premium activo" : "Conocé los beneficios"}
+              {isPremium
+                ? t("vet.home.myPlanPremium")
+                : t("vet.home.myPlanFree")}
             </Text>
           </View>
         </Pressable>
@@ -218,17 +234,28 @@ function PlanBadge({
   expired: boolean;
   daysLeft: number | null;
 }) {
-  if (expired) return <Badge label="Vencido" tone="rose" icon={AlertCircle} />;
-  if (plan === "premium") return <Badge label="Premium" tone="gold" icon={Crown} />;
+  const { t } = useTranslation();
+  if (expired)
+    return (
+      <Badge label={t("vet.home.badgeExpired")} tone="rose" icon={AlertCircle} />
+    );
+  if (plan === "premium")
+    return (
+      <Badge label={t("vet.home.badgePremium")} tone="gold" icon={Crown} />
+    );
   if (plan === "trial")
     return (
       <Badge
-        label={daysLeft ? `Trial · ${daysLeft}d` : "Trial"}
+        label={
+          daysLeft
+            ? t("vet.home.badgeTrialDays", { days: daysLeft })
+            : t("vet.home.badgeTrial")
+        }
         tone="amber"
         icon={Sparkles}
       />
     );
-  return <Badge label="Free" tone="neutral" />;
+  return <Badge label={t("vet.home.badgeFree")} tone="neutral" />;
 }
 
 function MiniStat({
