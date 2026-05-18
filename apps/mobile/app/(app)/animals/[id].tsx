@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,17 +9,21 @@ import {
   Text,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   AlertTriangle,
   Camera,
   ChevronLeft,
   Image as ImageIcon,
+  Pencil,
   QrCode,
   Syringe,
   Pill,
   Scale,
+  Bug,
+  FileText,
+  Stethoscope,
   X,
   Share2,
   CheckCircle2,
@@ -33,7 +37,8 @@ import { Button } from "../../../src/components/ui/button";
 import { Card } from "../../../src/components/ui/card";
 import { useAnimal } from "../../../src/hooks/use-animals";
 import { supabase } from "../../../src/lib/supabase";
-import { getAge, speciesLabel } from "../../../src/lib/format";
+import { useTranslation } from "../../../src/lib/i18n";
+import { useLocaleFormat } from "../../../src/lib/i18n/format";
 import { env } from "../../../src/lib/env";
 import {
   pickAnimalPhoto,
@@ -43,21 +48,78 @@ import {
 import { InviteCoOwnerModal } from "../../../src/components/invite-co-owner-modal";
 import { LostModeModal } from "../../../src/components/lost-mode-modal";
 
-interface HealthCounts {
-  vaccines: number;
-  meds: number;
-  allergies: number;
-  studies: number;
-  consults: number;
-  severeAllergies: { id: string; allergen: string }[];
+interface Vaccine {
+  id: string;
+  name: string;
+  applied_date: string;
+  next_dose_date: string | null;
 }
+interface Medication {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+}
+interface AllergyRow {
+  id: string;
+  allergen: string;
+  type: string;
+  severity: string;
+}
+interface DewormingRow {
+  id: string;
+  product: string;
+  type: string;
+  applied_date: string;
+  next_date: string | null;
+}
+interface StudyRow {
+  id: string;
+  title: string;
+  type: string;
+  study_date: string;
+}
+interface WeightRow {
+  id: string;
+  weight_kg: number;
+  recorded_at: string;
+}
+interface ConsultRow {
+  id: string;
+  visit_date: string;
+  reason: string;
+  diagnosis: string | null;
+  vet: { full_name: string } | null;
+}
+
+interface HealthData {
+  vaccines: Vaccine[];
+  medications: Medication[];
+  allergies: AllergyRow[];
+  dewormings: DewormingRow[];
+  studies: StudyRow[];
+  weights: WeightRow[];
+  consults: ConsultRow[];
+}
+
+const EMPTY_HEALTH: HealthData = {
+  vaccines: [],
+  medications: [],
+  allergies: [],
+  dewormings: [],
+  studies: [],
+  weights: [],
+  consults: [],
+};
 
 export default function AnimalProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { ageLabel, speciesLabel, formatDate } = useLocaleFormat();
   const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: animal, isLoading } = useAnimal(id ?? "");
-  const [counts, setCounts] = useState<HealthCounts | null>(null);
+  const [health, setHealth] = useState<HealthData>(EMPTY_HEALTH);
   const [qrOpen, setQrOpen] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
@@ -70,15 +132,96 @@ export default function AnimalProfileScreen() {
     void queryClient.invalidateQueries({ queryKey: ["animals"] });
   }
 
+  const loadHealth = useCallback(async () => {
+    if (!id) return;
+    const [
+      vaccines,
+      medications,
+      allergies,
+      dewormings,
+      studies,
+      weights,
+      consults,
+      lostAlert,
+    ] = await Promise.all([
+      supabase
+        .from("vaccines")
+        .select("id, name, applied_date, next_dose_date")
+        .eq("animal_id", id)
+        .order("applied_date", { ascending: false }),
+      supabase
+        .from("medications")
+        .select("id, name, dosage, frequency")
+        .eq("animal_id", id)
+        .eq("active", true)
+        .order("start_date", { ascending: false }),
+      supabase
+        .from("allergies")
+        .select("id, allergen, type, severity")
+        .eq("animal_id", id)
+        .order("severity", { ascending: false }),
+      supabase
+        .from("deworming")
+        .select("id, product, type, applied_date, next_date")
+        .eq("animal_id", id)
+        .order("applied_date", { ascending: false }),
+      supabase
+        .from("studies")
+        .select("id, title, type, study_date")
+        .eq("animal_id", id)
+        .order("study_date", { ascending: false }),
+      supabase
+        .from("weight_entries")
+        .select("id, weight_kg, recorded_at")
+        .eq("animal_id", id)
+        .order("recorded_at", { ascending: false })
+        .limit(8),
+      supabase
+        .from("medical_records")
+        .select("id, visit_date, reason, diagnosis, vet:vet_profiles(full_name)")
+        .eq("animal_id", id)
+        .order("visit_date", { ascending: false }),
+      supabase
+        .from("lost_pet_alerts")
+        .select("public_slug")
+        .eq("animal_id", id)
+        .eq("status", "active")
+        .maybeSingle(),
+    ]);
+
+    setHealth({
+      vaccines: (vaccines.data as Vaccine[]) ?? [],
+      medications: (medications.data as Medication[]) ?? [],
+      allergies: (allergies.data as AllergyRow[]) ?? [],
+      dewormings: (dewormings.data as DewormingRow[]) ?? [],
+      studies: (studies.data as StudyRow[]) ?? [],
+      weights: (weights.data as WeightRow[]) ?? [],
+      consults:
+        (consults.data as unknown as ConsultRow[])?.map((c) => ({
+          ...c,
+          vet: Array.isArray(c.vet) ? (c.vet[0] ?? null) : c.vet,
+        })) ?? [],
+    });
+    setLostSlug(lostAlert.data?.public_slug ?? null);
+  }, [id]);
+
+  // Recargamos la salud cada vez que la pantalla recibe foco —
+  // así al volver de "editar" o de "agregar registro" se ve al instante.
+  useFocusEffect(
+    useCallback(() => {
+      void loadHealth();
+    }, [loadHealth]),
+  );
+
   async function handleMarkFound() {
     if (!id || markingFound) return;
     Alert.alert(
-      "¿La encontraste?",
-      "Se desactiva la página pública de búsqueda y la mascota vuelve a estado normal.",
+      t("animalDetail.markFoundTitle"),
+      t("animalDetail.markFoundBody"),
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Sí, la encontré",
+          text: t("animalDetail.markFoundConfirm"),
           onPress: async () => {
             setMarkingFound(true);
             try {
@@ -86,7 +229,10 @@ export default function AnimalProfileScreen() {
                 data: { session },
               } = await supabase.auth.getSession();
               if (!session?.access_token) {
-                Alert.alert("Sesión expirada", "Volvé a iniciar sesión.");
+                Alert.alert(
+                  t("components.lostMode.sessionExpiredTitle"),
+                  t("components.lostMode.sessionExpiredBody"),
+                );
                 return;
               }
               const res = await fetch(`${env.APP_URL}/api/lost-mode`, {
@@ -103,14 +249,18 @@ export default function AnimalProfileScreen() {
               });
               const body = await res.json().catch(() => ({}));
               if (!res.ok) {
-                Alert.alert("Error", body.error ?? "No se pudo actualizar.");
+                Alert.alert(
+                  t("common.error"),
+                  body.error ?? t("animalDetail.markFoundFailBody"),
+                );
                 return;
               }
               setLostSlug(null);
               refreshAnimal();
             } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : "Error de red";
-              Alert.alert("Error", msg);
+              const msg =
+                err instanceof Error ? err.message : t("common.networkError");
+              Alert.alert(t("common.error"), msg);
             } finally {
               setMarkingFound(false);
             }
@@ -122,9 +272,9 @@ export default function AnimalProfileScreen() {
 
   async function handlePhotoChange() {
     if (!id || uploadingPhoto) return;
-    Alert.alert("Foto de la mascota", "¿De dónde querés sacarla?", [
+    Alert.alert(t("animalDetail.photoTitle"), t("animalDetail.photoBody"), [
       {
-        text: "Galería",
+        text: t("animalDetail.photoGallery"),
         onPress: async () => {
           const picked = await pickAnimalPhoto();
           if (!picked) return;
@@ -132,14 +282,14 @@ export default function AnimalProfileScreen() {
         },
       },
       {
-        text: "Cámara",
+        text: t("animalDetail.photoCamera"),
         onPress: async () => {
           const picked = await takeAnimalPhoto();
           if (!picked) return;
           await doUpload(picked.uri);
         },
       },
-      { text: "Cancelar", style: "cancel" },
+      { text: t("common.cancel"), style: "cancel" },
     ]);
   }
 
@@ -148,44 +298,15 @@ export default function AnimalProfileScreen() {
     const result = await uploadAnimalPhoto(id ?? "", photoUri);
     setUploadingPhoto(false);
     if (result.success) {
-      // Invalidar la cache de react-query para que vuelva a fetchear con la nueva foto
       await queryClient.invalidateQueries({ queryKey: ["animal", id] });
       await queryClient.invalidateQueries({ queryKey: ["animals"] });
     } else {
-      Alert.alert("Error", result.error ?? "No pudimos subir la foto.");
+      Alert.alert(
+        t("common.error"),
+        result.error ?? t("animalDetail.photoUploadFail"),
+      );
     }
   }
-
-
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      const [vaccines, meds, allergies, studies, consults, lostAlert] =
-        await Promise.all([
-          supabase.from("vaccines").select("id", { count: "exact", head: true }).eq("animal_id", id),
-          supabase.from("medications").select("id", { count: "exact", head: true }).eq("animal_id", id).eq("active", true),
-          supabase.from("allergies").select("id, allergen, severity").eq("animal_id", id),
-          supabase.from("studies").select("id", { count: "exact", head: true }).eq("animal_id", id),
-          supabase.from("medical_records").select("id", { count: "exact", head: true }).eq("animal_id", id),
-          supabase
-            .from("lost_pet_alerts")
-            .select("public_slug")
-            .eq("animal_id", id)
-            .eq("status", "active")
-            .maybeSingle(),
-        ]);
-
-      setCounts({
-        vaccines: vaccines.count ?? 0,
-        meds: meds.count ?? 0,
-        allergies: (allergies.data ?? []).length,
-        studies: studies.count ?? 0,
-        consults: consults.count ?? 0,
-        severeAllergies: (allergies.data ?? []).filter((a) => a.severity === "severe"),
-      });
-      setLostSlug(lostAlert.data?.public_slug ?? null);
-    })();
-  }, [id]);
 
   if (isLoading || !animal) {
     return (
@@ -196,17 +317,34 @@ export default function AnimalProfileScreen() {
   }
 
   const isLost = animal.status === "lost";
-  const ageText = animal.birth_date ? getAge(animal.birth_date) : null;
+  const ageText = animal.birth_date ? ageLabel(animal.birth_date) : null;
   const qrUrl = `${env.APP_URL}/vet/scan?token=${animal.url_token}`;
+  const severeAllergies = health.allergies.filter(
+    (a) => a.severity === "severe",
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-4 py-2">
         <Pressable onPress={() => router.back()} className="flex-row items-center gap-1">
           <ChevronLeft size={22} color="#0c0a09" />
-          <Text className="text-[15px] text-foreground">Atrás</Text>
+          <Text className="text-[15px] text-foreground">
+            {t("animalDetail.back")}
+          </Text>
         </Pressable>
         <View className="flex-row gap-2">
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/animals/edit",
+                params: { id: animal.id },
+              } as never)
+            }
+            className="size-9 items-center justify-center rounded-lg border border-border bg-surface"
+            style={{ width: 36, height: 36 }}
+          >
+            <Pencil size={16} color="#0c0a09" />
+          </Pressable>
           <Pressable
             onPress={() => setQrOpen(true)}
             className="size-9 items-center justify-center rounded-lg border border-border bg-surface"
@@ -261,30 +399,36 @@ export default function AnimalProfileScreen() {
               <Text className="text-[24px] font-bold tracking-tight text-foreground">
                 {animal.name}
               </Text>
-              {isLost && <Badge label="PERDIDA" tone="rose" icon={AlertTriangle} />}
+              {isLost && (
+                <Badge
+                  label={t("animalDetail.badgeLost")}
+                  tone="rose"
+                  icon={AlertTriangle}
+                />
+              )}
             </View>
             <Text className="mt-1 text-[13px] text-muted">
-              {speciesLabel[animal.species] ?? animal.species}
+              {speciesLabel(animal.species)}
               {animal.breed && ` · ${animal.breed}`}
               {ageText && ` · ${ageText}`}
             </Text>
             {animal.microchip && (
               <Text className="mt-0.5 font-mono text-[11px] text-subtle">
-                Chip: {animal.microchip}
+                {t("animalDetail.chipLabel", { value: animal.microchip })}
               </Text>
             )}
           </View>
         </View>
 
-        {counts && counts.severeAllergies.length > 0 && (
+        {severeAllergies.length > 0 && (
           <View className="mt-4 mx-5 flex-row items-center gap-3 rounded-xl border border-rose/30 bg-rose/5 p-3">
             <AlertTriangle size={18} color="#e11d48" />
             <View className="flex-1">
               <Text className="text-[13px] font-semibold text-rose">
-                Alergias severas
+                {t("animalDetail.severeAllergiesTitle")}
               </Text>
               <Text className="text-[12px] text-muted">
-                {counts.severeAllergies.map((a) => a.allergen).join(" · ")}
+                {severeAllergies.map((a) => a.allergen).join(" · ")}
               </Text>
             </View>
           </View>
@@ -294,43 +438,181 @@ export default function AnimalProfileScreen() {
           <View className="flex-row gap-2">
             <MiniStat
               icon={Scale}
-              label="Peso"
-              value={animal.weight_kg ? `${Number(animal.weight_kg).toFixed(1)} kg` : "—"}
+              label={t("animalDetail.miniWeight")}
+              value={
+                animal.weight_kg
+                  ? `${Number(animal.weight_kg).toFixed(1)} kg`
+                  : "—"
+              }
             />
-            <MiniStat icon={Syringe} label="Vacunas" value={`${counts?.vaccines ?? 0}`} />
-            <MiniStat icon={Pill} label="Medic." value={`${counts?.meds ?? 0}`} />
+            <MiniStat
+              icon={Syringe}
+              label={t("animalDetail.miniVaccines")}
+              value={`${health.vaccines.length}`}
+            />
+            <MiniStat
+              icon={Pill}
+              label={t("animalDetail.miniMeds")}
+              value={`${health.medications.length}`}
+            />
           </View>
         </View>
 
-        <View className="mt-5 px-5">
-          <Text className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-subtle">
-            Resumen de salud
-          </Text>
-          <Card className="gap-3">
-            <RowItem icon={Syringe} label="Vacunas" count={counts?.vaccines} />
-            <RowItem icon={Pill} label="Medicación activa" count={counts?.meds} />
-            <RowItem
-              icon={AlertTriangle}
-              label="Alergias"
-              count={counts?.allergies}
-              tone={counts && counts.severeAllergies.length > 0 ? "rose" : "neutral"}
-            />
-          </Card>
-        </View>
+        {/* ─── VACUNAS ─────────────────────────────────────────── */}
+        <Section icon={Syringe} title={t("animalDetail.sectionVaccines")}>
+          {health.vaccines.length === 0 ? (
+            <EmptyLine text={t("animalDetail.emptyVaccines")} />
+          ) : (
+            health.vaccines.map((v) => (
+              <ListRow
+                key={v.id}
+                title={v.name}
+                subtitle={
+                  formatDate(v.applied_date, { short: true }) +
+                  (v.next_dose_date
+                    ? ` · ${t("animalDetail.vaccineNext", {
+                        date: formatDate(v.next_dose_date, { short: true }),
+                      })}`
+                    : "")
+                }
+              />
+            ))
+          )}
+        </Section>
 
+        {/* ─── MEDICACIÓN ──────────────────────────────────────── */}
+        <Section icon={Pill} title={t("animalDetail.sectionMedications")}>
+          {health.medications.length === 0 ? (
+            <EmptyLine text={t("animalDetail.emptyMedications")} />
+          ) : (
+            health.medications.map((m) => (
+              <ListRow
+                key={m.id}
+                title={m.name}
+                subtitle={`${m.dosage} · ${m.frequency}`}
+              />
+            ))
+          )}
+        </Section>
+
+        {/* ─── ALERGIAS ────────────────────────────────────────── */}
+        <Section icon={AlertTriangle} title={t("animalDetail.sectionAllergies")}>
+          {health.allergies.length === 0 ? (
+            <EmptyLine text={t("animalDetail.emptyAllergies")} />
+          ) : (
+            health.allergies.map((a) => (
+              <ListRow
+                key={a.id}
+                title={a.allergen}
+                subtitle={`${t(`animalDetail.allergyType.${a.type}`)} · ${t(
+                  `animalDetail.allergySeverity.${a.severity}`,
+                )}`}
+                danger={a.severity === "severe"}
+              />
+            ))
+          )}
+        </Section>
+
+        {/* ─── ANTIPARASITARIOS ────────────────────────────────── */}
+        <Section icon={Bug} title={t("animalDetail.sectionDewormings")}>
+          {health.dewormings.length === 0 ? (
+            <EmptyLine text={t("animalDetail.emptyDewormings")} />
+          ) : (
+            health.dewormings.map((d) => (
+              <ListRow
+                key={d.id}
+                title={d.product}
+                subtitle={
+                  `${t(`animalDetail.dewormingType.${d.type}`)} · ` +
+                  formatDate(d.applied_date, { short: true }) +
+                  (d.next_date
+                    ? ` · ${t("animalDetail.dewormingNext", {
+                        date: formatDate(d.next_date, { short: true }),
+                      })}`
+                    : "")
+                }
+              />
+            ))
+          )}
+        </Section>
+
+        {/* ─── ESTUDIOS ────────────────────────────────────────── */}
+        <Section icon={FileText} title={t("animalDetail.sectionStudies")}>
+          {health.studies.length === 0 ? (
+            <EmptyLine text={t("animalDetail.emptyStudies")} />
+          ) : (
+            health.studies.map((s) => (
+              <ListRow
+                key={s.id}
+                title={s.title}
+                subtitle={`${t(`animalDetail.studyType.${s.type}`)} · ${formatDate(
+                  s.study_date,
+                  { short: true },
+                )}`}
+              />
+            ))
+          )}
+        </Section>
+
+        {/* ─── PESO ────────────────────────────────────────────── */}
+        <Section icon={Scale} title={t("animalDetail.sectionWeight")}>
+          {health.weights.length === 0 ? (
+            <EmptyLine text={t("animalDetail.emptyWeight")} />
+          ) : (
+            health.weights.map((w) => (
+              <ListRow
+                key={w.id}
+                title={`${Number(w.weight_kg).toFixed(1)} kg`}
+                subtitle={formatDate(w.recorded_at, { short: true })}
+              />
+            ))
+          )}
+        </Section>
+
+        {/* ─── HISTORIAL DE CONSULTAS ──────────────────────────── */}
+        <Section icon={Stethoscope} title={t("animalDetail.sectionConsults")}>
+          {health.consults.length === 0 ? (
+            <EmptyLine text={t("animalDetail.emptyConsults")} />
+          ) : (
+            health.consults.map((c) => (
+              <ListRow
+                key={c.id}
+                title={c.reason}
+                subtitle={
+                  formatDate(c.visit_date, { short: true }) +
+                  (c.vet
+                    ? ` · ${t("animalDetail.consultBy", {
+                        name: c.vet.full_name,
+                      })}`
+                    : "")
+                }
+                detail={c.diagnosis ?? undefined}
+              />
+            ))
+          )}
+        </Section>
+
+        {/* ─── DATOS ───────────────────────────────────────────── */}
         <View className="mt-5 px-5">
           <Text className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-subtle">
-            Datos
+            {t("animalDetail.dataTitle")}
           </Text>
           <Card className="gap-3">
-            {animal.color && <DataLine label="Color" value={animal.color} />}
-            {animal.distinctive_marks && (
-              <DataLine label="Marcas" value={animal.distinctive_marks} />
+            {animal.color && (
+              <DataLine label={t("animalDetail.dataColor")} value={animal.color} />
             )}
-            {animal.notes && <DataLine label="Notas" value={animal.notes} />}
+            {animal.distinctive_marks && (
+              <DataLine
+                label={t("animalDetail.dataMarks")}
+                value={animal.distinctive_marks}
+              />
+            )}
+            {animal.notes && (
+              <DataLine label={t("animalDetail.dataNotes")} value={animal.notes} />
+            )}
             {!animal.color && !animal.distinctive_marks && !animal.notes && (
               <Text className="text-[13px] text-muted">
-                Sin datos adicionales. Editá desde la web para agregar más.
+                {t("animalDetail.noExtraData")}
               </Text>
             )}
           </Card>
@@ -339,35 +621,37 @@ export default function AnimalProfileScreen() {
         {/* Modo perdido */}
         <View className="mt-6 px-3">
           <Text className="mb-2 px-2 text-[11px] uppercase tracking-wider text-subtle">
-            Modo perdido
+            {t("animalDetail.lostModeTitle")}
           </Text>
           {isLost ? (
             <Card className="gap-3">
               <View className="flex-row items-center gap-2">
                 <AlertTriangle size={18} color="#e11d48" />
                 <Text className="flex-1 text-[13px] font-semibold text-rose">
-                  {animal.name} está reportada como perdida
+                  {t("animalDetail.lostReported", { name: animal.name })}
                 </Text>
               </View>
               <Text className="text-[12px] text-muted">
-                La página pública de búsqueda está activa. Compartila para
-                llegar a más gente.
+                {t("animalDetail.lostActiveDesc")}
               </Text>
               {lostSlug && (
                 <Button
-                  label="Compartir búsqueda"
+                  label={t("animalDetail.shareLost")}
                   variant="rose"
                   icon={Share2}
                   fullWidth
                   onPress={() => {
                     void Share.share({
-                      message: `🔴 SE PERDIÓ ${animal.name}. Ayudanos a encontrarla:\n${env.APP_URL}/lost/${lostSlug}`,
+                      message: t("components.lostMode.shareMessage", {
+                        name: animal.name,
+                        url: `${env.APP_URL}/lost/${lostSlug}`,
+                      }),
                     });
                   }}
                 />
               )}
               <Button
-                label="Marcar como encontrada"
+                label={t("animalDetail.markFound")}
                 variant="outline"
                 icon={CheckCircle2}
                 fullWidth
@@ -378,11 +662,10 @@ export default function AnimalProfileScreen() {
           ) : (
             <Card className="gap-2">
               <Text className="text-[13px] text-muted">
-                Si {animal.name} se pierde, activá el modo perdido: generamos
-                una página pública para que quien la encuentre te contacte.
+                {t("animalDetail.lostInactiveDesc", { name: animal.name })}
               </Text>
               <Button
-                label="Reportar como perdida"
+                label={t("animalDetail.reportLost")}
                 variant="rose"
                 icon={AlertTriangle}
                 fullWidth
@@ -395,15 +678,14 @@ export default function AnimalProfileScreen() {
         {/* Co-dueños */}
         <View className="mt-6 px-3">
           <Text className="mb-2 px-2 text-[11px] uppercase tracking-wider text-subtle">
-            Co-dueños
+            {t("animalDetail.coOwnersTitle")}
           </Text>
           <Card className="gap-2">
             <Text className="text-[13px] text-muted">
-              Invitá a tu pareja o familia para que vean el historial y
-              puedan agregar info.
+              {t("animalDetail.coOwnersDesc")}
             </Text>
             <Button
-              label="Invitar por email"
+              label={t("animalDetail.inviteByEmail")}
               variant="outline"
               icon={Share2}
               fullWidth
@@ -464,36 +746,62 @@ function MiniStat({
   );
 }
 
-function RowItem({
+function Section({
   icon: Icon,
-  label,
-  count,
-  tone = "primary",
+  title,
+  children,
 }: {
   icon: typeof Scale;
-  label: string;
-  count?: number;
-  tone?: "primary" | "rose" | "neutral";
+  title: string;
+  children: React.ReactNode;
 }) {
-  const colors = {
-    primary: { bg: "#ede9fe", fg: "#7c3aed" },
-    rose: { bg: "#ffe4e6", fg: "#e11d48" },
-    neutral: { bg: "#f5f5f4", fg: "#57534e" },
-  }[tone];
   return (
-    <View className="flex-row items-center gap-3">
-      <View
-        className="size-9 items-center justify-center rounded-lg"
-        style={{ width: 36, height: 36, backgroundColor: colors.bg }}
-      >
-        <Icon size={18} color={colors.fg} />
+    <View className="mt-5 px-5">
+      <View className="mb-2 flex-row items-center gap-1.5">
+        <Icon size={13} color="#78716c" />
+        <Text className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
+          {title}
+        </Text>
       </View>
-      <Text className="flex-1 text-[14px] font-medium text-foreground">{label}</Text>
-      <Text className="font-mono text-[13px] font-semibold text-muted">
-        {count ?? 0}
-      </Text>
+      <Card className="gap-2.5">{children}</Card>
     </View>
   );
+}
+
+function ListRow({
+  title,
+  subtitle,
+  detail,
+  danger,
+}: {
+  title: string;
+  subtitle?: string;
+  detail?: string;
+  danger?: boolean;
+}) {
+  return (
+    <View className="border-b border-border/40 pb-2.5 last:border-0 last:pb-0">
+      <Text
+        className={`text-[14px] font-medium ${
+          danger ? "text-rose" : "text-foreground"
+        }`}
+      >
+        {title}
+      </Text>
+      {subtitle ? (
+        <Text className="mt-0.5 text-[12px] text-muted">{subtitle}</Text>
+      ) : null}
+      {detail ? (
+        <Text className="mt-0.5 text-[12.5px] text-foreground/80">
+          {detail}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function EmptyLine({ text }: { text: string }) {
+  return <Text className="text-[13px] text-muted">{text}</Text>;
 }
 
 function DataLine({ label, value }: { label: string; value: string }) {
@@ -522,9 +830,14 @@ function QRSheet({
   photoUrl: string | null;
   qrUrl: string;
 }) {
+  const { t } = useTranslation();
+
   async function handleShare() {
     await Share.share({
-      message: `Acá está el QR de ${animalName}. Escanealo desde PetApp:\n${qrUrl}`,
+      message: t("animalDetail.qrShareMessage", {
+        name: animalName,
+        url: qrUrl,
+      }),
     });
   }
 
@@ -562,10 +875,10 @@ function QRSheet({
               radius={16}
             />
             <Text className="mt-3 text-[20px] font-bold text-white">
-              QR de {animalName}
+              {t("animalDetail.qrTitle", { name: animalName })}
             </Text>
             <Text className="mt-1 text-center text-[13px] text-white/90">
-              Mostrale este código a tu veterinario.
+              {t("animalDetail.qrSubtitle")}
             </Text>
           </LinearGradient>
 
@@ -596,13 +909,13 @@ function QRSheet({
               <QRCode value={qrUrl} size={216} backgroundColor="#ffffff" color="#0c0a09" />
             </View>
             <Text className="mt-3 text-center text-[12px] text-muted">
-              Que el veterinario escanee este código con la cámara de su celular.
+              {t("animalDetail.qrHint")}
             </Text>
           </View>
 
           <View className="mt-8 w-full">
             <Button
-              label="Compartir link"
+              label={t("animalDetail.qrShare")}
               onPress={handleShare}
               icon={Share2}
               fullWidth
