@@ -33,7 +33,7 @@ export async function pickAnimalPhoto(): Promise<PickedPhoto | null> {
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ["images"],
     allowsEditing: true, // crop nativo
     aspect: [1, 1],
     quality: 0.9,
@@ -58,7 +58,7 @@ export async function takeAnimalPhoto(): Promise<PickedPhoto | null> {
   }
 
   const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    mediaTypes: ["images"],
     allowsEditing: true,
     aspect: [1, 1],
     quality: 0.9,
