@@ -28,7 +28,7 @@ export default function InvitesScreen() {
   const invites = data?.invites ?? [];
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-background" edges={[]}>
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-border">
         <Pressable
           onPress={() => router.back()}

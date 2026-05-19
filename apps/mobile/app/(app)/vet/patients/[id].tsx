@@ -122,7 +122,7 @@ export default function VetPatientView() {
   const cleanPhone = owner?.phone?.replace(/\D/g, "");
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-background" edges={[]}>
       <View className="flex-row items-center justify-between px-4 py-2">
         <Pressable onPress={() => router.back()} className="flex-row items-center gap-1">
           <ChevronLeft size={22} color="#0c0a09" />
