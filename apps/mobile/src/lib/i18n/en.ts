@@ -20,8 +20,11 @@ export const en = {
   auth: {
     login: {
       title: "Welcome to PetApp",
+      eyebrow: "Welcome",
+      titleLine1: "Your pet's health history,",
+      titleLine2: "always with you.",
       subtitle:
-        "Enter your email and we'll send you a 6-digit code to sign in.",
+        "Sign in with your email — we'll send you a 6-digit code.",
       emailLabel: "Email",
       emailPlaceholder: "you@email.com",
       sendCode: "Send code",

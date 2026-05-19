@@ -20,8 +20,11 @@ export const pt = {
   auth: {
     login: {
       title: "Bem-vindo ao PetApp",
+      eyebrow: "Bem-vindo",
+      titleLine1: "O histórico do seu pet,",
+      titleLine2: "sempre com você.",
       subtitle:
-        "Digite seu e-mail e enviamos um código de 6 dígitos para entrar.",
+        "Entre com seu e-mail — enviamos um código de 6 dígitos.",
       emailLabel: "E-mail",
       emailPlaceholder: "voce@email.com",
       sendCode: "Enviar código",
