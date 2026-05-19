@@ -35,6 +35,14 @@ const variantBg: Record<ButtonVariant, string> = {
   dark: "bg-foreground active:opacity-90",
 };
 
+/** Variantes rellenas que llevan una sombra de color suave. */
+const SHADOW_TINT: Partial<Record<ButtonVariant, string>> = {
+  primary: "#7c3aed",
+  accent: "#06b6d4",
+  rose: "#e11d48",
+  whatsapp: "#25d366",
+};
+
 const variantText: Record<ButtonVariant, string> = {
   primary: "text-white",
   accent: "text-white",
@@ -65,17 +73,29 @@ export function Button({
   const isDisabled = disabled || loading;
   const sz = sizeStyles[size];
   const iconColor = variant === "outline" || variant === "ghost" ? "#0c0a09" : "#ffffff";
+  const tint = SHADOW_TINT[variant];
 
   return (
     <Pressable
       onPress={isDisabled ? undefined : onPress}
       className={cn(
-        "flex-row items-center justify-center rounded-lg",
+        "flex-row items-center justify-center rounded-[10px]",
         sz.container,
         variantBg[variant],
         fullWidth ? "w-full" : "",
         isDisabled ? "opacity-50" : "",
       )}
+      style={
+        tint && !isDisabled
+          ? {
+              shadowColor: tint,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.28,
+              shadowRadius: 10,
+              elevation: 3,
+            }
+          : undefined
+      }
     >
       {loading ? (
         <ActivityIndicator size="small" color={iconColor} />
