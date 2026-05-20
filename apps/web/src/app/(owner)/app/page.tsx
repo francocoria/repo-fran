@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import {
   PlusCircle,
   Calendar,
@@ -13,7 +12,9 @@ import {
   Users,
   Scale,
   Shield,
-  Stethoscope,
+  Bell,
+  QrCode,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -21,13 +22,13 @@ import {
   Badge,
   Card,
   CardContent,
-  PetAvatar,
   StatCard,
 } from "@pet-app/ui";
 import { getTranslations } from "next-intl/server";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { getAge, formatDateLong } from "@pet-app/lib/utils/format";
+import { QRModal } from "@/components/animal/qr-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,18 @@ export async function generateMetadata() {
   const t = await getTranslations("ownerHome");
   return { title: t("metaTitle") };
 }
+
+const SPECIES_GRADIENT: Record<string, [string, string]> = {
+  dog: ["#7c3aed", "#06b6d4"],   // Purple to Cyan
+  cat: ["#0d9488", "#14b8a6"],   // Teal
+  bird: ["#f59e0b", "#fb923c"],  // Amber/Orange
+  rabbit: ["#a78bfa", "#8b5cf6"], // Violet
+  rodent: ["#fb7185", "#f43f5e"], // Rose
+  reptile: ["#84cc16", "#65a30d"], // Lime
+  fish: ["#38bdf8", "#0ea5e9"],   // Sky
+  exotic: ["#c084fc", "#a855f7"], // Purple
+  other: ["#64748b", "#475569"],  // Slate
+};
 
 export default async function OwnerDashboardPage() {
   const user = await requireUser();
@@ -104,6 +117,11 @@ export default async function OwnerDashboardPage() {
     orderBy: { added_at: "desc" },
   });
 
+  // Invitaciones a co-dueño pendientes
+  const pendingInvitesCount = await prisma.coOwner.count({
+    where: { owner_id: profile.id, status: "pending" },
+  });
+
   const coOwnedAnimals = coOwnedAnimalsRel
     .map((co) => co.animal)
     .filter((a) => a.status !== "archived");
@@ -112,6 +130,8 @@ export default async function OwnerDashboardPage() {
     ...ownedAnimals.map((a) => ({ ...a, isCoOwned: false })),
     ...coOwnedAnimals.map((a) => ({ ...a, isCoOwned: true })),
   ];
+
+  const firstAnimal = allAnimals[0];
 
   // ─── Stats ────────────────────────────────────────────────
   const lostCount = allAnimals.filter((a) => a.status === "lost").length;
@@ -200,60 +220,84 @@ export default async function OwnerDashboardPage() {
   const upcomingTop = upcoming.slice(0, 5);
 
   return (
-    <div className="animate-fade-up space-y-8">
-      {/* ─── HEADER GREETING ──────────────────────────────────── */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="animate-fade-up space-y-6 md:space-y-8">
+      {/* ─── HEADER GREETING (V2 layout) ───────────────────────── */}
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-[13px] text-muted-foreground">{t("greeting")}</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight md:text-[32px]">
+          <p className="text-[13px] text-muted-foreground font-medium">{t("greeting")}</p>
+          <h1 className="mt-0.5 text-[28px] font-extrabold leading-tight tracking-tight text-foreground md:text-[32px]">
             {profile.full_name.split(" ")[0]} 👋
           </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            {allAnimals.length === 0
-              ? t("subtitleEmpty")
-              : t(
-                  allAnimals.length === 1
-                    ? "subtitleCountOne"
-                    : "subtitleCountOther",
-                  { count: allAnimals.length },
-                )}
-            {lostCount > 0 && (
-              <>
-                {" "}
-                <span className="font-medium text-rose">
-                  {t(lostCount === 1 ? "lostOne" : "lostOther", {
-                    count: lostCount,
-                  })}
+          {allAnimals.length > 0 && (
+            <p className="mt-1 text-[13px] text-muted-foreground font-medium">
+              {allAnimals.length === 1
+                ? t("subtitleCountOne", { count: allAnimals.length })
+                : t("subtitleCountOther", { count: allAnimals.length })}
+              {lostCount > 0 ? (
+                <span className="font-semibold text-rose">
+                  {" · "}{t(lostCount === 1 ? "lostOne" : "lostOther", { count: lostCount })}
                 </span>
-              </>
-            )}
-            {lostCount === 0 && allAnimals.length > 0 && (
-              <> {t("allInOrder")}</>
-            )}
-          </p>
+              ) : (
+                <>{" · "}{t("allInOrder")}</>
+              )}
+            </p>
+          )}
         </div>
-        {allAnimals.length > 0 && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="default" asChild>
-              <Link href="/app/notifications">
-                <Calendar className="size-4" />
-                {t("notices")}
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href="/app/animals/new">
-                <PlusCircle className="size-4" />
-                <span className="hidden sm:inline">{t("addPet")}</span>
-                <span className="sm:hidden">{t("addPetShort")}</span>
-              </Link>
-            </Button>
-          </div>
-        )}
+
+        {/* Notifications & Add Actions */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="relative h-10 w-10 shrink-0 rounded-xl border border-border bg-card"
+            asChild
+          >
+            <Link href="/app/notifications">
+              <Bell className="h-5 w-5 text-foreground" />
+              {lostCount > 0 && (
+                <span className="absolute right-2.5 top-2.5 flex h-2 w-2 rounded-full bg-rose" />
+              )}
+            </Link>
+          </Button>
+
+          <Button asChild className="hidden md:flex gap-1.5 rounded-xl">
+            <Link href="/app/animals/new">
+              <PlusCircle className="size-4" />
+              {t("addPet")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      {/* ─── QUICK STATS STRIP (4 cols) ──────────────────────── */}
+      {/* ─── CO-OWNER INVITATION BANNER ────────────────────────── */}
+      {pendingInvitesCount > 0 && (
+        <Link
+          href="/app/access"
+          className="flex items-center justify-between rounded-2xl bg-primary/10 border border-primary/20 p-4 transition-all hover:bg-primary/15"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
+              <UserPlus className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                {t(
+                  pendingInvitesCount === 1 ? "invitesPendingOne" : "invitesPendingOther",
+                  { count: pendingInvitesCount }
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("invitesHint")}
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="size-5 text-muted-foreground" />
+        </Link>
+      )}
+
+      {/* ─── QUICK STATS STRIP (hidden on mobile) ──────────────── */}
       {allAnimals.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="hidden md:grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label={t("statPets")}
             value={allAnimals.length}
@@ -294,8 +338,8 @@ export default async function OwnerDashboardPage() {
 
       {/* ─── SECTION: MIS MASCOTAS ───────────────────────────── */}
       {allAnimals.length > 0 && (
-        <div>
-          <div className="mb-4 flex items-baseline justify-between">
+        <div className="space-y-4">
+          <div className="flex items-baseline justify-between">
             <div>
               <h2 className="text-lg font-semibold">{t("myPetsTitle")}</h2>
               <p className="text-xs text-muted-foreground">
@@ -331,32 +375,51 @@ export default async function OwnerDashboardPage() {
                     (v) => v.next_dose_date && new Date(v.next_dose_date) < now,
                   ).length,
                   activeMedsCount: animal.medications.length,
+                  weightKg: animal.weight_kg ? Number(animal.weight_kg) : null,
+                  urlToken: animal.url_token,
                 }}
               />
             ))}
 
+            {/* Dotted premium Add Pet card */}
             <Link
               href="/app/animals/new"
-              className="group flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border-strong p-5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              className="group flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-[24px] border-2 border-dashed border-border bg-secondary/20 p-5 text-center transition-all hover:bg-secondary/30 hover:border-primary/50"
             >
-              <PlusCircle className="size-7" strokeWidth={1.5} />
-              <span className="font-medium">{t("addPet")}</span>
+              <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-105">
+                <PlusCircle className="size-6" strokeWidth={2} />
+              </div>
+              <h4 className="mt-2 text-sm font-semibold text-foreground">{t("addAnotherTitle")}</h4>
+              <p className="text-xs text-muted-foreground">{t("addAnotherDesc")}</p>
             </Link>
           </div>
+
+          {/* ─── SUGGESTIONS ROW (only if 1 pet) ───────────────── */}
+          {firstAnimal && allAnimals.length === 1 && (
+            <SuggestionsRow
+              t={t}
+              animal={{
+                id: firstAnimal.id,
+                name: firstAnimal.name,
+                photoUrl: firstAnimal.photo_url,
+                species: firstAnimal.species,
+              }}
+            />
+          )}
         </div>
       )}
 
       {/* ─── SECTION: PRÓXIMAMENTE ───────────────────────────── */}
       {upcomingTop.length > 0 && (
-        <div>
-          <div className="mb-4 flex items-baseline gap-2">
+        <div className="space-y-4 pt-2">
+          <div className="flex items-baseline gap-2">
             <Calendar className="size-4 text-primary" />
             <h2 className="text-lg font-semibold">{t("upcomingTitle")}</h2>
             <span className="text-xs text-muted-foreground">
               {t("upcomingSubtitle")}
             </span>
           </div>
-          <Card>
+          <Card className="rounded-2xl">
             <CardContent className="p-0">
               <ul className="divide-y divide-border/60">
                 {upcomingTop.map((event) => (
@@ -370,7 +433,7 @@ export default async function OwnerDashboardPage() {
 
       {/* ─── EMPTY STATE ─────────────────────────────────────── */}
       {allAnimals.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border-strong px-6 py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-border px-6 py-20 text-center bg-card">
           <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
             <Dog className="size-8 text-primary" />
           </div>
@@ -380,7 +443,7 @@ export default async function OwnerDashboardPage() {
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
             {t("emptyText")}
           </p>
-          <Button asChild className="mt-6">
+          <Button asChild className="mt-6 rounded-xl">
             <Link href="/app/animals/new">
               <PlusCircle className="size-4" />
               {t("emptyCta")}
@@ -388,6 +451,84 @@ export default async function OwnerDashboardPage() {
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* SuggestionsRow                                              */
+/* ─────────────────────────────────────────────────────────── */
+interface SuggestionsRowProps {
+  animal: {
+    id: string;
+    name: string;
+    photoUrl: string | null;
+    species: string;
+  };
+  t: any;
+}
+
+function SuggestionsRow({ animal, t }: SuggestionsRowProps) {
+  return (
+    <div className="mt-6 space-y-3">
+      <h3 className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+        {t("completeProfile", { name: animal.name })}
+      </h3>
+      <div className="grid gap-3 grid-cols-3 overflow-x-auto pb-2 no-scrollbar">
+        {/* Card 1: Cargar vacunas */}
+        <Link
+          href={`/app/animals/${animal.id}`}
+          className="flex flex-col justify-between p-3.5 rounded-2xl border border-primary/10 bg-primary/5 transition-all hover:bg-primary/10 min-w-[100px]"
+        >
+          <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Syringe className="size-4" />
+          </div>
+          <div className="mt-6">
+            <p className="text-xs font-semibold text-foreground leading-tight">
+              {t("suggVaccines")}
+            </p>
+            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium text-primary">
+              Empezar <ChevronRight className="size-3" />
+            </span>
+          </div>
+        </Link>
+
+        {/* Card 2: Subir foto */}
+        <Link
+          href={`/app/animals/${animal.id}`}
+          className="flex flex-col justify-between p-3.5 rounded-2xl border border-accent/10 bg-accent/5 transition-all hover:bg-accent/10 min-w-[100px]"
+        >
+          <div className="size-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+            <PawPrint className="size-4" />
+          </div>
+          <div className="mt-6">
+            <p className="text-xs font-semibold text-foreground leading-tight">
+              {t("suggPhoto")}
+            </p>
+            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium text-accent">
+              Empezar <ChevronRight className="size-3" />
+            </span>
+          </div>
+        </Link>
+
+        {/* Card 3: Antiparasitarios */}
+        <Link
+          href={`/app/animals/${animal.id}`}
+          className="flex flex-col justify-between p-3.5 rounded-2xl border border-amber-500/10 bg-amber-500/5 transition-all hover:bg-amber-500/10 min-w-[100px]"
+        >
+          <div className="size-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-500">
+            <Shield className="size-4" />
+          </div>
+          <div className="mt-6">
+            <p className="text-xs font-semibold text-foreground leading-tight">
+              {t("suggDewormings")}
+            </p>
+            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-500">
+              Empezar <ChevronRight className="size-3" />
+            </span>
+          </div>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -408,6 +549,8 @@ interface PetCardData {
   severeAllergiesCount: number;
   overdueVaccinesCount: number;
   activeMedsCount: number;
+  weightKg: number | null;
+  urlToken: string;
 }
 
 function PetCard({
@@ -439,91 +582,123 @@ function PetCard({
         : {
             variant: "emerald" as const,
             icon: CheckCircle2,
-            label: t("petBadgeAllGood"),
+            label: t("statusOk"),
           };
 
   const StateIcon = stateBadge.icon;
+  const gradient = (SPECIES_GRADIENT[animal.species] || SPECIES_GRADIENT.other) as [string, string];
 
   return (
-    <Link
-      href={`/app/animals/${animal.id}`}
-      className="group block focus-ring rounded-2xl"
-    >
-      <Card className="overflow-hidden transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-        <CardContent className="p-0">
-          {/* Photo hero — full bleed top of card */}
-          <div className="relative aspect-square w-full overflow-hidden bg-surface-2">
-            {animal.photoUrl ? (
-              <Image
-                src={animal.photoUrl}
-                alt={animal.name}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <PetAvatar
-                  name={animal.name}
-                  species={animal.species}
-                  size={120}
-                  lost={isLost}
-                />
-              </div>
-            )}
-            {isLost && (
-              <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-rose px-2 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow animate-pulse-rose">
-                ● {t("petLost")}
-              </span>
-            )}
+    <div className="group relative flex flex-col overflow-hidden rounded-[24px] border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+      {/* Invisible link covering card, except header actions */}
+      <Link
+        href={`/app/animals/${animal.id}`}
+        className="absolute inset-0 z-10"
+        aria-label={animal.name}
+      />
+
+      <div className="relative flex flex-col">
+        {/* Photo or Gradient Hero */}
+        <div
+          className="relative w-full overflow-hidden bg-cover bg-center flex flex-col justify-between p-4 h-64 sm:h-72"
+          style={
+            animal.photoUrl
+              ? { backgroundImage: `url(${animal.photoUrl})` }
+              : {
+                  background: `linear-gradient(135deg, ${gradient[0]} 0%, ${gradient[1]} 100%)`,
+                }
+          }
+        >
+          {/* Tint overlay for legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/35" />
+
+          {/* Top Overlays */}
+          <div className="relative z-20 flex w-full items-center justify-between">
+            <Badge
+              variant={stateBadge.variant}
+              size="sm"
+              className="text-white border-none shadow-sm gap-1 uppercase tracking-wider text-[10px] font-bold"
+              style={{
+                backgroundColor:
+                  stateBadge.variant === "emerald"
+                    ? "#10b981"
+                    : stateBadge.variant === "rose"
+                      ? "#f43f5e"
+                      : "#f59e0b",
+              }}
+            >
+              <StateIcon className="size-3 text-white" />
+              {stateBadge.label}
+            </Badge>
+
+            <QRModal
+              animalId={animal.id}
+              animalName={animal.name}
+              urlToken={animal.urlToken}
+            >
+              <button
+                type="button"
+                className="flex size-9 items-center justify-center rounded-[10px] bg-white/20 hover:bg-white/30 text-white transition-colors backdrop-blur-md"
+              >
+                <QrCode className="size-4" />
+              </button>
+            </QRModal>
+          </div>
+
+          {/* Bottom Info */}
+          <div className="relative z-20 text-white mt-auto">
             {animal.isCoOwned && (
-              <span className="absolute right-3 top-3 inline-block rounded-md border border-border bg-background/85 px-2 py-0.5 text-[11px] font-medium shadow-sm backdrop-blur-sm">
+              <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white backdrop-blur-sm mb-1.5 uppercase">
                 {t("petShared")}
               </span>
             )}
-          </div>
-
-          {/* Info block */}
-          <div className="p-4">
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 className="truncate text-base font-semibold">{animal.name}</h3>
-            {ageText && (
-              <span className="shrink-0 text-xs text-subtle">{ageText}</span>
-            )}
-          </div>
-          <p className="mt-0.5 text-[13px] text-muted-foreground">
-            {animal.breed ?? speciesLabel(animal.species, tc)}
-            {animal.sex !== "unknown" && (
-              <> · {animal.sex === "male" ? "♂" : "♀"}</>
-            )}
-          </p>
-
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <Badge variant={stateBadge.variant} size="sm">
-              <StateIcon className="size-3" />
-              {stateBadge.label}
-            </Badge>
-            <div className="flex items-center gap-2">
-              {animal.activeMedsCount > 0 && (
-                <span
-                  className="inline-flex items-center text-subtle"
-                  title={t(
-                    animal.activeMedsCount === 1
-                      ? "medsActiveOne"
-                      : "medsActiveOther",
-                    { count: animal.activeMedsCount },
-                  )}
-                >
-                  <Pill className="size-3.5" />
-                </span>
+            <h3 className="text-3xl font-extrabold leading-none tracking-tight">
+              {animal.name}
+            </h3>
+            <p className="mt-1.5 text-xs text-white/80 font-medium truncate">
+              {animal.breed ?? speciesLabel(animal.species, tc)}
+              {animal.sex !== "unknown" && (
+                <> · {animal.sex === "male" ? "♂" : "♀"}</>
               )}
-              <ChevronRight className="size-4 text-subtle transition-transform group-hover:translate-x-0.5" />
-            </div>
+              {ageText && <> · {ageText}</>}
+            </p>
           </div>
+        </div>
+
+        {/* Bottom stats row */}
+        <div className="relative z-20 grid grid-cols-3 border-t border-border bg-card text-center divide-x divide-border">
+          {/* Weight */}
+          <div className="flex flex-col items-center justify-center py-3.5">
+            <span className="text-[9.5px] font-bold tracking-wider text-muted-foreground uppercase">
+              {t("statWeight")}
+            </span>
+            <span className="mt-0.5 text-[14px] font-semibold text-foreground">
+              {animal.weightKg ? `${animal.weightKg.toFixed(1)} kg` : "—"}
+            </span>
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+
+          {/* Age */}
+          <div className="flex flex-col items-center justify-center py-3.5">
+            <span className="text-[9.5px] font-bold tracking-wider text-muted-foreground uppercase">
+              {t("statAge")}
+            </span>
+            <span className="mt-0.5 text-[14px] font-semibold text-foreground animate-fade-in">
+              {ageText ? ageText : "—"}
+            </span>
+          </div>
+
+          {/* Meds */}
+          <div className="flex flex-col items-center justify-center py-3.5">
+            <span className="text-[9.5px] font-bold tracking-wider text-muted-foreground uppercase">
+              {t("statMeds")}
+            </span>
+            <span className="mt-0.5 text-[14px] font-semibold text-foreground">
+              {animal.activeMedsCount}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

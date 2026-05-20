@@ -464,7 +464,19 @@
     "petLost": "Perdida",
     "petShared": "Compartida",
     "medsActiveOne": "{count} medicación activa",
-    "medsActiveOther": "{count} medicaciones activas"
+    "medsActiveOther": "{count} medicaciones activas",
+    "statWeight": "Peso",
+    "statAge": "Edad",
+    "statMeds": "Medic.",
+    "completeProfile": "Completar perfil de {name}",
+    "suggVaccines": "Cargar vacunas",
+    "suggPhoto": "Subir foto",
+    "suggDewormings": "Antiparasitarios",
+    "addAnotherTitle": "Agregar otra mascota",
+    "addAnotherDesc": "Perro, gato, conejo, ave…",
+    "invitesPendingOne": "Tenés {count} invitación pendiente",
+    "invitesPendingOther": "Tenés {count} invitaciones pendientes",
+    "invitesHint": "Co-dueño · Tocá para ver y responder"
   },
   "ownerAccess": {
     "metaTitle": "Accesos",

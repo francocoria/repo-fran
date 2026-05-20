@@ -12,12 +12,13 @@ interface QRModalProps {
   animalId: string;
   animalName: string;
   urlToken: string;
+  children?: React.ReactNode;
 }
 
 /// Modal con QR del animal para que el vet escanee.
 /// El QR codifica una URL del tipo `${origin}/vet/scan?token=${url_token}`.
 /// Al escanear con cámara común redirige al vet a confirmar la solicitud.
-export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
+export function QRModal({ animalId, animalName, urlToken, children }: QRModalProps) {
   const t = useTranslations("qrModal");
   const [open, setOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -61,16 +62,28 @@ export function QRModal({ animalId, animalName, urlToken }: QRModalProps) {
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => setOpen(true)}
-        className="gap-1.5"
-      >
-        <QrCode className="h-3.5 w-3.5" />
-        {t("showQr")}
-      </Button>
+      {children ? (
+        <div
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
+        >
+          {children}
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="gap-1.5"
+        >
+          <QrCode className="h-3.5 w-3.5" />
+          {t("showQr")}
+        </Button>
+      )}
 
       {open && (
         <ModalPortal>

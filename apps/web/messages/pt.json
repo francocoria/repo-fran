@@ -463,8 +463,20 @@
     "petBadgeAllGood": "Tudo em dia",
     "petLost": "Perdido",
     "petShared": "Compartilhado",
-    "medsActiveOne": "{count} medicação ativa",
-    "medsActiveOther": "{count} medicações ativas"
+    "medsActiveOne": "{count} medicação activa",
+    "medsActiveOther": "{count} medicações ativas",
+    "statWeight": "Peso",
+    "statAge": "Idade",
+    "statMeds": "Med.",
+    "completeProfile": "Completar perfil de {name}",
+    "suggVaccines": "Adicionar vacinas",
+    "suggPhoto": "Enviar foto",
+    "suggDewormings": "Vermífugos",
+    "addAnotherTitle": "Adicionar outro pet",
+    "addAnotherDesc": "Cachorro, gato, coelho, ave…",
+    "invitesPendingOne": "Você tem {count} convite pendente",
+    "invitesPendingOther": "Você tem {count} convites pendentes",
+    "invitesHint": "Co-tutor · Toque para ver e responder"
   },
   "ownerAccess": {
     "metaTitle": "Acessos",

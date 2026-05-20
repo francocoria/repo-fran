@@ -464,7 +464,19 @@
     "petLost": "Lost",
     "petShared": "Shared",
     "medsActiveOne": "{count} active medication",
-    "medsActiveOther": "{count} active medications"
+    "medsActiveOther": "{count} active medications",
+    "statWeight": "Weight",
+    "statAge": "Age",
+    "statMeds": "Meds",
+    "completeProfile": "Complete {name}'s profile",
+    "suggVaccines": "Add vaccines",
+    "suggPhoto": "Upload photo",
+    "suggDewormings": "Dewormings",
+    "addAnotherTitle": "Add another pet",
+    "addAnotherDesc": "Dog, cat, rabbit, bird…",
+    "invitesPendingOne": "You have {count} pending invitation",
+    "invitesPendingOther": "You have {count} pending invitations",
+    "invitesHint": "Co-owner · Tap to view and respond"
   },
   "ownerAccess": {
     "metaTitle": "Access",
