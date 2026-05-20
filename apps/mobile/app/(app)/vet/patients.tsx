@@ -1,6 +1,7 @@
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Archive, ChevronRight, MessageCircle, ScanLine } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Archive, ChevronRight, MessageCircle, ScanLine, Users } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { PetAvatar } from "../../../src/components/pet-avatar";
 import { Badge } from "../../../src/components/ui/badge";
@@ -19,8 +20,25 @@ export default function VetPatientsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
+      {/* Blob ambiental decorativo */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: -40,
+          left: -40,
+          width: 220,
+          height: 220,
+          borderRadius: 110,
+          backgroundColor: "rgba(6, 182, 212, 0.10)",
+        }}
+      />
+
       <View className="px-5 pt-4 pb-2">
-        <Text className="text-[24px] font-bold tracking-tight text-foreground">
+        <Text className="text-[12px] tracking-wide text-muted">
+          {t("vet.patients.eyebrow")}
+        </Text>
+        <Text className="text-[28px] font-extrabold tracking-tight text-foreground">
           {t("vet.patients.title")}
         </Text>
         <Text className="mt-1 text-[13px] text-muted">
@@ -34,8 +52,26 @@ export default function VetPatientsScreen() {
         <ActivityIndicator color="#06b6d4" style={{ marginTop: 32 }} />
       ) : patients.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
-          <ScanLine size={40} color="#d6d3d1" />
-          <Text className="mt-3 text-center text-[15px] font-semibold text-foreground">
+          <LinearGradient
+            colors={["#06b6d4", "#0891b2"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#06b6d4",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: 16,
+              elevation: 6,
+            }}
+          >
+            <Users size={32} color="#fff" strokeWidth={2.2} />
+          </LinearGradient>
+          <Text className="mt-4 text-center text-[17px] font-bold text-foreground">
             {t("vet.patients.emptyTitle")}
           </Text>
           <Text className="mt-1.5 text-center text-[13px] text-muted">
@@ -44,6 +80,7 @@ export default function VetPatientsScreen() {
           <View className="mt-5">
             <Button
               label={t("vet.patients.scanQr")}
+              variant="accent"
               icon={ScanLine}
               onPress={() => router.push("/(app)/vet/scan" as never)}
             />
@@ -87,6 +124,14 @@ function PatientRow({
     <Pressable
       onPress={onPress}
       className="mx-3 flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-3"
+      style={{
+        shadowColor: "#0c0a09",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.04,
+        shadowRadius: 10,
+        elevation: 1,
+        opacity: patient.archived ? 0.7 : 1,
+      }}
     >
       <PetAvatar
         name={patient.animal_name}
@@ -95,9 +140,12 @@ function PatientRow({
         size={56}
         radius={14}
       />
-      <View className="flex-1">
+      <View className="min-w-0 flex-1">
         <View className="flex-row items-center gap-2">
-          <Text className="text-[15px] font-semibold text-foreground">
+          <Text
+            className="text-[15px] font-semibold tracking-tight text-foreground"
+            numberOfLines={1}
+          >
             {patient.animal_name}
           </Text>
           {patient.archived && (
@@ -108,10 +156,10 @@ function PatientRow({
             />
           )}
         </View>
-        <Text className="text-[12.5px] text-muted">
+        <Text className="text-[12.5px] text-muted" numberOfLines={1}>
           {patient.animal_breed ?? speciesLabel(patient.animal_species)}
         </Text>
-        <Text className="text-[11.5px] text-subtle">
+        <Text className="text-[11.5px] text-subtle" numberOfLines={1}>
           {patient.owner_name}
           {patient.owner_phone && ` · ${patient.owner_phone}`}
         </Text>

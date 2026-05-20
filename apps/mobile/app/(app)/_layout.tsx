@@ -11,6 +11,7 @@ import {
   Crown,
   QrCode,
   ScanLine,
+  Search,
   type LucideIcon,
 } from "lucide-react-native";
 import { useSession, useProfile } from "../../src/lib/session";
@@ -27,6 +28,7 @@ interface Tab {
 const OWNER_TABS: Tab[] = [
   { labelKey: "nav.pets", icon: Home, href: "/(app)/" },
   { labelKey: "nav.reminders", icon: Bell, href: "/(app)/notifications" },
+  { labelKey: "nav.lost", icon: Search, href: "/(app)/lost" },
   { labelKey: "nav.me", icon: User, href: "/(app)/settings" },
 ];
 

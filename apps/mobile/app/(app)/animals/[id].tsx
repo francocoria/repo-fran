@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -15,7 +16,6 @@ import {
   AlertTriangle,
   Camera,
   ChevronLeft,
-  Image as ImageIcon,
   Pencil,
   QrCode,
   Syringe,
@@ -36,6 +36,7 @@ import { PetAvatar } from "../../../src/components/pet-avatar";
 import { Badge } from "../../../src/components/ui/badge";
 import { Button } from "../../../src/components/ui/button";
 import { Card } from "../../../src/components/ui/card";
+import { HealthRing } from "../../../src/components/ui/health-ring";
 import { useAnimal } from "../../../src/hooks/use-animals";
 import { supabase } from "../../../src/lib/supabase";
 import { useTranslation } from "../../../src/lib/i18n";
@@ -115,6 +116,18 @@ const EMPTY_HEALTH: HealthData = {
   studies: [],
   weights: [],
   consults: [],
+};
+
+const SPECIES_GRADIENT: Record<string, [string, string]> = {
+  dog: ["#06b6d4", "#0891b2"],
+  cat: ["#0d9488", "#14b8a6"],
+  bird: ["#f59e0b", "#fb923c"],
+  rabbit: ["#a78bfa", "#8b5cf6"],
+  rodent: ["#fb7185", "#f43f5e"],
+  reptile: ["#84cc16", "#65a30d"],
+  fish: ["#38bdf8", "#0ea5e9"],
+  exotic: ["#c084fc", "#a855f7"],
+  other: ["#64748b", "#475569"],
 };
 
 export default function AnimalProfileScreen() {
@@ -329,100 +342,231 @@ export default function AnimalProfileScreen() {
     (a) => a.severity === "severe",
   );
 
-  return (
-    <SafeAreaView className="flex-1 bg-background" edges={[]}>
-      <View className="flex-row items-center justify-between px-4 py-2">
-        <Pressable onPress={() => router.back()} className="flex-row items-center gap-1">
-          <ChevronLeft size={22} color="#0c0a09" />
-          <Text className="text-[15px] text-foreground">
-            {t("animalDetail.back")}
-          </Text>
-        </Pressable>
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/(app)/animals/edit",
-                params: { id: animal.id },
-              } as never)
-            }
-            className="size-9 items-center justify-center rounded-lg border border-border bg-surface"
-            style={{ width: 36, height: 36 }}
-          >
-            <Pencil size={16} color="#0c0a09" />
-          </Pressable>
-          <Pressable
-            onPress={() => setQrOpen(true)}
-            className="size-9 items-center justify-center rounded-lg border border-border bg-surface"
-            style={{ width: 36, height: 36 }}
-          >
-            <QrCode size={16} color="#0c0a09" />
-          </Pressable>
-        </View>
-      </View>
+  // Salud %: 5 ítems × 20% = foto + vacuna + antiparasitario + peso + chip
+  const healthFlags = [
+    !!animal.photo_url,
+    health.vaccines.length > 0,
+    health.dewormings.length > 0,
+    !!animal.weight_kg || health.weights.length > 0,
+    !!animal.microchip,
+  ];
+  const healthPercent = healthFlags.filter(Boolean).length * 20;
+  const healthMsg =
+    healthPercent < 40
+      ? t("animalDetail.healthScoreMsgLow")
+      : healthPercent < 100
+        ? t("animalDetail.healthScoreMsgMid")
+        : t("animalDetail.healthScoreMsgHigh");
 
+  const heroGradient = SPECIES_GRADIENT[animal.species] ?? SPECIES_GRADIENT.other;
+  const sexLabel =
+    animal.sex === "male" ? "♂" : animal.sex === "female" ? "♀" : null;
+  const subPieces = [
+    ageText,
+    sexLabel,
+    animal.weight_kg ? `${Number(animal.weight_kg).toFixed(1)} kg` : null,
+  ].filter(Boolean) as string[];
+
+  return (
+    <View className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <View className="flex-row items-center gap-4 px-5 pt-2">
-          <Pressable
-            onPress={handlePhotoChange}
-            disabled={uploadingPhoto}
-            style={{ position: "relative" }}
-          >
-            <PetAvatar
-              name={animal.name}
-              species={animal.species}
-              photoUrl={animal.photo_url}
-              size={88}
-              radius={22}
-              lost={isLost}
+        {/* ─── HERO FULL-BLEED ─────────────────────────────────── */}
+        <View style={{ position: "relative", height: 360, width: "100%" }}>
+          {animal.photo_url ? (
+            <Image
+              source={{ uri: animal.photo_url }}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode="cover"
             />
-            <View
+          ) : (
+            <LinearGradient
+              colors={heroGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ width: "100%", height: "100%" }}
+            />
+          )}
+          {/* Velo arriba + fade hacia bg abajo */}
+          <LinearGradient
+            colors={[
+              "rgba(0,0,0,0.45)",
+              "transparent",
+              "transparent",
+              "#faf9f7",
+            ]}
+            locations={[0, 0.35, 0.6, 1]}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          />
+
+          {/* Top row: back + glass actions */}
+          <View
+            pointerEvents="box-none"
+            className="absolute left-0 right-0 top-0 flex-row items-center justify-between px-4 pt-2"
+          >
+            <Pressable
+              onPress={() => router.back()}
               style={{
-                position: "absolute",
-                right: -2,
-                bottom: -2,
-                width: 28,
-                height: 28,
-                borderRadius: 14,
-                backgroundColor: "#7c3aed",
-                borderWidth: 2,
-                borderColor: "#ffffff",
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                backgroundColor: "rgba(255,255,255,0.92)",
                 alignItems: "center",
                 justifyContent: "center",
+                shadowColor: "#0c0a09",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 6,
+                elevation: 3,
               }}
             >
-              {uploadingPhoto ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : animal.photo_url ? (
-                <Camera size={14} color="#ffffff" />
-              ) : (
-                <ImageIcon size={14} color="#ffffff" />
-              )}
+              <ChevronLeft size={20} color="#0c0a09" />
+            </Pressable>
+            <View className="flex-row gap-2">
+              <GlassIconButton
+                onPress={handlePhotoChange}
+                disabled={uploadingPhoto}
+                icon={
+                  uploadingPhoto ? (
+                    <ActivityIndicator size="small" color="#0c0a09" />
+                  ) : (
+                    <Camera size={18} color="#0c0a09" />
+                  )
+                }
+              />
+              <GlassIconButton
+                onPress={() => setQrOpen(true)}
+                icon={<QrCode size={18} color="#0c0a09" />}
+              />
+              <GlassIconButton
+                onPress={() =>
+                  router.push({
+                    pathname: "/(app)/animals/edit",
+                    params: { id: animal.id },
+                  } as never)
+                }
+                icon={<Pencil size={18} color="#0c0a09" />}
+              />
             </View>
-          </Pressable>
-          <View className="flex-1">
-            <View className="flex-row items-center gap-2">
-              <Text className="text-[24px] font-bold tracking-tight text-foreground">
-                {animal.name}
-              </Text>
-              {isLost && (
+          </View>
+
+          {/* Bottom-left: badge perdido + pill especie + nombre + sub */}
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: 20,
+              right: 20,
+              bottom: 56,
+            }}
+          >
+            {isLost && (
+              <View style={{ alignSelf: "flex-start", marginBottom: 10 }}>
                 <Badge
                   label={t("animalDetail.badgeLost")}
                   tone="rose"
                   icon={AlertTriangle}
                 />
-              )}
+              </View>
+            )}
+            <View
+              style={{
+                alignSelf: "flex-start",
+                backgroundColor: "rgba(255,255,255,0.88)",
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+                marginBottom: 8,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: "700",
+                  color: "#0c0a09",
+                  letterSpacing: 0.2,
+                }}
+              >
+                {animal.breed
+                  ? t("animalDetail.heroSpeciesPill", {
+                      species: speciesLabel(animal.species),
+                      breed: animal.breed,
+                    })
+                  : speciesLabel(animal.species)}
+              </Text>
             </View>
-            <Text className="mt-1 text-[13px] text-muted">
-              {speciesLabel(animal.species)}
-              {animal.breed && ` · ${animal.breed}`}
-              {ageText && ` · ${ageText}`}
+            <Text
+              style={{
+                fontSize: 44,
+                fontWeight: "800",
+                color: "#0c0a09",
+                letterSpacing: -1.4,
+                lineHeight: 48,
+              }}
+            >
+              {animal.name}
             </Text>
-            {animal.microchip && (
-              <Text className="mt-0.5 font-mono text-[11px] text-subtle">
-                {t("animalDetail.chipLabel", { value: animal.microchip })}
+            {subPieces.length > 0 && (
+              <Text
+                style={{
+                  marginTop: 4,
+                  fontSize: 14,
+                  fontWeight: "500",
+                  color: "#44403c",
+                }}
+              >
+                {subPieces.join(" · ")}
               </Text>
             )}
+          </View>
+        </View>
+
+        {/* ─── Tarjeta flotante: Perfil de salud ─────────────── */}
+        <View className="px-5" style={{ marginTop: -32 }}>
+          <View
+            className="flex-row items-center gap-3.5 rounded-[20px] border border-border bg-surface p-4"
+            style={{
+              shadowColor: "#0c0a09",
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.1,
+              shadowRadius: 22,
+              elevation: 4,
+            }}
+          >
+            <HealthRing
+              size={68}
+              stroke={6}
+              percent={healthPercent}
+              color="#7c3aed"
+            >
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "800",
+                  color: "#0c0a09",
+                }}
+              >
+                {healthPercent}%
+              </Text>
+            </HealthRing>
+            <View className="min-w-0 flex-1">
+              <Text className="text-[14px] font-bold text-foreground">
+                {t("animalDetail.healthScoreTitle", { percent: healthPercent })}
+              </Text>
+              <Text className="mt-0.5 text-[12px] text-muted">
+                {healthMsg}
+              </Text>
+              {animal.microchip && (
+                <Text className="mt-1 font-mono text-[10.5px] text-subtle">
+                  {t("animalDetail.chipLabel", { value: animal.microchip })}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
 
@@ -440,17 +584,9 @@ export default function AnimalProfileScreen() {
           </View>
         )}
 
+        {/* Mini-stats: vacunas / medicación / consultas */}
         <View className="mt-5 px-3">
           <View className="flex-row gap-2">
-            <MiniStat
-              icon={Scale}
-              label={t("animalDetail.miniWeight")}
-              value={
-                animal.weight_kg
-                  ? `${Number(animal.weight_kg).toFixed(1)} kg`
-                  : "—"
-              }
-            />
             <MiniStat
               icon={Syringe}
               label={t("animalDetail.miniVaccines")}
@@ -460,6 +596,11 @@ export default function AnimalProfileScreen() {
               icon={Pill}
               label={t("animalDetail.miniMeds")}
               value={`${health.medications.length}`}
+            />
+            <MiniStat
+              icon={Stethoscope}
+              label={t("animalDetail.miniVisits")}
+              value={`${health.consults.length}`}
             />
           </View>
         </View>
@@ -755,7 +896,39 @@ export default function AnimalProfileScreen() {
           refreshAnimal();
         }}
       />
-    </SafeAreaView>
+    </View>
+  );
+}
+
+function GlassIconButton({
+  onPress,
+  icon,
+  disabled,
+}: {
+  onPress: () => void;
+  icon: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: "rgba(255,255,255,0.92)",
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#0c0a09",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+        elevation: 3,
+      }}
+    >
+      {icon}
+    </Pressable>
   );
 }
 

@@ -173,8 +173,25 @@ export default function VetSettingsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <View className="px-5 pt-4 pb-2">
-          <Text className="text-[24px] font-bold tracking-tight text-foreground">
+        {/* Blob ambiental decorativo */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            top: -40,
+            right: -40,
+            width: 220,
+            height: 220,
+            borderRadius: 110,
+            backgroundColor: "rgba(6, 182, 212, 0.10)",
+          }}
+        />
+
+        <View className="px-5 pt-3 pb-1">
+          <Text className="text-[12px] tracking-wide text-muted">
+            {t("vet.settings.eyebrow")}
+          </Text>
+          <Text className="text-[28px] font-extrabold tracking-tight text-foreground">
             {t("vet.settings.title")}
           </Text>
           <Text className="mt-1 text-[13px] text-muted">

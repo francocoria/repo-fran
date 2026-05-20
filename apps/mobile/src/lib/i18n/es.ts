@@ -93,6 +93,7 @@ export const es = {
   nav: {
     pets: "Mascotas",
     reminders: "Recordatorios",
+    lost: "Perdidos",
     me: "Yo",
     home: "Inicio",
     patients: "Pacientes",
@@ -144,11 +145,47 @@ export const es = {
       decline: "Rechazar",
     },
     notifications: {
-      title: "Notificaciones",
+      title: "Recordatorios",
+      eyebrow: "Tu agenda",
       empty: "Sin notificaciones",
       unread: "{count} sin leer",
       allRead: "Todas leídas",
       emptyHint: "Cuando haya algo nuevo, va a aparecer acá.",
+      subtitleEmpty: "No tenés vacunas ni antiparasitarios programados",
+      subtitleCount:
+        "{count, plural, one{# recordatorio activo} other{# recordatorios activos}}",
+      overdueTitle: "Atrasados",
+      upcomingTitle: "Próximos 60 días",
+      upcomingEmpty: "No hay vencimientos en los próximos 60 días",
+      notifsTitle: "Notificaciones",
+      todayLabel: "Hoy",
+      tomorrowLabel: "Mañana",
+      daysRemaining: "en {count, plural, one{# día} other{# días}}",
+      daysOverdue:
+        "hace {count, plural, one{# día} other{# días}}",
+    },
+    lost: {
+      eyebrow: "Comunidad",
+      title: "Mascotas perdidas",
+      emptyTitle: "Sin alertas activas",
+      emptyDesc:
+        "Cuando alguien marque su mascota como perdida, va a aparecer acá. ¡Es buena señal!",
+      emptyHint: "No hay mascotas reportadas como perdidas",
+      feedCount:
+        "{count, plural, one{# mascota necesita ayuda} other{# mascotas necesitan ayuda}}",
+      badge: "PERDIDA",
+      contact: "Llamar a {name}",
+      shareMessage:
+        "¡Ayudanos a encontrar a {name}! Más info: {url}",
+      lastSeenAt: "Última vez visto en {place}",
+      rewardLabel: "Recompensa",
+      justNow: "Recién",
+      minutesAgo:
+        "hace {count, plural, one{# min} other{# min}}",
+      hoursAgo:
+        "hace {count, plural, one{# h} other{# h}}",
+      daysAgo:
+        "hace {count, plural, one{# día} other{# días}}",
     },
     settings: {
       title: "Configuración",
@@ -266,6 +303,7 @@ export const es = {
       aimQr: "Apuntá al QR de la mascota",
     },
     patients: {
+      eyebrow: "Consultorio",
       title: "Mis pacientes",
       countActive: "{count} activos",
       countArchived: " · {count} archivados",
@@ -310,6 +348,7 @@ export const es = {
       saveError: "No pudimos guardar la consulta.",
     },
     plan: {
+      eyebrow: "Suscripción",
       title: "Mi plan",
       subtitle: "Gestioná tu suscripción y beneficios.",
       badgeExpired: "Vencido",
@@ -335,6 +374,7 @@ export const es = {
         "Las suscripciones se gestionan desde la cuenta web. Próximamente compras dentro de la app.",
     },
     settings: {
+      eyebrow: "Mi cuenta",
       title: "Configuración",
       subtitle: "Tu información profesional.",
       fullNameLabel: "Nombre completo",
@@ -432,6 +472,12 @@ export const es = {
     miniWeight: "Peso",
     miniVaccines: "Vacunas",
     miniMeds: "Medic.",
+    miniVisits: "Consultas",
+    healthScoreTitle: "Perfil de salud al {percent}%",
+    healthScoreMsgLow: "Cargá vacunas y antiparasitarios para completar",
+    healthScoreMsgMid: "Vas bien — falta poco para completarlo",
+    healthScoreMsgHigh: "¡Perfil completo!",
+    heroSpeciesPill: "{species} · {breed}",
     sectionVaccines: "Vacunas",
     sectionMedications: "Medicación activa",
     sectionAllergies: "Alergias",

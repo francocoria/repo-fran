@@ -1,12 +1,10 @@
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
   AlertCircle,
   Crown,
   QrCode,
   Sparkles,
-  Stethoscope,
   Users,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -45,13 +43,27 @@ export default function VetHomeScreen() {
 
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+      {/* Blob ambiental decorativo */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          top: -40,
+          right: -40,
+          width: 220,
+          height: 220,
+          borderRadius: 110,
+          backgroundColor: "rgba(6, 182, 212, 0.10)",
+        }}
+      />
+
       <View className="px-5 pt-4">
         <View className="flex-row items-end justify-between">
           <View className="flex-1">
-            <Text className="text-[13px] text-muted">
+            <Text className="text-[12px] tracking-wide text-muted">
               {t("vet.home.greeting")}
             </Text>
-            <Text className="text-[26px] font-bold tracking-tight text-foreground">
+            <Text className="text-[28px] font-extrabold tracking-tight text-foreground">
               {firstName}
             </Text>
             {profile.clinic_name && (

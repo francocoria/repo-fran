@@ -39,8 +39,25 @@ export default function VetPlanScreen() {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+        {/* Blob ambiental decorativo */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            top: -40,
+            right: -40,
+            width: 220,
+            height: 220,
+            borderRadius: 110,
+            backgroundColor: "rgba(245, 158, 11, 0.10)",
+          }}
+        />
+
         <View className="px-5 pt-4 pb-2">
-          <Text className="text-[24px] font-bold tracking-tight text-foreground">
+          <Text className="text-[12px] tracking-wide text-muted">
+            {t("vet.plan.eyebrow")}
+          </Text>
+          <Text className="text-[28px] font-extrabold tracking-tight text-foreground">
             {t("vet.plan.title")}
           </Text>
           <Text className="mt-1 text-[13px] text-muted">

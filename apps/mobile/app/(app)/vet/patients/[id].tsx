@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Linking,
   Modal,
   Pressable,
@@ -12,6 +13,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   AlertTriangle,
   ChevronLeft,
@@ -21,7 +23,6 @@ import {
   Stethoscope,
   X,
 } from "lucide-react-native";
-import { PetAvatar } from "../../../../src/components/pet-avatar";
 import { Badge } from "../../../../src/components/ui/badge";
 import { Card } from "../../../../src/components/ui/card";
 import { Button } from "../../../../src/components/ui/button";
@@ -121,38 +122,137 @@ export default function VetPatientView() {
   const ageText = animal.birth_date ? ageLabel(animal.birth_date) : null;
   const cleanPhone = owner?.phone?.replace(/\D/g, "");
 
-  return (
-    <SafeAreaView className="flex-1 bg-background" edges={[]}>
-      <View className="flex-row items-center justify-between px-4 py-2">
-        <Pressable onPress={() => router.back()} className="flex-row items-center gap-1">
-          <ChevronLeft size={22} color="#0c0a09" />
-          <Text className="text-[15px] text-foreground">
-            {t("vet.patientDetail.back")}
-          </Text>
-        </Pressable>
-      </View>
+  const heroGradient: [string, string] = ((): [string, string] => {
+    const map: Record<string, [string, string]> = {
+      dog: ["#06b6d4", "#0891b2"],
+      cat: ["#0d9488", "#14b8a6"],
+      bird: ["#f59e0b", "#fb923c"],
+      rabbit: ["#a78bfa", "#8b5cf6"],
+      rodent: ["#fb7185", "#f43f5e"],
+      reptile: ["#84cc16", "#65a30d"],
+      fish: ["#38bdf8", "#0ea5e9"],
+      exotic: ["#c084fc", "#a855f7"],
+      other: ["#64748b", "#475569"],
+    };
+    return map[animal.species] ?? map.other;
+  })();
 
+  return (
+    <View className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <View className="flex-row items-center gap-3 px-5 pt-2">
-          <PetAvatar
-            name={animal.name}
-            species={animal.species}
-            photoUrl={animal.photo_url}
-            size={72}
-            radius={18}
+        {/* ─── HERO FULL-BLEED ─────────────────────────────────── */}
+        <View style={{ position: "relative", height: 300, width: "100%" }}>
+          {animal.photo_url ? (
+            <Image
+              source={{ uri: animal.photo_url }}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode="cover"
+            />
+          ) : (
+            <LinearGradient
+              colors={heroGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ width: "100%", height: "100%" }}
+            />
+          )}
+          <LinearGradient
+            colors={[
+              "rgba(0,0,0,0.45)",
+              "transparent",
+              "transparent",
+              "#faf9f7",
+            ]}
+            locations={[0, 0.35, 0.6, 1]}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
           />
-          <View className="flex-1">
-            <Text className="text-[22px] font-bold tracking-tight text-foreground">
+
+          {/* Back glass */}
+          <View
+            pointerEvents="box-none"
+            className="absolute left-0 right-0 top-0 flex-row items-center px-4 pt-2"
+          >
+            <Pressable
+              onPress={() => router.back()}
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                backgroundColor: "rgba(255,255,255,0.92)",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#0c0a09",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.15,
+                shadowRadius: 6,
+                elevation: 3,
+              }}
+            >
+              <ChevronLeft size={20} color="#0c0a09" />
+            </Pressable>
+          </View>
+
+          {/* Nombre + sub */}
+          <View
+            pointerEvents="none"
+            style={{ position: "absolute", left: 20, right: 20, bottom: 22 }}
+          >
+            <View
+              style={{
+                alignSelf: "flex-start",
+                backgroundColor: "rgba(255,255,255,0.88)",
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+                marginBottom: 8,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: "700",
+                  color: "#0c0a09",
+                  letterSpacing: 0.2,
+                }}
+              >
+                {speciesLabel(animal.species)}
+                {animal.breed ? ` · ${animal.breed}` : ""}
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 38,
+                fontWeight: "800",
+                color: "#0c0a09",
+                letterSpacing: -1.2,
+                lineHeight: 42,
+              }}
+            >
               {animal.name}
             </Text>
-            <Text className="text-[12.5px] text-muted">
-              {speciesLabel(animal.species)}
-              {animal.breed && ` · ${animal.breed}`}
-              {ageText && ` · ${ageText}`}
-            </Text>
-            {animal.weight_kg && (
-              <Text className="text-[12px] text-muted">
-                <Text className="font-mono">{Number(animal.weight_kg).toFixed(1)} kg</Text>
+            {(ageText || animal.weight_kg) && (
+              <Text
+                style={{
+                  marginTop: 4,
+                  fontSize: 13,
+                  fontWeight: "500",
+                  color: "#44403c",
+                }}
+              >
+                {[
+                  ageText,
+                  animal.weight_kg
+                    ? `${Number(animal.weight_kg).toFixed(1)} kg`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </Text>
             )}
           </View>
@@ -296,7 +396,7 @@ export default function VetPatientView() {
           loadPatient();
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
