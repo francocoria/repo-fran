@@ -17,9 +17,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   AlertTriangle,
   ChevronLeft,
+  ChevronRight,
   Lock,
   MessageCircle,
   Phone,
+  Pill,
   Stethoscope,
   X,
 } from "lucide-react-native";
@@ -28,7 +30,6 @@ import { Card } from "../../../../src/components/ui/card";
 import { Button } from "../../../../src/components/ui/button";
 import { supabase } from "../../../../src/lib/supabase";
 import { useSession } from "../../../../src/lib/session";
-import { env } from "../../../../src/lib/env";
 import { useTranslation } from "../../../../src/lib/i18n";
 import { useLocaleFormat } from "../../../../src/lib/i18n/format";
 
@@ -44,6 +45,7 @@ interface PatientData {
     vet_id: string;
     is_mine: boolean;
   }[];
+  activeMeds: { id: string; name: string; dosage: string; frequency: string }[];
   myVetId: string;
 }
 
@@ -70,7 +72,7 @@ export default function VetPatientView() {
       .single();
     if (!vetProfile) return;
 
-    const [animalRes, allergiesRes, recordsRes] = await Promise.all([
+    const [animalRes, allergiesRes, recordsRes, medsRes] = await Promise.all([
       supabase
         .from("animals")
         .select(
@@ -89,6 +91,11 @@ export default function VetPatientView() {
         .eq("animal_id", id)
         .order("visit_date", { ascending: false })
         .limit(20),
+      supabase
+        .from("medications")
+        .select("id, name, dosage, frequency, active")
+        .eq("animal_id", id)
+        .eq("active", true),
     ]);
 
     setData({
@@ -100,6 +107,12 @@ export default function VetPatientView() {
           ...r,
           is_mine: r.vet_id === vetProfile.id,
         })) ?? [],
+      activeMeds: (medsRes.data ?? []).map((m) => ({
+        id: m.id,
+        name: m.name,
+        dosage: m.dosage ?? "",
+        frequency: m.frequency ?? "",
+      })),
       myVetId: vetProfile.id,
     });
     setLoading(false);
@@ -118,7 +131,7 @@ export default function VetPatientView() {
     );
   }
 
-  const { animal, owner, severeAllergies, records } = data;
+  const { animal, owner, severeAllergies, records, activeMeds } = data;
   const ageText = animal.birth_date ? ageLabel(animal.birth_date) : null;
   const cleanPhone = owner?.phone?.replace(/\D/g, "");
 
@@ -141,7 +154,7 @@ export default function VetPatientView() {
     <View className="flex-1 bg-background">
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         {/* ─── HERO FULL-BLEED ─────────────────────────────────── */}
-        <View style={{ position: "relative", height: 300, width: "100%" }}>
+        <View style={{ position: "relative", height: 320, width: "100%", marginBottom: -32 }}>
           {animal.photo_url ? (
             <Image
               source={{ uri: animal.photo_url }}
@@ -158,12 +171,12 @@ export default function VetPatientView() {
           )}
           <LinearGradient
             colors={[
-              "rgba(0,0,0,0.45)",
+              "rgba(0,0,0,0.35)",
               "transparent",
               "transparent",
               "#faf9f7",
             ]}
-            locations={[0, 0.35, 0.6, 1]}
+            locations={[0, 0.4, 0.65, 1]}
             style={{
               position: "absolute",
               top: 0,
@@ -173,8 +186,8 @@ export default function VetPatientView() {
             }}
           />
 
-          {/* Back glass */}
-          <View
+          {/* Top bar back button */}
+          <SafeAreaView
             pointerEvents="box-none"
             className="absolute left-0 right-0 top-0 flex-row items-center px-4 pt-2"
           >
@@ -183,89 +196,110 @@ export default function VetPatientView() {
               style={{
                 width: 38,
                 height: 38,
-                borderRadius: 19,
-                backgroundColor: "rgba(255,255,255,0.92)",
+                borderRadius: 12,
+                backgroundColor: "rgba(255,255,255,0.25)",
                 alignItems: "center",
                 justifyContent: "center",
-                shadowColor: "#0c0a09",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.15,
-                shadowRadius: 6,
-                elevation: 3,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.35)",
               }}
             >
-              <ChevronLeft size={20} color="#0c0a09" />
+              <ChevronLeft size={20} color="#fff" strokeWidth={2.4} />
             </Pressable>
-          </View>
+          </SafeAreaView>
 
-          {/* Nombre + sub */}
+          {/* Severe Allergy stripe overlaid on Hero */}
+          {severeAllergies.length > 0 && (
+            <View
+              className="absolute left-4 right-4 flex-row items-center gap-3 rounded-xl bg-rose p-3.5"
+              style={{
+                top: 100,
+                shadowColor: "#e11d48",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 4,
+                zIndex: 10,
+              }}
+            >
+              <AlertTriangle size={18} color="#fff" strokeWidth={2.4} />
+              <View className="flex-1">
+                <Text className="text-[10px] font-extrabold uppercase tracking-wider text-white/90">
+                  {t("vet.patientDetail.severeAllergyTitle")}
+                </Text>
+                <Text className="text-[13.5px] font-bold text-white leading-tight">
+                  NO administrar {severeAllergies.map((a) => a.allergen).join(", ")}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Name & metadata */}
           <View
             pointerEvents="none"
-            style={{ position: "absolute", left: 20, right: 20, bottom: 22 }}
+            style={{ position: "absolute", left: 20, right: 20, bottom: 52 }}
           >
-            <View
-              style={{
-                alignSelf: "flex-start",
-                backgroundColor: "rgba(255,255,255,0.88)",
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                borderRadius: 999,
-                marginBottom: 8,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "700",
-                  color: "#0c0a09",
-                  letterSpacing: 0.2,
-                }}
-              >
-                {speciesLabel(animal.species)}
-                {animal.breed ? ` · ${animal.breed}` : ""}
-              </Text>
-            </View>
             <Text
               style={{
                 fontSize: 38,
                 fontWeight: "800",
                 color: "#0c0a09",
-                letterSpacing: -1.2,
+                letterSpacing: -1,
                 lineHeight: 42,
+                textShadowColor: "rgba(255, 255, 255, 0.4)",
+                textShadowOffset: { width: 0, height: 1 },
+                textShadowRadius: 8,
               }}
             >
               {animal.name}
             </Text>
-            {(ageText || animal.weight_kg) && (
-              <Text
-                style={{
-                  marginTop: 4,
-                  fontSize: 13,
-                  fontWeight: "500",
-                  color: "#44403c",
-                }}
-              >
-                {[
-                  ageText,
-                  animal.weight_kg
-                    ? `${Number(animal.weight_kg).toFixed(1)} kg`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </Text>
-            )}
+            <Text
+              className="mt-1 text-[13.5px] font-medium text-foreground"
+              style={{
+                textShadowColor: "rgba(255, 255, 255, 0.4)",
+                textShadowOffset: { width: 0, height: 1 },
+                textShadowRadius: 6,
+              }}
+            >
+              {[
+                speciesLabel(animal.species) + (animal.breed ? ` · ${animal.breed}` : ""),
+                ageText,
+                animal.weight_kg
+                  ? `${Number(animal.weight_kg).toFixed(1)} kg`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </Text>
           </View>
         </View>
 
+        {/* Owner card overlapping */}
         {owner && (
-          <View className="mt-4 mx-3">
-            <Card className="flex-row items-center gap-3">
-              <View
-                className="size-9 items-center justify-center rounded-lg bg-accent"
-                style={{ width: 36, height: 36 }}
+          <View className="px-4" style={{ zIndex: 10, position: "relative" }}>
+            <View
+              className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-3"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.08,
+                shadowRadius: 24,
+                elevation: 4,
+              }}
+            >
+              <LinearGradient
+                colors={["#06b6d4", "#7c3aed"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 10,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                <Text className="text-[12px] font-semibold text-white">
+                <Text className="text-[13px] font-bold text-white">
                   {owner.full_name
                     .split(" ")
                     .map((s) => s[0])
@@ -273,74 +307,81 @@ export default function VetPatientView() {
                     .join("")
                     .toUpperCase()}
                 </Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-[14px] font-semibold text-foreground">
+              </LinearGradient>
+              <View className="flex-1 min-w-0">
+                <Text className="text-[13.5px] font-bold text-foreground" numberOfLines={1}>
                   {owner.full_name}
                 </Text>
                 {owner.phone && (
-                  <Text className="font-mono text-[11.5px] text-subtle">
+                  <Text className="font-mono text-[11px] text-muted mt-0.5" numberOfLines={1}>
                     {owner.phone}
                   </Text>
                 )}
               </View>
               {cleanPhone && (
-                <View className="flex-row gap-1.5">
+                <View className="flex-row gap-2">
                   <Pressable
                     onPress={() => Linking.openURL(`https://wa.me/${cleanPhone}`)}
-                    className="size-9 items-center justify-center rounded-lg bg-whatsapp"
-                    style={{ width: 36, height: 36 }}
+                    className="size-[38px] items-center justify-center rounded-xl bg-whatsapp"
+                    style={{ width: 38, height: 38 }}
                   >
                     <MessageCircle size={16} color="#fff" />
                   </Pressable>
                   <Pressable
                     onPress={() => Linking.openURL(`tel:${cleanPhone}`)}
-                    className="size-9 items-center justify-center rounded-lg border border-border"
-                    style={{ width: 36, height: 36 }}
+                    className="size-[38px] items-center justify-center rounded-xl bg-neutral-100 border border-neutral-200"
+                    style={{ width: 38, height: 38 }}
                   >
-                    <Phone size={16} color="#0c0a09" />
+                    <Phone size={16} color="#57534e" />
                   </Pressable>
                 </View>
               )}
-            </Card>
+            </View>
           </View>
         )}
 
-        {severeAllergies.length > 0 && (
-          <View className="mt-3 mx-3">
-            <View className="flex-row items-center gap-3 rounded-xl bg-rose p-3">
-              <AlertTriangle size={20} color="#fff" strokeWidth={2.4} />
-              <View className="flex-1">
-                <Text className="text-[11px] font-bold uppercase tracking-wider text-white/90">
-                  {t("vet.patientDetail.severeAllergyTitle")}
+        {/* Active Medications banner */}
+        {activeMeds.length > 0 && (
+          <View className="mt-3 px-4">
+            <View className="flex-row items-center gap-3 rounded-2xl border border-accent/20 bg-accent/5 p-3">
+              <View className="size-[34px] items-center justify-center rounded-xl bg-accent" style={{ width: 34, height: 34 }}>
+                <Pill size={16} color="#fff" strokeWidth={2.4} />
+              </View>
+              <View className="flex-1 min-w-0">
+                <Text className="text-[10.5px] font-bold uppercase tracking-wider text-accent">
+                  Medicación activa
                 </Text>
-                <Text className="text-[14px] font-semibold text-white">
-                  {severeAllergies.map((a) => a.allergen).join(", ")}
+                <Text className="text-[13.5px] font-bold text-foreground mt-0.5" numberOfLines={1}>
+                  {activeMeds[0].name}
+                </Text>
+                <Text className="text-[11.5px] text-muted mt-0.5" numberOfLines={1}>
+                  {activeMeds[0].dosage} {activeMeds[0].frequency ? `· ${activeMeds[0].frequency}` : ""}
                 </Text>
               </View>
             </View>
           </View>
         )}
 
-        <View className="mt-4 px-5">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
-              {t("vet.patientDetail.history")}
-            </Text>
-            <Text className="text-[11px] text-subtle">
-              {t("vet.patientDetail.consultsCount", {
-                count: records.length,
-              })}
-            </Text>
+        {/* Tabs visual element */}
+        <View className="mt-4 px-4 flex-row gap-2">
+          <View className="flex-1 bg-accent border border-accent rounded-xl py-2.5 items-center justify-center">
+            <Text className="text-[13px] font-semibold text-white">Historial</Text>
+          </View>
+          <View className="flex-1 bg-surface border border-border rounded-xl py-2.5 items-center justify-center">
+            <Text className="text-[13px] font-semibold text-muted">Salud</Text>
+          </View>
+          <View className="flex-1 bg-surface border border-border rounded-xl py-2.5 items-center justify-center">
+            <Text className="text-[13px] font-semibold text-muted">Notas</Text>
           </View>
         </View>
 
-        <View className="mt-2 px-3 gap-2">
+        {/* Consultations List */}
+        <View className="mt-4 px-3 gap-2">
           {records.length === 0 ? (
             <Card>
-              <View className="items-center py-4">
-                <Stethoscope size={28} color="#d6d3d1" />
-                <Text className="mt-2 text-[13px] text-muted">
+              <View className="items-center py-8">
+                <Stethoscope size={32} color="#d6d3d1" />
+                <Text className="mt-3 text-[13px] text-muted text-center px-6">
                   {t("vet.patientDetail.noConsults")}
                 </Text>
               </View>
@@ -349,23 +390,23 @@ export default function VetPatientView() {
             records.map((r) => (
               <View
                 key={r.id}
-                className={`rounded-xl border p-3 ${
-                  r.is_mine ? "border-accent/40 bg-accent/5" : "border-border bg-surface"
+                className={`rounded-2xl border p-3.5 ${
+                  r.is_mine ? "border-accent/30 bg-accent/5" : "border-border bg-surface"
                 }`}
               >
                 <View className="flex-row items-center justify-between">
-                  <Text className="font-mono text-[11px] text-subtle">
+                  <Text className="font-mono text-[11px] text-subtle font-semibold">
                     {formatDate(r.visit_date, { short: true })}
                   </Text>
                   {r.is_mine && (
                     <Badge label={t("vet.patientDetail.badgeMine")} tone="accent" />
                   )}
                 </View>
-                <Text className="mt-1 text-[14px] font-semibold text-foreground">
+                <Text className="mt-1.5 text-[14px] font-bold text-foreground">
                   {r.reason}
                 </Text>
                 {r.diagnosis && (
-                  <Text className="mt-0.5 text-[12.5px] text-muted">
+                  <Text className="mt-1 text-[12.5px] text-muted leading-relaxed">
                     {r.diagnosis}
                   </Text>
                 )}

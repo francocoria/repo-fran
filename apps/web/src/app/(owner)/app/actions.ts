@@ -113,7 +113,7 @@ export async function createAnimal(formData: FormData) {
     });
 
     revalidatePath("/app");
-    return { success: true, animalId: animal.id };
+    return { success: true, animalId: animal.id, urlToken: animal.url_token };
   } catch (error: any) {
     console.error("Animal create error:", error);
     return { success: false, error: "Ocurrió un error al crear la mascota." };

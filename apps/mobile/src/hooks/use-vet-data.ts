@@ -86,3 +86,63 @@ export function useVetPlan() {
     },
   });
 }
+
+export interface VetRecentConsult {
+  id: string;
+  animal_id: string;
+  visit_date: string;
+  reason: string;
+  diagnosis: string | null;
+  animal_name: string;
+  animal_species: string;
+  animal_breed: string | null;
+  animal_photo_url: string | null;
+}
+
+export function useVetRecentConsults() {
+  return useQuery({
+    queryKey: ["vet-recent-consults"],
+    queryFn: async (): Promise<VetRecentConsult[]> => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data: profile } = await supabase
+        .from("vet_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!profile) return [];
+
+      const { data, error } = await supabase
+        .from("medical_records")
+        .select(`
+          id,
+          visit_date,
+          reason,
+          diagnosis,
+          animal:animals(id, name, species, breed, photo_url)
+        `)
+        .eq("vet_id", profile.id)
+        .order("visit_date", { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error("[useVetRecentConsults] error:", error);
+        return [];
+      }
+
+      return (data ?? []).map((row: any) => ({
+        id: row.id,
+        animal_id: row.animal?.id ?? "",
+        visit_date: row.visit_date,
+        reason: row.reason,
+        diagnosis: row.diagnosis,
+        animal_name: row.animal?.name ?? "—",
+        animal_species: row.animal?.species ?? "other",
+        animal_breed: row.animal?.breed ?? null,
+        animal_photo_url: row.animal?.photo_url ?? null,
+      }));
+    },
+  });
+}
+
+

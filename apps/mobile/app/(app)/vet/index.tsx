@@ -1,26 +1,62 @@
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import {
   AlertCircle,
+  Calendar,
+  ChevronRight,
   Crown,
   QrCode,
+  ShieldCheck,
   Sparkles,
+  TrendingUp,
   Users,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Badge } from "../../../src/components/ui/badge";
 import { Card } from "../../../src/components/ui/card";
-import { useVetPlan } from "../../../src/hooks/use-vet-data";
+import { PetAvatar } from "../../../src/components/pet-avatar";
+import { PawPattern } from "../../../src/components/ui/paw-pattern";
+import { useVetPlan, useVetRecentConsults } from "../../../src/hooks/use-vet-data";
 import { useTranslation } from "../../../src/lib/i18n";
 
 const FREE_CAP = 5;
 
+function timeSince(dateString: string, t: any) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return t("owner.lost.justNow");
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return t("owner.lost.minutesAgo", { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t("owner.lost.hoursAgo", { count: hours });
+  const days = Math.floor(hours / 24);
+  return t("owner.lost.daysAgo", { count: days });
+}
+
 export default function VetHomeScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { data, isLoading } = useVetPlan();
+  const { width } = useWindowDimensions();
+  const { data: planData, isLoading: isLoadingPlan, refetch: refetchPlan, isRefetching: isRefetchingPlan } = useVetPlan();
+  const { data: recentConsults = [], isLoading: isLoadingConsults, refetch: refetchConsults, isRefetching: isRefetchingConsults } = useVetRecentConsults();
 
-  if (isLoading || !data) {
+  const isLoading = isLoadingPlan || isLoadingConsults;
+  const isRefetching = isRefetchingPlan || isRefetchingConsults;
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchPlan(), refetchConsults()]);
+  };
+
+  if (isLoading || !planData) {
     return (
       <View className="flex-1 items-center justify-center">
         <ActivityIndicator color="#06b6d4" />
@@ -28,7 +64,7 @@ export default function VetHomeScreen() {
     );
   }
 
-  const { profile, subscription, activeCount } = data;
+  const { profile, subscription, activeCount } = planData;
   const expiresAt = subscription?.expires_at ? new Date(subscription.expires_at) : null;
   const now = new Date();
   const daysLeft = expiresAt
@@ -39,50 +75,71 @@ export default function VetHomeScreen() {
   const atCap = !isPremium && activeCount >= FREE_CAP;
   const trialEndingSoon = subscription?.plan === "trial" && daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
 
-  const firstName = profile.full_name.split(" ")[0];
+  // Calculamos las estadísticas reales basadas en las consultas del vet
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayConsultsCount = recentConsults.filter(
+    (c) => new Date(c.visit_date) >= todayStart
+  ).length;
+
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 7);
+  const weekConsultsCount = recentConsults.filter(
+    (c) => new Date(c.visit_date) >= weekStart
+  ).length;
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+    <ScrollView
+      contentContainerStyle={{ paddingBottom: 130 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefetching}
+          onRefresh={handleRefresh}
+          tintColor="#06b6d4"
+        />
+      }
+    >
       {/* Blob ambiental decorativo */}
       <View
         pointerEvents="none"
         style={{
           position: "absolute",
-          top: -40,
-          right: -40,
-          width: 220,
-          height: 220,
-          borderRadius: 110,
-          backgroundColor: "rgba(6, 182, 212, 0.10)",
+          top: -60,
+          right: -60,
+          width: 260,
+          height: 260,
+          borderRadius: 130,
+          backgroundColor: "rgba(6, 182, 212, 0.08)",
         }}
       />
 
-      <View className="px-5 pt-4">
-        <View className="flex-row items-end justify-between">
-          <View className="flex-1">
-            <Text className="text-[12px] tracking-wide text-muted">
-              {t("vet.home.greeting")}
+      {/* Header */}
+      <View className="px-5 pt-6 pb-2 flex-row items-start justify-between">
+        <View className="flex-1 pr-4">
+          <Text className="text-[12.5px] text-muted">
+            {t("vet.home.greeting")}
+          </Text>
+          <Text className="text-[24px] font-extrabold tracking-tight text-foreground leading-tight">
+            {profile.full_name}
+          </Text>
+          <View className="mt-1 flex-row items-center gap-1.5">
+            <ShieldCheck size={13} color="#0ea5e9" strokeWidth={2.4} />
+            <Text className="text-[12px] text-muted">
+              {profile.clinic_name || t("vet.settings.clinicPlaceholder")}
             </Text>
-            <Text className="text-[28px] font-extrabold tracking-tight text-foreground">
-              {firstName}
-            </Text>
-            {profile.clinic_name && (
-              <Text className="mt-0.5 text-[13px] text-muted">
-                {profile.clinic_name}
-              </Text>
-            )}
           </View>
-          <PlanBadge plan={subscription?.plan} expired={!!expired} daysLeft={daysLeft} />
         </View>
+        <PlanBadge plan={subscription?.plan} expired={!!expired} daysLeft={daysLeft} />
       </View>
 
+      {/* Warning/Alert banners */}
       {(expired || trialEndingSoon || atCap) && (
-        <View className="mt-4 px-3">
+        <View className="mt-2 px-3">
           <Card
             className={
               expired
                 ? "border-rose/30 bg-rose/5"
-                : "border-amber/30 bg-amber/10"
+                : "border-amber/30 bg-amber/5"
             }
           >
             <View className="flex-row items-start gap-3">
@@ -117,123 +174,197 @@ export default function VetHomeScreen() {
         </View>
       )}
 
+      {/* Hero scan card */}
       <Pressable
         onPress={() => router.push("/(app)/vet/scan" as never)}
-        className="mt-4 mx-3"
+        className="mt-4 mx-3 overflow-hidden rounded-[24px]"
+        style={{
+          shadowColor: "#06b6d4",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.18,
+          shadowRadius: 18,
+          elevation: 4,
+        }}
       >
         <LinearGradient
-          colors={["#06b6d4", "#0891b2"]}
+          colors={["#06b6d4", "#7c3aed"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
-            borderRadius: 18,
-            padding: 18,
+            padding: 20,
             flexDirection: "row",
             alignItems: "center",
             gap: 14,
-            shadowColor: "#06b6d4",
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
-            elevation: 8,
+            height: 100,
+            position: "relative",
           }}
         >
+          <PawPattern
+            width={width - 24}
+            height={100}
+            color="#ffffff"
+            opacity={0.1}
+          />
           <View
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              backgroundColor: "rgba(255,255,255,0.2)",
+              width: 56,
+              height: 56,
+              borderRadius: 14,
+              backgroundColor: "rgba(255,255,255,0.22)",
               alignItems: "center",
               justifyContent: "center",
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.15)",
             }}
           >
-            <QrCode size={26} color="#fff" />
+            <QrCode size={28} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text className="text-[16px] font-bold text-white">
+            <Text className="text-[10px] font-bold tracking-wider text-white/80 uppercase">
+              {t("vet.home.actions")}
+            </Text>
+            <Text className="text-[19px] font-extrabold text-white leading-tight mt-0.5">
               {t("vet.home.scanQr")}
             </Text>
-            <Text className="text-[12.5px] text-white/90">
+            <Text className="text-[12.5px] text-white/90 mt-0.5">
               {t("vet.home.scanQrSub")}
             </Text>
           </View>
         </LinearGradient>
       </Pressable>
 
-      <View className="mt-4 px-3">
-        <View className="flex-row gap-2">
-          <MiniStat
-            label={t("vet.home.statActive")}
-            value={isPremium ? `${activeCount}` : `${activeCount} / ${FREE_CAP}`}
-            icon={Users}
+      {/* Stats Grid */}
+      <View className="mt-4 px-3 gap-2.5">
+        <View className="flex-row gap-2.5">
+          <VetStatTile
+            label="Hoy"
+            value={String(todayConsultsCount)}
+            icon={Calendar}
+            subtitle="consultas hoy"
+            tone="primary"
           />
-          <MiniStat
-            label={t("vet.home.statPlan")}
-            value={subscription?.plan ?? "free"}
+          <VetStatTile
+            label="Pacientes"
+            value={isPremium ? `${activeCount}` : `${activeCount}/${FREE_CAP}`}
+            icon={Users}
+            subtitle="activos"
+            tone="accent"
+          />
+        </View>
+        <View className="flex-row gap-2.5">
+          <VetStatTile
+            label="Esta semana"
+            value={String(weekConsultsCount)}
+            icon={TrendingUp}
+            subtitle="consultas"
+            tone="emerald"
+          />
+          <VetStatTile
+            label="Plan"
+            value={subscription?.plan === "premium" ? "Premium" : subscription?.plan === "trial" ? "Trial" : "Gratuito"}
             icon={Crown}
+            subtitle={expired ? "Vencido" : "Activo"}
+            tone="amber"
           />
         </View>
       </View>
 
-      <View className="mt-5 px-5">
-        <Text className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-subtle">
-          {t("vet.home.actions")}
+      {/* Actions / Navigation list */}
+      <View className="mt-5 px-5 flex-row items-center justify-between">
+        <Text className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
+          Actividad reciente
         </Text>
+        <Pressable onPress={() => router.push("/(app)/vet/patients" as never)}>
+          <Text className="text-[12px] font-semibold text-accent">
+            Ver todas →
+          </Text>
+        </Pressable>
       </View>
 
-      <View className="px-3 gap-2">
-        <Pressable
-          onPress={() => router.push("/(app)/vet/patients" as never)}
-          className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4"
-        >
-          <View
-            className="size-10 items-center justify-center rounded-lg bg-accent/10"
-            style={{ width: 40, height: 40 }}
-          >
-            <Users size={18} color="#06b6d4" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-[14px] font-semibold text-foreground">
-              {t("vet.home.myPatients")}
+      {/* Recent Activity List */}
+      <View className="mt-2 px-3 gap-2">
+        {recentConsults.length === 0 ? (
+          <Card className="items-center py-8">
+            <Users size={32} color="#d6d3d1" />
+            <Text className="mt-3 text-[13px] text-muted text-center px-6">
+              Sin consultas registradas recientemente. Utilizá Escanear QR para iniciar una consulta.
             </Text>
-            <Text className="text-[12px] text-muted">
-              {t("vet.home.myPatientsSub")}
-            </Text>
-          </View>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/(app)/vet/plan" as never)}
-          className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-4"
-        >
-          <LinearGradient
-            colors={["#f59e0b", "#fbbf24"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Crown size={18} color="#fff" />
-          </LinearGradient>
-          <View className="flex-1">
-            <Text className="text-[14px] font-semibold text-foreground">
-              {t("vet.home.myPlan")}
-            </Text>
-            <Text className="text-[12px] text-muted">
-              {isPremium
-                ? t("vet.home.myPlanPremium")
-                : t("vet.home.myPlanFree")}
-            </Text>
-          </View>
-        </Pressable>
+          </Card>
+        ) : (
+          recentConsults.slice(0, 4).map((c) => (
+            <Pressable
+              key={c.id}
+              onPress={() => router.push(`/(app)/vet/patients/${c.animal_id}` as never)}
+              className="flex-row items-center gap-3 rounded-2xl border border-border bg-surface p-3"
+            >
+              <PetAvatar
+                name={c.animal_name}
+                species={c.animal_species}
+                photoUrl={c.animal_photo_url || undefined}
+                size={40}
+                radius={10}
+              />
+              <View className="flex-1 min-w-0">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-[13.5px] font-bold text-foreground">
+                    {c.animal_name}
+                  </Text>
+                  <Text className="text-[10.5px] text-subtle">
+                    {timeSince(c.visit_date, t)}
+                  </Text>
+                </View>
+                <Text
+                  className="text-[11.5px] text-muted mt-0.5"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {c.reason}
+                </Text>
+              </View>
+              <ChevronRight size={14} color="#a8a29e" />
+            </Pressable>
+          ))
+        )}
       </View>
     </ScrollView>
+  );
+}
+
+function VetStatTile({
+  label,
+  value,
+  icon: Icon,
+  subtitle,
+  tone,
+}: {
+  label: string;
+  value: string;
+  icon: any;
+  subtitle: string;
+  tone: "primary" | "accent" | "emerald" | "amber";
+}) {
+  const styles = {
+    primary: { bg: "bg-primary/5", border: "border-primary/20", text: "text-primary" },
+    accent: { bg: "bg-accent/5", border: "border-accent/20", text: "text-accent" },
+    emerald: { bg: "bg-emerald/5", border: "border-emerald/20", text: "text-emerald" },
+    amber: { bg: "bg-amber/5", border: "border-amber/20", text: "text-amber" },
+  }[tone];
+
+  return (
+    <View className={`rounded-2xl border p-3.5 flex-1 ${styles.bg} ${styles.border}`}>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-[10.5px] font-bold uppercase tracking-wider text-subtle">
+          {label}
+        </Text>
+        <Icon size={14} className={styles.text} />
+      </View>
+      <Text className="mt-1 text-[22px] font-extrabold tracking-tight text-foreground leading-tight">
+        {value}
+      </Text>
+      <Text className="text-[11px] font-medium text-muted mt-0.5">
+        {subtitle}
+      </Text>
+    </View>
   );
 }
 
@@ -247,49 +378,78 @@ function PlanBadge({
   daysLeft: number | null;
 }) {
   const { t } = useTranslation();
-  if (expired)
+  if (expired) {
     return (
-      <Badge label={t("vet.home.badgeExpired")} tone="rose" icon={AlertCircle} />
-    );
-  if (plan === "premium")
-    return (
-      <Badge label={t("vet.home.badgePremium")} tone="gold" icon={Crown} />
-    );
-  if (plan === "trial")
-    return (
-      <Badge
-        label={
-          daysLeft
-            ? t("vet.home.badgeTrialDays", { days: daysLeft })
-            : t("vet.home.badgeTrial")
-        }
-        tone="amber"
-        icon={Sparkles}
-      />
-    );
-  return <Badge label={t("vet.home.badgeFree")} tone="neutral" />;
-}
-
-function MiniStat({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: typeof Users;
-}) {
-  return (
-    <View className="flex-1 rounded-xl border border-border bg-surface p-3">
-      <View className="flex-row items-center justify-between">
-        <Text className="text-[10px] font-semibold uppercase tracking-wider text-subtle">
-          {label}
+      <View className="rounded-full bg-rose px-2.5 py-1 flex-row items-center gap-1">
+        <AlertCircle size={10} color="#fff" strokeWidth={2.4} />
+        <Text className="text-[10px] font-bold uppercase tracking-wider text-white">
+          {t("vet.home.badgeExpired")}
         </Text>
-        <Icon size={14} color="#78716c" />
       </View>
-      <Text className="mt-1 font-mono text-[18px] font-semibold capitalize text-foreground">
-        {value}
+    );
+  }
+  if (plan === "premium") {
+    return (
+      <LinearGradient
+        colors={["#d97706", "#fbbf24"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 999,
+          paddingHorizontal: 10,
+          paddingVertical: 5,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          shadowColor: "#d97706",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 10,
+          elevation: 2,
+        }}
+      >
+        <Crown size={11} color="#fff" strokeWidth={2.4} />
+        <Text className="text-[10px] font-bold uppercase tracking-wider text-white">
+          {t("vet.home.badgePremium")}
+        </Text>
+      </LinearGradient>
+    );
+  }
+  if (plan === "trial") {
+    return (
+      <LinearGradient
+        colors={["#d97706", "#fbbf24"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 999,
+          paddingHorizontal: 10,
+          paddingVertical: 5,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          shadowColor: "#d97706",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 10,
+          elevation: 2,
+        }}
+      >
+        <Sparkles size={11} color="#fff" strokeWidth={2.4} />
+        <Text className="text-[10px] font-bold uppercase tracking-wider text-white">
+          {daysLeft
+            ? t("vet.home.badgeTrialDays", { days: daysLeft })
+            : t("vet.home.badgeTrial")}
+        </Text>
+      </LinearGradient>
+    );
+  }
+  return (
+    <View className="rounded-full bg-neutral-200 px-2.5 py-1">
+      <Text className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">
+        {t("vet.home.badgeFree")}
       </Text>
     </View>
   );
 }
+

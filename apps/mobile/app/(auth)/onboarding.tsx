@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Dog, Stethoscope } from "lucide-react-native";
+import { ChevronLeft, Dog, Stethoscope } from "lucide-react-native";
 import { randomUUID } from "expo-crypto";
-import { Button } from "../../src/components/ui/button";
-import { Input } from "../../src/components/ui/input";
+import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../../src/lib/supabase";
 import { useSession } from "../../src/lib/session";
 import { useTranslation } from "../../src/lib/i18n";
@@ -79,18 +78,53 @@ export default function OnboardingScreen() {
     }
   }
 
-  if (step === "role") {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="flex-1 px-6 pt-8">
-          <Text className="text-[28px] font-bold tracking-tight text-foreground">
+  return (
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+      {/* ─── PROGRESS BAR HEADER ─────────────────────────────── */}
+      <View className="px-6 pt-3 pb-2 flex-row items-center justify-between gap-3">
+        {step === "details" ? (
+          <Pressable
+            onPress={() => setStep("role")}
+            className="size-9 items-center justify-center rounded-xl bg-surface border border-border"
+            style={{ width: 36, height: 36 }}
+          >
+            <ChevronLeft size={18} color="#0c0a09" />
+          </Pressable>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
+
+        <View className="flex-1 h-[6px] bg-stone-200 rounded-full overflow-hidden max-w-[180px]">
+          <LinearGradient
+            colors={["#7c3aed", "#06b6d4"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              height: "100%",
+              width: step === "role" ? "50%" : "100%",
+            }}
+          />
+        </View>
+
+        <View style={{ width: 36 }} />
+      </View>
+
+      <Text className="text-center text-[10px] font-extrabold uppercase tracking-widest text-primary mt-1">
+        {step === "role"
+          ? t("auth.onboarding.roleQuestion").substring(0, 0) || "Paso 1 de 2"
+          : "Paso 2 de 2"}
+      </Text>
+
+      {step === "role" ? (
+        <View className="flex-1 px-6 pt-5">
+          <Text className="text-[26px] font-bold tracking-tight text-foreground leading-tight">
             {t("auth.onboarding.roleQuestion")}
           </Text>
-          <Text className="mt-2 text-[15px] text-muted">
+          <Text className="mt-2 text-[14.5px] leading-relaxed text-muted">
             {t("auth.onboarding.roleSubtitle")}
           </Text>
 
-          <View className="mt-8 gap-3">
+          <View className="mt-8 gap-4">
             <RoleCard
               icon={Dog}
               title={t("auth.onboarding.roleOwnerTitle")}
@@ -110,82 +144,166 @@ export default function OnboardingScreen() {
           </View>
 
           <View className="mt-auto pb-4">
-            <Button
-              label={t("common.continue")}
+            <Pressable
               onPress={() => setStep("details")}
-              fullWidth
-              size="lg"
-            />
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView className="flex-1 bg-background">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
-      >
-        <View className="flex-1 px-6 pt-8">
-          <Text className="text-[28px] font-bold tracking-tight text-foreground">
-            {role === "owner"
-              ? t("auth.onboarding.detailsTitleOwner")
-              : t("auth.onboarding.detailsTitleVet")}
-          </Text>
-          <Text className="mt-2 text-[15px] text-muted">
-            {role === "owner"
-              ? t("auth.onboarding.detailsSubtitleOwner")
-              : t("auth.onboarding.detailsSubtitleVet")}
-          </Text>
-
-          <View className="mt-8 gap-4">
-            <Input
-              label={t("auth.onboarding.fullNameLabel")}
-              required
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder={
-                role === "vet"
-                  ? t("auth.onboarding.fullNamePlaceholderVet")
-                  : t("auth.onboarding.fullNamePlaceholderOwner")
-              }
-              autoFocus
-            />
-            {role === "vet" && (
-              <>
-                <Input
-                  label={t("auth.onboarding.licenseLabel")}
-                  hint={t("auth.onboarding.optional")}
-                  value={licenseNumber}
-                  onChangeText={setLicenseNumber}
-                  placeholder={t("auth.onboarding.licensePlaceholder")}
-                />
-                <Input
-                  label={t("auth.onboarding.clinicLabel")}
-                  hint={t("auth.onboarding.optional")}
-                  value={clinicName}
-                  onChangeText={setClinicName}
-                  placeholder={t("auth.onboarding.clinicPlaceholder")}
-                />
-              </>
-            )}
-            <Button
-              label={t("auth.onboarding.createAccount")}
-              onPress={handleFinish}
-              loading={loading}
-              fullWidth
-              size="lg"
-            />
-            <Pressable onPress={() => setStep("role")} className="self-center">
-              <Text className="text-[14px] text-muted">
-                {t("auth.onboarding.goBack")}
-              </Text>
+              style={{
+                shadowColor: role === "owner" ? "#7c3aed" : "#06b6d4",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.3,
+                shadowRadius: 14,
+                elevation: 4,
+              }}
+            >
+              <LinearGradient
+                colors={role === "owner" ? ["#7c3aed", "#a78bfa"] : ["#06b6d4", "#14b8a6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  height: 52,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 15, fontStyle: "normal", fontWeight: "700" }}>
+                  {t("common.continue")}
+                </Text>
+              </LinearGradient>
             </Pressable>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      ) : (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="flex-1"
+        >
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 32 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text className="text-[26px] font-bold tracking-tight text-foreground leading-tight">
+              {role === "owner"
+                ? t("auth.onboarding.detailsTitleOwner")
+                : t("auth.onboarding.detailsTitleVet")}
+            </Text>
+            <Text className="mt-2 text-[14.5px] leading-relaxed text-muted">
+              {role === "owner"
+                ? t("auth.onboarding.detailsSubtitleOwner")
+                : t("auth.onboarding.detailsSubtitleVet")}
+            </Text>
+
+            <View className="mt-8 gap-5">
+              {/* Full Name Input */}
+              <View className="gap-1.5">
+                <Text className="text-[12px] font-semibold text-muted">
+                  {t("auth.onboarding.fullNameLabel")}
+                  <Text className="text-rose"> *</Text>
+                </Text>
+                <View
+                  className="flex-row items-center rounded-xl border border-border bg-surface px-3.5"
+                  style={{ height: 50 }}
+                >
+                  <TextInput
+                    className="flex-1 text-[15px] text-foreground"
+                    value={fullName}
+                    onChangeText={setFullName}
+                    placeholder={
+                      role === "vet"
+                        ? t("auth.onboarding.fullNamePlaceholderVet")
+                        : t("auth.onboarding.fullNamePlaceholderOwner")
+                    }
+                    placeholderTextColor="#a8a29e"
+                    autoFocus
+                  />
+                </View>
+              </View>
+
+              {role === "vet" && (
+                <>
+                  {/* License Number Input */}
+                  <View className="gap-1.5">
+                    <View className="flex-row items-baseline justify-between">
+                      <Text className="text-[12px] font-semibold text-muted">
+                        {t("auth.onboarding.licenseLabel")}
+                      </Text>
+                      <Text className="text-[10px] text-subtle font-medium">
+                        {t("auth.onboarding.optional")}
+                      </Text>
+                    </View>
+                    <View
+                      className="flex-row items-center rounded-xl border border-border bg-surface px-3.5"
+                      style={{ height: 50 }}
+                    >
+                      <TextInput
+                        className="flex-1 text-[15px] text-foreground"
+                        value={licenseNumber}
+                        onChangeText={setLicenseNumber}
+                        placeholder={t("auth.onboarding.licensePlaceholder")}
+                        placeholderTextColor="#a8a29e"
+                      />
+                    </View>
+                  </View>
+
+                  {/* Clinic Name Input */}
+                  <View className="gap-1.5">
+                    <View className="flex-row items-baseline justify-between">
+                      <Text className="text-[12px] font-semibold text-muted">
+                        {t("auth.onboarding.clinicLabel")}
+                      </Text>
+                      <Text className="text-[10px] text-subtle font-medium">
+                        {t("auth.onboarding.optional")}
+                      </Text>
+                    </View>
+                    <View
+                      className="flex-row items-center rounded-xl border border-border bg-surface px-3.5"
+                      style={{ height: 50 }}
+                    >
+                      <TextInput
+                        className="flex-1 text-[15px] text-foreground"
+                        value={clinicName}
+                        onChangeText={setClinicName}
+                        placeholder={t("auth.onboarding.clinicPlaceholder")}
+                        placeholderTextColor="#a8a29e"
+                      />
+                    </View>
+                  </View>
+                </>
+              )}
+
+              {/* Finish Account Button */}
+              <Pressable
+                onPress={loading ? undefined : handleFinish}
+                disabled={loading || !fullName.trim()}
+                style={{
+                  shadowColor: "#7c3aed",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: loading || !fullName.trim() ? 0 : 0.32,
+                  shadowRadius: 14,
+                  elevation: 4,
+                  marginTop: 10,
+                  opacity: loading || !fullName.trim() ? 0.6 : 1,
+                }}
+              >
+                <LinearGradient
+                  colors={["#7c3aed", "#06b6d4"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    height: 52,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>
+                    {t("auth.onboarding.createAccount")}
+                  </Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
@@ -205,26 +323,47 @@ function RoleCard({
   selected: boolean;
   onPress: () => void;
 }) {
-  const iconColor = tone === "primary" ? "#7c3aed" : "#06b6d4";
+  const activeColor = tone === "primary" ? "#7c3aed" : "#06b6d4";
   return (
     <Pressable
       onPress={onPress}
-      className={`flex-row items-start gap-3 rounded-2xl border-2 p-4 ${
-        selected ? "border-primary bg-primary/5" : "border-border bg-surface"
+      className={`relative flex-row items-start gap-4 rounded-2xl border-2 p-5 ${
+        selected
+          ? tone === "primary"
+            ? "border-primary bg-primary/5"
+            : "border-accent bg-accent/5"
+          : "border-border bg-surface"
       }`}
+      style={{
+        shadowColor: selected ? activeColor : "#000",
+        shadowOffset: { width: 0, height: selected ? 8 : 2 },
+        shadowOpacity: selected ? 0.08 : 0.02,
+        shadowRadius: selected ? 16 : 6,
+        elevation: selected ? 3 : 1,
+      }}
     >
       <View
-        className={`size-10 items-center justify-center rounded-xl ${
+        className={`size-11 items-center justify-center rounded-xl ${
           tone === "primary" ? "bg-primary/10" : "bg-accent/10"
         }`}
-        style={{ width: 40, height: 40 }}
+        style={{ width: 44, height: 44 }}
       >
-        <Icon size={20} color={iconColor} />
+        <Icon size={22} color={activeColor} strokeWidth={2.2} />
       </View>
       <View className="flex-1">
-        <Text className="text-[16px] font-semibold text-foreground">{title}</Text>
-        <Text className="mt-0.5 text-[13px] text-muted">{description}</Text>
+        <Text className="text-[16px] font-bold text-foreground">{title}</Text>
+        <Text className="mt-1 text-[13px] leading-relaxed text-muted">{description}</Text>
       </View>
+
+      {/* Selected indicator check badge */}
+      {selected && (
+        <View
+          className="absolute top-4 right-4 size-5 rounded-full items-center justify-center"
+          style={{ backgroundColor: activeColor }}
+        >
+          <Text style={{ color: "#fff", fontSize: 10, fontWeight: "bold" }}>✓</Text>
+        </View>
+      )}
     </Pressable>
   );
 }
