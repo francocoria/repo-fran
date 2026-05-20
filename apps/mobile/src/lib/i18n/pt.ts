@@ -153,6 +153,11 @@ export const pt = {
     settings: {
       title: "Configurações",
       subtitle: "Gerencie suas informações pessoais.",
+      eyebrow: "Minha conta",
+      petCountBadge: "{count, plural, one{# pet} other{# pets}}",
+      sectionPersonal: "Dados pessoais",
+      sectionLanguage: "Preferências",
+      appFooter: "PetApp · v1.0.0",
       fullNameLabel: "Nome completo",
       fullNamePlaceholder: "Seu nome",
       emailLabel: "E-mail",
