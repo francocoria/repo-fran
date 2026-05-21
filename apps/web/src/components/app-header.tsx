@@ -39,6 +39,7 @@ const roleConfig = {
     basePath: "/app",
     navItems: [
       { labelKey: "navOwnerPets", href: "/app" },
+      { labelKey: "navOwnerLost", href: "/lost" },
       { labelKey: "navOwnerAccess", href: "/app/access" },
     ],
   },
@@ -48,7 +49,8 @@ const roleConfig = {
     color: "text-accent",
     basePath: "/vet",
     navItems: [
-      { labelKey: "navVetPatients", href: "/vet" },
+      { labelKey: "navVetHome", href: "/vet" },
+      { labelKey: "navVetPatients", href: "/vet/patients" },
       { labelKey: "navVetScan", href: "/vet/scan" },
       { labelKey: "navVetTemplates", href: "/vet/templates" },
       { labelKey: "navVetPlan", href: "/vet/plan" },
