@@ -209,16 +209,63 @@
   to { transform: rotate(360deg); }
 }
 
+/* ─── Landing v2 keyframes ─────────────────────────────── */
+@keyframes lv2-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes lv2-marquee-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+@keyframes lv2-blob {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  33% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+  66% { border-radius: 70% 30% 50% 50% / 30% 60% 40% 70%; }
+}
+@keyframes lv2-phone-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-14px) rotate(-2deg); }
+}
+@keyframes lv2-float-y {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50% { transform: translateY(-12px) rotate(var(--rot, 0deg)); }
+}
+@keyframes lv2-pop-in {
+  0% { opacity: 0; transform: scale(.6) translateY(20px); }
+  60% { transform: scale(1.05) translateY(0); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes lv2-ping {
+  0% { transform: scale(.6); opacity: .9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes lv2-scan-bar {
+  0% { top: 0; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+@keyframes lv2-pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+
+.lv2-reveal { opacity: 0; transform: translateY(40px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+.lv2-reveal.lv2-in { opacity: 1; transform: translateY(0); }
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-in,
   .animate-pulse-rose,
   .animate-bounce,
-  .animate-pulse {
+  .animate-pulse,
+  [class*="lv2-"] {
     animation: none !important;
     transition: none !important;
   }
+  .lv2-reveal { opacity: 1; transform: none; }
 }
 
 /* Scrollbar minimalista */
