@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import { logout } from "@/app/(auth)/actions";
 import { useState, useTransition } from "react";
 import { VetSearch } from "@/components/vet/vet-search";
+import { usePathname } from "next/navigation";
 
 type UserRole = "owner" | "vet" | "admin";
 
@@ -70,6 +71,7 @@ const roleConfig = {
 export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
   const t = useTranslations("appHeader");
   const { theme, setTheme } = useTheme();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const config = roleConfig[userRole];
@@ -82,7 +84,7 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
   }
 
   return (
-    <header className="hidden md:block sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
+    <header className="hidden md:block sticky top-0 z-50 border-b border-border/40 bg-background/60 dark:bg-background/40 backdrop-blur-xl transition-all shadow-[0_2px_15px_-3px_rgba(0,0,0,0.03)]">
       <div className="container flex h-14 items-center justify-between gap-4">
         {/* Logo + nav */}
         <div className="flex items-center gap-6">
@@ -97,16 +99,27 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {config.navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-lg px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              >
-                {t(item.labelKey)}
-              </Link>
-            ))}
+          <nav className="hidden md:flex items-center gap-1.5">
+            {config.navItems.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-full px-4 py-1.5 text-sm transition-all duration-200 ${
+                    isActive
+                      ? userRole === "owner"
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : userRole === "vet"
+                          ? "bg-accent/10 text-accent font-semibold"
+                          : "bg-destructive/10 text-destructive font-semibold"
+                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                  }`}
+                >
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
