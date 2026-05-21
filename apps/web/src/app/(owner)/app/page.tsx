@@ -38,7 +38,7 @@ export async function generateMetadata() {
 }
 
 const SPECIES_GRADIENT: Record<string, [string, string]> = {
-  dog: ["#7c3aed", "#06b6d4"],   // Purple to Cyan
+  dog: ["#7c3aed", "#a855f7"],   // Violet to Purple (matching screenshot 2 Pepe card)
   cat: ["#0d9488", "#14b8a6"],   // Teal
   bird: ["#f59e0b", "#fb923c"],  // Amber/Orange
   rabbit: ["#a78bfa", "#8b5cf6"], // Violet
@@ -231,14 +231,15 @@ export default async function OwnerDashboardPage() {
           {allAnimals.length > 0 && (
             <p className="mt-1 text-[13px] text-muted-foreground font-medium">
               {allAnimals.length === 1
-                ? t("subtitleCountOne", { count: allAnimals.length })
-                : t("subtitleCountOther", { count: allAnimals.length })}
+                ? "1 mascota"
+                : `${allAnimals.length} mascotas`}
+              {" · "}
               {lostCount > 0 ? (
                 <span className="font-semibold text-rose">
-                  {" · "}{t(lostCount === 1 ? "lostOne" : "lostOther", { count: lostCount })}
+                  {t(lostCount === 1 ? "lostOne" : "lostOther", { count: lostCount })}
                 </span>
               ) : (
-                <>{" · "}{t("allInOrder")}</>
+                <span className="lowercase">{t("allInOrder")}</span>
               )}
             </p>
           )}
@@ -249,13 +250,13 @@ export default async function OwnerDashboardPage() {
           <Button
             variant="outline"
             size="icon"
-            className="relative h-10 w-10 shrink-0 rounded-xl border border-border bg-card"
+            className="relative h-10 w-10 shrink-0 rounded-full border border-border bg-card shadow-sm"
             asChild
           >
             <Link href="/app/notifications">
               <Bell className="h-5 w-5 text-foreground" />
               {lostCount > 0 && (
-                <span className="absolute right-2.5 top-2.5 flex h-2 w-2 rounded-full bg-rose" />
+                <span className="absolute right-3 top-3 flex h-2 w-2 rounded-full bg-rose animate-pulse" />
               )}
             </Link>
           </Button>
@@ -338,8 +339,8 @@ export default async function OwnerDashboardPage() {
 
       {/* ─── SECTION: MIS MASCOTAS ───────────────────────────── */}
       {allAnimals.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-baseline justify-between">
+        <div className="space-y-6">
+          <div className="flex items-baseline justify-between md:hidden">
             <div>
               <h2 className="text-lg font-semibold">{t("myPetsTitle")}</h2>
               <p className="text-xs text-muted-foreground">
@@ -354,7 +355,7 @@ export default async function OwnerDashboardPage() {
             </span>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {allAnimals.map((animal) => (
               <PetCard
                 key={animal.id}
@@ -381,12 +382,12 @@ export default async function OwnerDashboardPage() {
               />
             ))}
 
-            {/* Dotted premium Add Pet card */}
+            {/* Dotted premium Add Pet card (desktop only) */}
             <Link
               href="/app/animals/new"
-              className="group flex min-h-[200px] flex-col items-center justify-center gap-2 rounded-[24px] border-2 border-dashed border-border bg-secondary/20 p-5 text-center transition-all hover:bg-secondary/30 hover:border-primary/50"
+              className="hidden md:flex group flex-col items-center justify-center gap-2 rounded-[32px] border-2 border-dashed border-border bg-secondary/20 p-5 text-center transition-all hover:bg-secondary/30 hover:border-primary/50 aspect-[4/3] w-full max-w-md mx-auto"
             >
-              <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-105">
+              <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform group-hover:scale-105">
                 <PlusCircle className="size-6" strokeWidth={2} />
               </div>
               <h4 className="mt-2 text-sm font-semibold text-foreground">{t("addAnotherTitle")}</h4>
@@ -406,6 +407,22 @@ export default async function OwnerDashboardPage() {
               }}
             />
           )}
+
+          {/* ─── Mobile Add Pet Row (mobile only) ───────────────── */}
+          <div className="pt-2 md:hidden">
+            <Link
+              href="/app/animals/new"
+              className="flex items-center gap-4 rounded-[24px] border border-border bg-card p-4 transition-all hover:bg-secondary/30 active:scale-[0.99] duration-150"
+            >
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <PlusCircle className="size-5" />
+              </div>
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-foreground leading-snug">{t("addAnotherTitle")}</h4>
+                <p className="text-xs text-muted-foreground leading-normal">{t("addAnotherDesc")}</p>
+              </div>
+            </Link>
+          </div>
         </div>
       )}
 
@@ -470,24 +487,24 @@ interface SuggestionsRowProps {
 
 function SuggestionsRow({ animal, t }: SuggestionsRowProps) {
   return (
-    <div className="mt-6 space-y-3">
-      <h3 className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+    <div className="mt-8 space-y-4">
+      <h3 className="text-[11px] font-extrabold tracking-wider text-muted-foreground uppercase">
         {t("completeProfile", { name: animal.name })}
       </h3>
       <div className="grid gap-3 grid-cols-3 overflow-x-auto pb-2 no-scrollbar">
         {/* Card 1: Cargar vacunas */}
         <Link
           href={`/app/animals/${animal.id}`}
-          className="flex flex-col justify-between p-3.5 rounded-2xl border border-primary/10 bg-primary/5 transition-all hover:bg-primary/10 min-w-[100px]"
+          className="flex flex-col justify-between p-4 rounded-2xl border border-indigo-100 bg-[#f5f7ff] transition-all hover:bg-indigo-50 min-h-[140px]"
         >
-          <div className="size-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <Syringe className="size-4" />
+          <div className="size-9 rounded-xl bg-indigo-100 flex items-center justify-center text-[#4f46e5]">
+            <Syringe className="size-4.5" />
           </div>
-          <div className="mt-6">
-            <p className="text-xs font-semibold text-foreground leading-tight">
+          <div className="mt-4">
+            <p className="text-xs font-bold text-foreground leading-tight">
               {t("suggVaccines")}
             </p>
-            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium text-primary">
+            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-bold text-[#4f46e5]">
               Empezar <ChevronRight className="size-3" />
             </span>
           </div>
@@ -496,16 +513,16 @@ function SuggestionsRow({ animal, t }: SuggestionsRowProps) {
         {/* Card 2: Subir foto */}
         <Link
           href={`/app/animals/${animal.id}`}
-          className="flex flex-col justify-between p-3.5 rounded-2xl border border-accent/10 bg-accent/5 transition-all hover:bg-accent/10 min-w-[100px]"
+          className="flex flex-col justify-between p-4 rounded-2xl border border-teal-100 bg-[#f0fdfa] transition-all hover:bg-teal-50 min-h-[140px]"
         >
-          <div className="size-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
-            <PawPrint className="size-4" />
+          <div className="size-9 rounded-xl bg-teal-100 flex items-center justify-center text-[#0d9488]">
+            <PawPrint className="size-4.5" />
           </div>
-          <div className="mt-6">
-            <p className="text-xs font-semibold text-foreground leading-tight">
+          <div className="mt-4">
+            <p className="text-xs font-bold text-foreground leading-tight">
               {t("suggPhoto")}
             </p>
-            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium text-accent">
+            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-bold text-[#0d9488]">
               Empezar <ChevronRight className="size-3" />
             </span>
           </div>
@@ -514,16 +531,16 @@ function SuggestionsRow({ animal, t }: SuggestionsRowProps) {
         {/* Card 3: Antiparasitarios */}
         <Link
           href={`/app/animals/${animal.id}`}
-          className="flex flex-col justify-between p-3.5 rounded-2xl border border-amber-500/10 bg-amber-500/5 transition-all hover:bg-amber-500/10 min-w-[100px]"
+          className="flex flex-col justify-between p-4 rounded-2xl border border-amber-100 bg-[#fffbeb] transition-all hover:bg-amber-50 min-h-[140px]"
         >
-          <div className="size-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-500">
-            <Shield className="size-4" />
+          <div className="size-9 rounded-xl bg-amber-100 flex items-center justify-center text-[#d97706]">
+            <Shield className="size-4.5" />
           </div>
-          <div className="mt-6">
-            <p className="text-xs font-semibold text-foreground leading-tight">
+          <div className="mt-4">
+            <p className="text-xs font-bold text-foreground leading-tight">
               {t("suggDewormings")}
             </p>
-            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-500">
+            <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] font-bold text-[#d97706]">
               Empezar <ChevronRight className="size-3" />
             </span>
           </div>
@@ -566,30 +583,17 @@ function PetCard({
   const isLost = animal.status === "lost";
 
   const stateBadge = isLost
-    ? { variant: "rose" as const, icon: AlertTriangle, label: t("petBadgeLost") }
+    ? { variant: "rose" as const, label: t("petBadgeLost") }
     : animal.severeAllergiesCount > 0
-      ? {
-          variant: "amber" as const,
-          icon: AlertTriangle,
-          label: t("petBadgeSevereAllergy"),
-        }
+      ? { variant: "amber" as const, label: t("petBadgeSevereAllergy") }
       : animal.overdueVaccinesCount > 0
-        ? {
-            variant: "rose" as const,
-            icon: AlertTriangle,
-            label: t("petBadgeOverdueVaccine"),
-          }
-        : {
-            variant: "emerald" as const,
-            icon: CheckCircle2,
-            label: t("statusOk"),
-          };
+        ? { variant: "rose" as const, label: t("petBadgeOverdueVaccine") }
+        : { variant: "emerald" as const, label: "AL DÍA" };
 
-  const StateIcon = stateBadge.icon;
   const gradient = (SPECIES_GRADIENT[animal.species] || SPECIES_GRADIENT.other) as [string, string];
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[24px] border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+    <div className="group relative flex flex-col overflow-hidden rounded-[32px] border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md aspect-[4/3] w-full max-w-md mx-auto">
       {/* Invisible link covering card, except header actions */}
       <Link
         href={`/app/animals/${animal.id}`}
@@ -597,105 +601,67 @@ function PetCard({
         aria-label={animal.name}
       />
 
-      <div className="relative flex flex-col">
-        {/* Photo or Gradient Hero */}
-        <div
-          className="relative w-full overflow-hidden bg-cover bg-center flex flex-col justify-between p-4 h-64 sm:h-72"
-          style={
-            animal.photoUrl
-              ? { backgroundImage: `url(${animal.photoUrl})` }
-              : {
-                  background: `linear-gradient(135deg, ${gradient[0]} 0%, ${gradient[1]} 100%)`,
-                }
-          }
-        >
-          {/* Tint overlay for legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/35" />
+      <div
+        className="absolute inset-0 bg-cover bg-center flex flex-col justify-between p-6"
+        style={
+          animal.photoUrl
+            ? { backgroundImage: `url(${animal.photoUrl})` }
+            : {
+                background: `linear-gradient(135deg, ${gradient[0]} 0%, ${gradient[1]} 100%)`,
+              }
+        }
+      >
+        {/* Tint overlay for legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/25" />
 
-          {/* Top Overlays */}
-          <div className="relative z-20 flex w-full items-center justify-between">
-            <Badge
-              variant={stateBadge.variant}
-              size="sm"
-              className="text-white border-none shadow-sm gap-1 uppercase tracking-wider text-[10px] font-bold"
-              style={{
-                backgroundColor:
-                  stateBadge.variant === "emerald"
-                    ? "#10b981"
-                    : stateBadge.variant === "rose"
-                      ? "#f43f5e"
-                      : "#f59e0b",
-              }}
+        {/* Top Overlays */}
+        <div className="relative z-20 flex w-full items-center justify-between">
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-[10px] font-extrabold text-white tracking-wider border-none shadow-sm uppercase"
+            style={{
+              backgroundColor:
+                stateBadge.variant === "emerald"
+                  ? "#22c55e"
+                  : stateBadge.variant === "rose"
+                    ? "#ef4444"
+                    : "#f59e0b",
+            }}
+          >
+            {stateBadge.variant === "emerald" && "✓ "}
+            {stateBadge.label}
+          </span>
+
+          <QRModal
+            animalId={animal.id}
+            animalName={animal.name}
+            urlToken={animal.urlToken}
+          >
+            <button
+              type="button"
+              className="flex size-10 items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 text-white transition-colors backdrop-blur-md border border-white/10"
             >
-              <StateIcon className="size-3 text-white" />
-              {stateBadge.label}
-            </Badge>
-
-            <QRModal
-              animalId={animal.id}
-              animalName={animal.name}
-              urlToken={animal.urlToken}
-            >
-              <button
-                type="button"
-                className="flex size-9 items-center justify-center rounded-[10px] bg-white/20 hover:bg-white/30 text-white transition-colors backdrop-blur-md"
-              >
-                <QrCode className="size-4" />
-              </button>
-            </QRModal>
-          </div>
-
-          {/* Bottom Info */}
-          <div className="relative z-20 text-white mt-auto">
-            {animal.isCoOwned && (
-              <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white backdrop-blur-sm mb-1.5 uppercase">
-                {t("petShared")}
-              </span>
-            )}
-            <h3 className="text-3xl font-extrabold leading-none tracking-tight">
-              {animal.name}
-            </h3>
-            <p className="mt-1.5 text-xs text-white/80 font-medium truncate">
-              {animal.breed ?? speciesLabel(animal.species, tc)}
-              {animal.sex !== "unknown" && (
-                <> · {animal.sex === "male" ? "♂" : "♀"}</>
-              )}
-              {ageText && <> · {ageText}</>}
-            </p>
-          </div>
+              <QrCode className="size-5" />
+            </button>
+          </QRModal>
         </div>
 
-        {/* Bottom stats row */}
-        <div className="relative z-20 grid grid-cols-3 border-t border-border bg-card text-center divide-x divide-border">
-          {/* Weight */}
-          <div className="flex flex-col items-center justify-center py-3.5">
-            <span className="text-[9.5px] font-bold tracking-wider text-muted-foreground uppercase">
-              {t("statWeight")}
+        {/* Bottom Info */}
+        <div className="relative z-20 text-white">
+          {animal.isCoOwned && (
+            <span className="inline-block rounded-md bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white backdrop-blur-sm mb-2 uppercase">
+              {t("petShared")}
             </span>
-            <span className="mt-0.5 text-[14px] font-semibold text-foreground">
-              {animal.weightKg ? `${animal.weightKg.toFixed(1)} kg` : "—"}
-            </span>
-          </div>
-
-          {/* Age */}
-          <div className="flex flex-col items-center justify-center py-3.5">
-            <span className="text-[9.5px] font-bold tracking-wider text-muted-foreground uppercase">
-              {t("statAge")}
-            </span>
-            <span className="mt-0.5 text-[14px] font-semibold text-foreground animate-fade-in">
-              {ageText ? ageText : "—"}
-            </span>
-          </div>
-
-          {/* Meds */}
-          <div className="flex flex-col items-center justify-center py-3.5">
-            <span className="text-[9.5px] font-bold tracking-wider text-muted-foreground uppercase">
-              {t("statMeds")}
-            </span>
-            <span className="mt-0.5 text-[14px] font-semibold text-foreground">
-              {animal.activeMedsCount}
-            </span>
-          </div>
+          )}
+          <h3 className="text-3xl font-extrabold leading-none tracking-tight">
+            {animal.name}
+          </h3>
+          <p className="mt-2 text-sm text-white/90 font-medium">
+            {animal.breed ?? speciesLabel(animal.species, tc)}
+            {animal.sex !== "unknown" && (
+              <> · {animal.sex === "male" ? "♂" : "♀"}</>
+            )}
+            {ageText && <> · {ageText}</>}
+          </p>
         </div>
       </div>
     </div>
