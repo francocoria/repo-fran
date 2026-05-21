@@ -104,11 +104,9 @@ export default async function LandingPage() {
     <div className="bg-background">
       {/* ═══ HERO ═════════════════════════════════════════════ */}
       <section
-        className="relative overflow-hidden"
+        className="relative overflow-hidden pb-16 pt-28 sm:pb-20 sm:pt-[90px]"
         style={{
           minHeight: "92vh",
-          paddingTop: 90,
-          paddingBottom: 80,
           background: `
             radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.22), transparent 50%),
             radial-gradient(circle at 80% 70%, hsl(var(--accent) / 0.22), transparent 50%),
@@ -206,7 +204,7 @@ export default async function LandingPage() {
         </header>
 
         {/* Two-column hero */}
-        <div className="container relative z-[2] grid items-center gap-14 pt-16 md:grid-cols-[1.05fr_.95fr] md:gap-16 md:pt-20">
+        <div className="container relative z-[2] grid items-center gap-10 pt-2 md:grid-cols-[1.05fr_.95fr] md:gap-16 md:pt-20">
           {/* Left copy */}
           <div>
             <Reveal>
@@ -233,7 +231,7 @@ export default async function LandingPage() {
               <h1
                 className="font-extrabold leading-[0.96]"
                 style={{
-                  fontSize: "clamp(48px, 7vw, 92px)",
+                  fontSize: "clamp(42px, 9vw, 92px)",
                   letterSpacing: "-0.035em",
                 }}
               >
@@ -1159,10 +1157,11 @@ function FloatingPet({
   duration: number;
   delay: number;
 }) {
+  // Sólo desde md+ — en mobile cramping con el contenido y empujan ancho.
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute z-[1] overflow-hidden rounded-2xl"
+      className="pointer-events-none absolute z-[1] hidden overflow-hidden rounded-2xl md:block"
       style={{
         ...pos,
         width: size,
@@ -1258,7 +1257,7 @@ function LostPosterMockup({
 }) {
   return (
     <div
-      className="mx-auto max-w-[380px] overflow-hidden rounded-3xl bg-white text-foreground"
+      className="mx-auto w-full max-w-[320px] overflow-hidden rounded-3xl bg-white text-foreground sm:max-w-[380px]"
       style={{
         boxShadow:
           "0 32px 80px rgba(0,0,0,.4), 0 12px 32px rgba(225,29,72,.25)",
@@ -1287,12 +1286,12 @@ function LostPosterMockup({
         >
           <div
             className="overflow-hidden rounded-2xl"
-            style={{ width: 180, height: 180 }}
+            style={{ width: 160, height: 160 }}
           >
             <PetAvatar name={petName} species="dog" size={180} radius={0} />
           </div>
         </div>
-        <h3 className="mt-4 text-[44px] font-extrabold tracking-tight">
+        <h3 className="mt-4 text-[36px] font-extrabold tracking-tight sm:text-[44px]">
           {petName}
         </h3>
         <div className="text-xs text-muted-foreground">{meta}</div>
@@ -1320,7 +1319,7 @@ function VetDashboardMockup({
 }) {
   return (
     <div
-      className="mx-auto max-w-[500px] overflow-hidden rounded-3xl border border-border bg-surface"
+      className="mx-auto w-full max-w-full overflow-hidden rounded-3xl border border-border bg-surface sm:max-w-[500px]"
       style={{
         boxShadow: "0 24px 60px rgba(0,0,0,.12), 0 8px 20px rgba(0,0,0,.06)",
         transform: "perspective(1200px) rotateY(-4deg)",

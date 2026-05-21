@@ -109,7 +109,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: THEME_COLOR_INIT_SCRIPT }}
         />
       </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
+      <body className="min-h-screen overflow-x-hidden bg-background font-sans antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider
             attribute="class"

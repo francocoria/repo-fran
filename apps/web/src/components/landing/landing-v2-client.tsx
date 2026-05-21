@@ -141,7 +141,7 @@ export function HeroPhone({
   }, []);
 
   return (
-    <div className="relative flex h-[600px] items-center justify-center">
+    <div className="relative mx-auto flex h-[520px] w-full max-w-[340px] items-center justify-center sm:h-[600px] sm:max-w-none">
       {/* Glow halo */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -153,21 +153,22 @@ export function HeroPhone({
         }}
       />
 
-      {/* Phone */}
-      <div
-        className="relative z-10"
-        style={{
-          width: 320,
-          height: 560,
-          background: "#000",
-          borderRadius: 48,
-          padding: 10,
-          boxShadow:
-            "0 40px 80px rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.15), inset 0 0 0 2px rgba(255,255,255,.05)",
-          animation: "lv2-phone-float 6s ease-in-out infinite",
-          transform: "rotate(-2deg)",
-        }}
-      >
+      {/* Wrapper para escalar en mobile sin pelearse con la animation transform */}
+      <div className="relative z-10 origin-center scale-[0.82] sm:scale-100">
+        <div
+          className="relative"
+          style={{
+            width: 320,
+            height: 560,
+            background: "#000",
+            borderRadius: 48,
+            padding: 10,
+            boxShadow:
+              "0 40px 80px rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.15), inset 0 0 0 2px rgba(255,255,255,.05)",
+            animation: "lv2-phone-float 6s ease-in-out infinite",
+            transform: "rotate(-2deg)",
+          }}
+        >
         <div
           className="relative h-full w-full overflow-hidden"
           style={{ borderRadius: 38, background: "hsl(var(--background))" }}
@@ -222,9 +223,10 @@ export function HeroPhone({
             ))}
           </div>
         </div>
+        </div>
       </div>
 
-      {/* Floating chips */}
+      {/* Floating chips — sólo desde sm+ para que no rompan el viewport en mobile */}
       <FloatingChip
         position={{ top: 50, right: 20 }}
         icon={<Syringe className="size-3.5" strokeWidth={2.4} />}
@@ -238,6 +240,7 @@ export function HeroPhone({
         tone="rose"
         label={`Alergia · Pollo`}
         delay={1}
+        hideOnMobile
       />
       <FloatingChip
         position={{ bottom: 120, right: -20 }}
@@ -245,6 +248,7 @@ export function HeroPhone({
         tone="accent"
         label={weight}
         delay={1.5}
+        hideOnMobile
       />
       <FloatingChip
         position={{ bottom: 40, left: 20 }}
@@ -263,12 +267,14 @@ function FloatingChip({
   tone,
   label,
   delay = 0,
+  hideOnMobile = false,
 }: {
   position: { top?: number; left?: number; right?: number; bottom?: number };
   icon: ReactNode;
   tone: "primary" | "accent" | "rose" | "emerald";
   label: string;
   delay?: number;
+  hideOnMobile?: boolean;
 }) {
   const tones = {
     primary: {
@@ -295,7 +301,7 @@ function FloatingChip({
   const t = tones[tone];
   return (
     <div
-      className="absolute z-20 inline-flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold backdrop-blur"
+      className={`absolute z-20 ${hideOnMobile ? "hidden sm:inline-flex" : "inline-flex"} items-center gap-1.5 px-3 py-2 text-[13px] font-semibold backdrop-blur`}
       style={{
         ...position,
         background: t.bg,
