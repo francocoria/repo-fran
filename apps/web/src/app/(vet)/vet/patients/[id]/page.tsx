@@ -110,286 +110,297 @@ export default async function VetPatientView({
   const ageText = animal.birth_date ? getAge(animal.birth_date) : null;
 
   return (
-    <div className="animate-fade-up max-w-4xl">
+    <div className="animate-fade-up max-w-5xl mx-auto pb-10">
       <Link
         href="/vet/patients"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeft className="size-4" />
         {t("backToPatients")}
       </Link>
 
-      {/* ─── HEADER PACIENTE ────────────────────────────────────── */}
-      <div className="mb-5 flex flex-wrap items-start gap-4">
-        <PetAvatar
-          name={animal.name}
-          species={animal.species}
-          photoUrl={animal.photo_url}
-          size={88}
-          radius={20}
-        />
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[28px] font-bold leading-tight tracking-tight md:text-3xl">
-              {animal.name}
-            </h1>
-            {access.archived_by_vet && (
-              <Badge variant="secondary">{t("badgeArchived")}</Badge>
-            )}
-          </div>
-
-          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span>
-              {speciesLabels[animal.species] ?? animal.species}
-              {animal.breed && ` · ${animal.breed}`}
-            </span>
-            {ageText && (
-              <span className="flex items-center gap-1">
-                <Calendar className="size-3.5" />
-                {ageText}
+      {/* ─── HEADER PACIENTE V2 ─── */}
+      <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 rounded-3xl border border-border/50 bg-card p-5 md:p-6 shadow-sm">
+        <div className="flex flex-wrap items-center gap-5">
+          <PetAvatar
+            name={animal.name}
+            species={animal.species}
+            photoUrl={animal.photo_url}
+            size={96}
+            radius={9999}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-extrabold tracking-tight">
+                {animal.name}
+              </h1>
+              {access.archived_by_vet && (
+                <div className="inline-flex h-6 items-center rounded-full bg-secondary/80 px-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {t("badgeArchived")}
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-2 text-sm font-medium text-muted-foreground">
+              <span className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full">
+                {speciesLabels[animal.species] ?? animal.species}
+                {animal.breed && ` · ${animal.breed}`}
               </span>
-            )}
-            {animal.sex !== "unknown" && (
-              <span>{animal.sex === "male" ? t("sexMale") : t("sexFemale")}</span>
-            )}
-            {animal.weight_kg && (
-              <span className="flex items-center gap-1">
-                <Activity className="size-3.5" />
-                <span className="font-mono">
-                  {Number(animal.weight_kg).toFixed(1)} kg
+              {ageText && (
+                <span className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full">
+                  <Calendar className="size-3.5" />
+                  {ageText}
                 </span>
-              </span>
-            )}
+              )}
+              {animal.sex !== "unknown" && (
+                <span className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full">
+                  {animal.sex === "male" ? t("sexMale") : t("sexFemale")}
+                </span>
+              )}
+              {animal.weight_kg && (
+                <span className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1 rounded-full">
+                  <Activity className="size-3.5" />
+                  <span className="font-mono">
+                    {Number(animal.weight_kg).toFixed(1)} kg
+                  </span>
+                </span>
+              )}
+            </div>
           </div>
-
-          {animal.microchip && (
-            <p className="mt-1 font-mono text-[11px] text-subtle">
-              {t("chip", { value: animal.microchip })}
-            </p>
-          )}
         </div>
-
-        <Button asChild className="shrink-0" variant="accent">
+        
+        <Button asChild className="shrink-0 rounded-full h-12 px-6 shadow-sm shadow-primary/25 w-full md:w-auto" variant="default">
           <Link href={`/vet/patients/${animal.id}/consults/new`}>
-            <Plus className="size-4" />
+            <Plus className="size-4 mr-2" />
             {t("newConsult")}
           </Link>
         </Button>
       </div>
 
-      {/* ─── OWNER CARD CON WHATSAPP ────────────────────────── */}
-      <div className="mb-5 rounded-xl border bg-card p-3">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-white text-xs font-semibold">
-            {animal.owner_profile.full_name
-              .split(" ")
-              .map((n) => n[0])
-              .slice(0, 2)
-              .join("")
-              .toUpperCase()}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate">
-              {animal.owner_profile.full_name}
-            </p>
-            {animal.owner_profile.phone && (
-              <p className="font-mono text-[11.5px] text-subtle">
-                {animal.owner_profile.phone}
-              </p>
-            )}
-            {animal.owner_profile.city && (
-              <p className="text-[11.5px] text-muted-foreground">
-                {animal.owner_profile.city}
-              </p>
-            )}
-          </div>
-          {animal.owner_profile.phone && (
-            <Button
-              asChild
-              size="icon"
-              variant="whatsapp"
-              aria-label={t("whatsappAria")}
-            >
-              <a
-                href={`https://wa.me/${animal.owner_profile.phone.replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <MessageCircle className="size-4" />
-              </a>
-            </Button>
-          )}
-        </div>
-      </div>
+      <div className="grid md:grid-cols-[1fr_320px] gap-6 items-start">
+        <div className="space-y-6">
+          {/* ─── ALERTAS DESTACADAS V2 ─── */}
+          {(severeAllergies.length > 0 || animal.medications.length > 0) && (
+            <section className="space-y-4">
+              {severeAllergies.length > 0 && (
+                <div className="rounded-3xl border border-rose-500/10 bg-rose-500/5 p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex size-7 items-center justify-center rounded-full bg-rose-500/20 text-rose-600">
+                      <AlertTriangle className="size-4" />
+                    </div>
+                    <h2 className="text-[15px] font-bold text-rose-600 dark:text-rose-400">
+                      {t("severeAllergiesTitle")}
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {severeAllergies.map((a) => (
+                      <span
+                        key={a.id}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1.5 text-xs text-rose-700 dark:text-rose-300 font-medium"
+                      >
+                        <span className="font-bold">{a.allergen}</span>
+                        <span className="opacity-70">
+                          ({allergyTypeLabels[a.type] ?? a.type})
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-      {/* ─── ALERTAS DESTACADAS ─────────────────────────────────── */}
-      {(severeAllergies.length > 0 || animal.medications.length > 0) && (
-        <section className="mb-6 space-y-3">
-          {severeAllergies.length > 0 && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <h2 className="text-sm font-semibold text-destructive">
-                  {t("severeAllergiesTitle")}
-                </h2>
+              {animal.medications.length > 0 && (
+                <div className="rounded-3xl border border-violet-500/10 bg-violet-500/5 p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex size-7 items-center justify-center rounded-full bg-violet-500/20 text-violet-600">
+                      <Pill className="size-4" />
+                    </div>
+                    <h2 className="text-[15px] font-bold text-violet-700 dark:text-violet-400">
+                      {t("activeMedication")}
+                    </h2>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    {animal.medications.map((m) => (
+                      <li key={m.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-x-2 gap-y-1 bg-violet-500/5 px-4 py-3 rounded-2xl">
+                        <span className="font-bold text-violet-900 dark:text-violet-200">{m.name}</span>
+                        <span className="inline-flex items-center rounded-full bg-violet-500/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-violet-600/80 dark:text-violet-400/80">
+                          {m.dosage} · {m.frequency}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ─── HISTORIAL DE CONSULTAS V2 ─── */}
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t("consultHistory")} ({records.length})
+              </h2>
+            </div>
+
+            {records.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-border/60 bg-surface-2/40 px-6 py-12 text-center">
+                <FileText className="mx-auto size-12 text-muted-foreground/30" />
+                <p className="mt-4 text-[15px] font-medium text-muted-foreground">
+                  {t("noConsultsTitle")}
+                </p>
+                <Button asChild size="default" className="mt-5 rounded-full px-6 shadow-sm" variant="outline">
+                  <Link href={`/vet/patients/${animal.id}/consults/new`}>
+                    <Plus className="mr-2 size-4" />
+                    {t("createFirstConsult")}
+                  </Link>
+                </Button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {severeAllergies.map((a) => (
-                  <span
-                    key={a.id}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 bg-background px-2.5 py-1 text-xs"
+            ) : (
+              <div className="space-y-4">
+                {records.map((r) => (
+                  <article
+                    key={r.id}
+                    className={`rounded-3xl border border-border/40 p-5 shadow-sm transition-all hover:shadow-md ${
+                      r.is_mine ? "bg-primary/[0.03] border-primary/20" : "bg-card"
+                    }`}
                   >
-                    <span className="font-semibold">{a.allergen}</span>
-                    <span className="text-muted-foreground">
-                      ({allergyTypeLabels[a.type] ?? a.type})
-                    </span>
-                  </span>
+                    <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-lg font-bold text-foreground">{r.reason}</p>
+                        <p className="mt-1 flex items-center gap-2 text-[13px] font-medium text-muted-foreground">
+                          <Calendar className="size-3.5" />
+                          {formatDateLong(r.visit_date)} 
+                          <span className="inline-block size-1 rounded-full bg-border"></span>
+                          {r.is_mine
+                            ? t("consultByYou")
+                            : t("consultByVet", { name: r.vet.full_name })}
+                        </p>
+                      </div>
+                      {r.is_mine && (
+                        <div className="inline-flex h-6 items-center rounded-full bg-primary/10 px-3 text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20">
+                          {t("badgeMine")}
+                        </div>
+                      )}
+                    </header>
+
+                    {r.diagnosis && (
+                      <div className="mt-3 rounded-2xl bg-secondary/60 p-4">
+                        <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{t("diagnosis")}</p>
+                        <p className="text-[14px] leading-relaxed font-medium">{r.diagnosis}</p>
+                      </div>
+                    )}
+
+                    {r.treatment && (
+                      <div className="mt-3 rounded-2xl bg-secondary/60 p-4">
+                        <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{t("treatment")}</p>
+                        <p className="text-[14px] leading-relaxed whitespace-pre-wrap font-medium">{r.treatment}</p>
+                      </div>
+                    )}
+
+                    {r.private_notes && (
+                      <div className="mt-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/40 p-4 shadow-sm">
+                        <p className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                          <AlertTriangle className="size-3" />
+                          {t("privateNotesTitle")}
+                        </p>
+                        <p className="text-[14px] leading-relaxed text-amber-900 dark:text-amber-200 whitespace-pre-wrap font-medium">
+                          {r.private_notes}
+                        </p>
+                      </div>
+                    )}
+                  </article>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </section>
+        </div>
 
-          {animal.medications.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Pill className="h-4 w-4 text-violet-500" />
-                <h2 className="text-sm font-semibold">{t("activeMedication")}</h2>
+        {/* ─── SIDEBAR ─── */}
+        <div className="space-y-6">
+          {/* OWNER CARD */}
+          <div className="rounded-3xl border border-border/50 bg-card p-5 shadow-sm">
+            <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Responsable</h2>
+            <div className="flex items-center gap-3">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent font-bold text-sm shadow-sm border border-accent/20">
+                {animal.owner_profile.full_name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase()}
               </div>
-              <ul className="space-y-1.5 text-sm">
-                {animal.medications.map((m) => (
-                  <li key={m.id} className="flex flex-wrap gap-x-2">
-                    <span className="font-medium">{m.name}</span>
-                    <span className="text-muted-foreground">
-                      {m.dosage} · {m.frequency}
-                    </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-bold truncate">
+                  {animal.owner_profile.full_name}
+                </p>
+                {animal.owner_profile.phone && (
+                  <p className="font-mono text-[13px] text-muted-foreground mt-0.5">
+                    {animal.owner_profile.phone}
+                  </p>
+                )}
+              </div>
+              {animal.owner_profile.phone && (
+                <Button
+                  asChild
+                  size="icon"
+                  className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shrink-0"
+                  aria-label={t("whatsappAria")}
+                >
+                  <a
+                    href={`https://wa.me/${animal.owner_profile.phone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="size-5" />
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* ÚLTIMAS VACUNAS */}
+          {animal.vaccines.length > 0 && (
+            <div className="rounded-3xl border border-border/50 bg-card p-5 shadow-sm">
+              <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t("lastVaccines")}
+              </h2>
+              <ul className="space-y-3">
+                {animal.vaccines.slice(0, 5).map((v) => (
+                  <li key={v.id} className="flex flex-col gap-1.5 border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                    <span className="font-bold text-[14px]">{v.name}</span>
+                    <div className="flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-wider">
+                      <span className="bg-secondary/60 text-muted-foreground px-2 py-0.5 rounded-full">{formatDateLong(v.applied_date)}</span>
+                      {v.next_dose_date && (
+                        <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+                          {t("nextDose", { date: formatDateLong(v.next_dose_date) })}
+                        </span>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
             </div>
           )}
-        </section>
-      )}
 
-      {/* ─── ALERGIAS NO SEVERAS ────────────────────────────────── */}
-      {otherAllergies.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("otherAllergies")}
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {otherAllergies.map((a) => (
-              <span
-                key={a.id}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${severityColor[a.severity] ?? severityColor.moderate}`}
-              >
-                {a.allergen}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ─── ÚLTIMAS VACUNAS ────────────────────────────────────── */}
-      {animal.vaccines.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("lastVaccines")}
-          </h2>
-          <ul className="space-y-1 text-sm">
-            {animal.vaccines.slice(0, 5).map((v) => (
-              <li key={v.id} className="flex flex-wrap gap-x-2">
-                <span className="font-medium">{v.name}</span>
-                <span className="text-muted-foreground">{formatDateLong(v.applied_date)}</span>
-                {v.next_dose_date && (
-                  <span className="text-muted-foreground">
-                    {t("nextDose", { date: formatDateLong(v.next_dose_date) })}
+          {/* OTRAS ALERGIAS */}
+          {otherAllergies.length > 0 && (
+            <div className="rounded-3xl border border-border/50 bg-card p-5 shadow-sm">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {t("otherAllergies")}
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {otherAllergies.map((a) => (
+                  <span
+                    key={a.id}
+                    className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold ${severityColor[a.severity] ?? severityColor.moderate}`}
+                  >
+                    {a.allergen}
                   </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* ─── HISTORIAL DE CONSULTAS ─────────────────────────────── */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            <Stethoscope className="h-4 w-4" />
-            {t("consultHistory")}
-          </h2>
-          <span className="text-xs text-muted-foreground">{records.length}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-        {records.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/60 px-6 py-10 text-center">
-            <FileText className="mx-auto h-8 w-8 text-muted-foreground/50" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              {t("noConsultsTitle")}
-            </p>
-            <Button asChild size="sm" className="mt-4 gap-2">
-              <Link href={`/vet/patients/${animal.id}/consults/new`}>
-                <Plus className="h-3.5 w-3.5" />
-                {t("createFirstConsult")}
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {records.map((r) => (
-              <article
-                key={r.id}
-                className={`rounded-xl border p-4 ${
-                  r.is_mine ? "border-primary/30 bg-primary/5" : "border-border bg-card"
-                }`}
-              >
-                <header className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold">{r.reason}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDateLong(r.visit_date)} ·{" "}
-                      {r.is_mine
-                        ? t("consultByYou")
-                        : t("consultByVet", { name: r.vet.full_name })}
-                    </p>
-                  </div>
-                  {r.is_mine && (
-                    <Badge variant="default" className="text-[10px]">
-                      {t("badgeMine")}
-                    </Badge>
-                  )}
-                </header>
-
-                {r.diagnosis && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-muted-foreground">{t("diagnosis")}</p>
-                    <p className="text-sm">{r.diagnosis}</p>
-                  </div>
-                )}
-
-                {r.treatment && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-muted-foreground">{t("treatment")}</p>
-                    <p className="text-sm whitespace-pre-wrap">{r.treatment}</p>
-                  </div>
-                )}
-
-                {r.private_notes && (
-                  <div className="mt-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 p-2.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                      {t("privateNotesTitle")}
-                    </p>
-                    <p className="mt-1 text-sm text-amber-900 dark:text-amber-200 whitespace-pre-wrap">
-                      {r.private_notes}
-                    </p>
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+      </div>
     </div>
   );
 }

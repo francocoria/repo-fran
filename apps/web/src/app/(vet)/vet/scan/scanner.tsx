@@ -150,24 +150,26 @@ export function Scanner() {
   return (
     <div className="mx-auto max-w-md space-y-4">
       {phase === "idle" && (
-        <Card>
-          <CardContent className="space-y-4 pt-6">
+        <Card className="rounded-3xl shadow-sm border-border/50">
+          <CardContent className="space-y-5 pt-8 pb-6 px-6">
             <div className="text-center">
-              <div className="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <ScanLine className="h-7 w-7" />
+              <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary shadow-sm border border-primary/20">
+                <ScanLine className="h-8 w-8" />
               </div>
-              <h2 className="text-xl font-semibold tracking-tight">
+              <h2 className="text-[22px] font-extrabold tracking-tight">
                 {t("idleTitle")}
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 text-[15px] text-muted-foreground font-medium">
                 {t("idleDesc")}
               </p>
             </div>
-            <Button onClick={startScanning} className="w-full gap-2">
-              <Camera className="h-4 w-4" />
-              {t("useCamera")}
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
+            <div className="pt-2">
+              <Button onClick={startScanning} className="w-full gap-2 rounded-full h-12 shadow-sm text-base">
+                <Camera className="h-5 w-5" />
+                {t("useCamera")}
+              </Button>
+            </div>
+            <p className="text-center text-[13px] text-muted-foreground font-medium">
               {t("pasteHint")}
             </p>
           </CardContent>
@@ -175,17 +177,17 @@ export function Scanner() {
       )}
 
       {phase === "scanning" && (
-        <Card>
-          <CardContent className="space-y-3 pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <ScanLine className="h-4 w-4 text-primary" />
+        <Card className="rounded-3xl shadow-sm border-border/50 overflow-hidden">
+          <CardContent className="space-y-4 pt-6 pb-6 px-5">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2 text-[15px] font-bold tracking-tight">
+                <ScanLine className="h-5 w-5 text-primary" />
                 {t("scanningAim")}
               </div>
               <button
                 type="button"
                 onClick={stopScanning}
-                className="rounded-full p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                className="rounded-full p-2 text-muted-foreground bg-secondary/50 hover:bg-secondary hover:text-foreground transition-colors"
                 aria-label={t("close")}
               >
                 <X className="h-4 w-4" />
@@ -194,9 +196,9 @@ export function Scanner() {
             <div
               id="qr-reader"
               ref={containerRef}
-              className="overflow-hidden rounded-xl border border-border bg-black"
+              className="overflow-hidden rounded-3xl border-2 border-border/50 bg-black shadow-inner"
             />
-            <p className="text-center text-xs text-muted-foreground">
+            <p className="text-center text-[13px] text-muted-foreground font-medium px-4">
               {t("scanningHint")}
             </p>
           </CardContent>
@@ -204,31 +206,31 @@ export function Scanner() {
       )}
 
       {phase === "confirming" && scannedToken && (
-        <Card>
-          <CardContent className="space-y-4 pt-6">
+        <Card className="rounded-3xl shadow-sm border-border/50">
+          <CardContent className="space-y-5 pt-8 pb-6 px-6">
             <div className="text-center">
-              <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-success/10 text-success">
-                <CheckCircle2 className="h-6 w-6" />
+              <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-sm">
+                <CheckCircle2 className="h-8 w-8" />
               </div>
-              <h2 className="text-xl font-semibold tracking-tight">
+              <h2 className="text-[22px] font-extrabold tracking-tight">
                 {t("qrDetected")}
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 text-[15px] text-muted-foreground font-medium">
                 {t("qrDetectedDesc")}
               </p>
             </div>
-            <div className="rounded-lg bg-secondary/40 px-3 py-2 font-mono text-xs text-muted-foreground break-all">
-              {t("tokenLabel")}
+            <div className="rounded-2xl bg-secondary/50 px-4 py-3 font-mono text-[11px] text-muted-foreground break-all border border-border/40 shadow-inner">
+              <span className="uppercase tracking-wider font-bold mr-2 text-[10px] text-foreground/50">{t("tokenLabel")}</span>
               {scannedToken}
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={reset} className="flex-1">
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={reset} className="flex-1 rounded-full h-12 shadow-sm font-semibold">
                 {t("cancel")}
               </Button>
-              <Button onClick={confirmRequest} disabled={isPending} className="flex-1 gap-2">
+              <Button onClick={confirmRequest} disabled={isPending} className="flex-1 gap-2 rounded-full h-12 shadow-sm font-semibold">
                 {isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                     {t("sending")}
                   </>
                 ) : (
@@ -241,10 +243,10 @@ export function Scanner() {
       )}
 
       {phase === "submitting" && (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">
+        <Card className="rounded-3xl shadow-sm border-border/50">
+          <CardContent className="flex flex-col items-center gap-4 py-16">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-[15px] text-muted-foreground font-medium">
               {t("submittingMsg")}
             </p>
           </CardContent>
@@ -252,28 +254,28 @@ export function Scanner() {
       )}
 
       {phase === "success" && scannedAnimal && (
-        <Card>
-          <CardContent className="space-y-4 pt-6 text-center">
-            <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-success/10 text-success">
-              <CheckCircle2 className="h-7 w-7" />
+        <Card className="rounded-3xl shadow-sm border-border/50">
+          <CardContent className="space-y-5 pt-8 pb-6 px-6 text-center">
+            <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shadow-sm">
+              <CheckCircle2 className="h-8 w-8" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold tracking-tight">
+              <h2 className="text-[22px] font-extrabold tracking-tight">
                 {t("successTitle")}
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 text-[15px] text-muted-foreground font-medium">
                 {t("successDescPre")}
-                <span className="font-medium text-foreground">
+                <span className="font-bold text-foreground">
                   {scannedAnimal.name}
                 </span>
                 {t("successDescPost")}
               </p>
             </div>
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={reset} className="flex-1">
+            <div className="flex gap-3 pt-4">
+              <Button variant="outline" onClick={reset} className="flex-1 rounded-full h-12 shadow-sm font-semibold">
                 {t("scanAnother")}
               </Button>
-              <Button onClick={() => router.push("/vet/patients")} className="flex-1">
+              <Button onClick={() => router.push("/vet/patients")} className="flex-1 rounded-full h-12 shadow-sm font-semibold">
                 {t("myPatients")}
               </Button>
             </div>
@@ -282,22 +284,24 @@ export function Scanner() {
       )}
 
       {phase === "error" && (
-        <Card>
-          <CardContent className="space-y-4 pt-6 text-center">
-            <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-              <AlertCircle className="h-7 w-7" />
+        <Card className="rounded-3xl shadow-sm border-border/50">
+          <CardContent className="space-y-5 pt-8 pb-6 px-6 text-center">
+            <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-rose-500/10 text-rose-600 border border-rose-500/20 shadow-sm">
+              <AlertCircle className="h-8 w-8" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold tracking-tight">
+              <h2 className="text-[22px] font-extrabold tracking-tight">
                 {t("errorTitle")}
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-2 text-[15px] text-muted-foreground font-medium">
                 {error ?? t("errorGeneric")}
               </p>
             </div>
-            <Button variant="outline" onClick={reset} className="w-full">
-              {t("retry")}
-            </Button>
+            <div className="pt-2">
+              <Button variant="outline" onClick={reset} className="w-full rounded-full h-12 shadow-sm font-semibold">
+                {t("retry")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

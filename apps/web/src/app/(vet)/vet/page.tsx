@@ -283,39 +283,32 @@ export default async function VetDashboardPage() {
     activeAccessCount < FREE_PATIENT_CAP;
 
   return (
-    <div className="animate-fade-up space-y-7">
-      {/* ─── HEADER ─────────────────────────────────────────────── */}
-      <div>
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">
-            {t("greeting", { name: profile.full_name.split(" ")[0] ?? "" })}
+    <div className="animate-fade-up max-w-5xl mx-auto space-y-8 pb-10">
+      {/* ─── V2 HEADER ─── */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Hola de nuevo, {profile.full_name.split(" ")[0] ?? ""} 👋
           </h1>
           {plan === "trial" && (
-            <Badge variant="secondary" className="gap-1">
-              <Sparkles className="h-3 w-3 text-amber-500" />
+            <Badge variant="secondary" className="gap-1 rounded-full px-3 shadow-sm border border-amber-500/20 bg-amber-500/10 text-amber-600">
+              <Sparkles className="h-3.5 w-3.5" />
               {t("trialBadge", { days: daysLeft ?? "?" })}
             </Badge>
           )}
           {plan === "premium" && (
-            <Badge className="gap-1 bg-amber-500 hover:bg-amber-500/90">
-              <Crown className="h-3 w-3" />
+            <Badge className="gap-1 rounded-full px-3 bg-amber-500 hover:bg-amber-600 shadow-sm text-white border-transparent">
+              <Crown className="h-3.5 w-3.5" />
               {t("premiumBadge")}
             </Badge>
           )}
         </div>
-        <p className="mt-1 text-muted-foreground">
-          {t("subtitle", {
-            month: now.toLocaleDateString("es-AR", {
-              month: "long",
-              year: "numeric",
-            }),
-          })}
-        </p>
+        <p className="text-muted-foreground font-medium">Resumen de hoy</p>
       </div>
 
-      {/* ─── BANNERS DE ESTADO ─────────────────────────────────── */}
+      {/* ─── BANNERS DE ESTADO ─── */}
       {expired && (
-        <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+        <div className="flex items-start gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-5 shadow-sm">
           <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-destructive">
@@ -324,9 +317,9 @@ export default async function VetDashboardPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               {t("expiredDesc", { cap: FREE_PATIENT_CAP })}
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <UpgradeModal triggerLabel={t("expiredRenew")} />
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="rounded-full">
                 <Link href="/vet/plan">{t("expiredViewPlan")}</Link>
               </Button>
             </div>
@@ -335,7 +328,7 @@ export default async function VetDashboardPage() {
       )}
 
       {trialEndingSoon && !expired && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-300/50 bg-amber-50 dark:bg-amber-950/30 p-4">
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-300/50 bg-amber-50 dark:bg-amber-950/30 p-5 shadow-sm">
           <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-amber-900 dark:text-amber-200">
@@ -344,9 +337,9 @@ export default async function VetDashboardPage() {
             <p className="mt-1 text-sm text-amber-800/80 dark:text-amber-300/80">
               {t("trialEndingDesc")}
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <UpgradeModal triggerLabel={t("trialActivate")} />
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="rounded-full">
                 <Link href="/vet/plan">{t("trialViewBenefits")}</Link>
               </Button>
             </div>
@@ -355,7 +348,7 @@ export default async function VetDashboardPage() {
       )}
 
       {atCap && (
-        <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4">
+        <div className="flex items-start gap-3 rounded-2xl border border-warning/40 bg-warning/10 p-5 shadow-sm">
           <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="font-semibold">{t("atCapTitle")}</p>
@@ -365,7 +358,7 @@ export default async function VetDashboardPage() {
                 cap: FREE_PATIENT_CAP,
               })}
             </p>
-            <div className="mt-3">
+            <div className="mt-4">
               <UpgradeModal triggerLabel={t("atCapCta")} />
             </div>
           </div>
@@ -373,7 +366,7 @@ export default async function VetDashboardPage() {
       )}
 
       {nearCap && !atCap && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-300/40 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-300/40 bg-amber-50/50 dark:bg-amber-950/20 p-5 shadow-sm">
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-medium">{t("nearCapTitle")}</p>
@@ -386,8 +379,8 @@ export default async function VetDashboardPage() {
       )}
 
       {pendingRequests > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+        <div className="flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-sm">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
             <Inbox className="size-5" />
           </span>
           <div className="flex-1 min-w-0">
@@ -398,255 +391,193 @@ export default async function VetDashboardPage() {
               {t("pendingRequestsDesc")}
             </p>
           </div>
+          <Button variant="default" size="sm" asChild className="rounded-full">
+            <Link href="/vet/patients">{t("pendingRequestsLink")}</Link>
+          </Button>
         </div>
       )}
 
-      {/* ─── MÉTRICAS DEL MES ───────────────────────────────────── */}
+      {/* ─── V2 2x2 METRICS GRID ─── */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("monthSummary")}
-        </h2>
+        <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("monthSummary")}</h2>
         {features.practiceStats ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              label={t("statConsults")}
-              value={consultsThisMonth}
-              icon={Stethoscope}
-              accent="primary"
-              sublabel={
-                <MonthDelta
-                  current={consultsThisMonth}
-                  prev={consultsPrevMonth}
-                  sameLabel={t("deltaSame")}
-                  vsLabel={t("deltaVs")}
-                />
-              }
-            />
-            <StatCard
-              label={t("statVaccines")}
-              value={vaccinesThisMonth}
-              icon={Syringe}
-              accent="emerald"
-              sublabel={
-                <MonthDelta
-                  current={vaccinesThisMonth}
-                  prev={vaccinesPrevMonth}
-                  sameLabel={t("deltaSame")}
-                  vsLabel={t("deltaVs")}
-                />
-              }
-            />
-            <StatCard
-              label={t("statNewPatients")}
-              value={newPatientsThisMonth}
-              icon={Users}
-              accent="accent"
-              sublabel={
-                <MonthDelta
-                  current={newPatientsThisMonth}
-                  prev={newPatientsPrevMonth}
-                  sameLabel={t("deltaSame")}
-                  vsLabel={t("deltaVs")}
-                />
-              }
-            />
-            <StatCard
-              label={t("statCertificates")}
-              value={certsThisMonth}
-              icon={FileCheck}
-              accent="amber"
-              sublabel={
-                <span className="text-muted-foreground">
-                  {t("certsSublabel")}
-                </span>
-              }
-            />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-3xl bg-sky-500/10 border border-sky-500/20 p-5 flex flex-col gap-3">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-sky-500 text-white shadow-sm shadow-sky-500/25">
+                <Users className="size-6" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-sky-950 dark:text-sky-100">{newPatientsThisMonth}</p>
+                <p className="text-xs font-semibold text-sky-700/80 dark:text-sky-400/80 uppercase tracking-wider mt-0.5">{t("statNewPatients")}</p>
+              </div>
+            </div>
+            <div className="rounded-3xl bg-violet-500/10 border border-violet-500/20 p-5 flex flex-col gap-3">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-violet-500 text-white shadow-sm shadow-violet-500/25">
+                <Stethoscope className="size-6" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-violet-950 dark:text-violet-100">{consultsThisMonth}</p>
+                <p className="text-xs font-semibold text-violet-700/80 dark:text-violet-400/80 uppercase tracking-wider mt-0.5">{t("statConsults")}</p>
+              </div>
+            </div>
+            <div className="rounded-3xl bg-emerald-500/10 border border-emerald-500/20 p-5 flex flex-col gap-3">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-sm shadow-emerald-500/25">
+                <Syringe className="size-6" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-emerald-950 dark:text-emerald-100">{vaccinesThisMonth}</p>
+                <p className="text-xs font-semibold text-emerald-700/80 dark:text-emerald-400/80 uppercase tracking-wider mt-0.5">{t("statVaccines")}</p>
+              </div>
+            </div>
+            <div className="rounded-3xl bg-amber-500/10 border border-amber-500/20 p-5 flex flex-col gap-3">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm shadow-amber-500/25">
+                <FileCheck className="size-6" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-amber-950 dark:text-amber-100">{certsThisMonth}</p>
+                <p className="text-xs font-semibold text-amber-700/80 dark:text-amber-400/80 uppercase tracking-wider mt-0.5">{t("statCertificates")}</p>
+              </div>
+            </div>
           </div>
         ) : (
-          <LockedSection
-            title={t("lockedStatsTitle")}
-            desc={t("lockedStatsDesc")}
-            cta={t("lockedCta")}
-          />
+          <LockedSection title={t("lockedStatsTitle")} desc={t("lockedStatsDesc")} cta={t("lockedCta")} />
         )}
       </section>
 
-      {/* ─── ACCIONES RÁPIDAS ───────────────────────────────────── */}
+      {/* ─── V2 QUICK ACTIONS ─── */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Acciones rápidas
-        </h2>
+        <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">Acciones Rápidas</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Link href="/vet/scan" className="group focus-ring rounded-2xl">
-            <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-md">
-              <CardContent className="p-5">
-                <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-accent/12 text-accent">
-                  <QrCode className="size-[22px]" />
-                </div>
-                <h3 className="text-[15px] font-semibold">Escanear QR</h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-                  Apuntá la cámara al QR del animal y registrá la consulta al
-                  instante.
-                </p>
-              </CardContent>
-            </Card>
+          <Link href="/vet/scan" className="group focus-ring rounded-3xl">
+            <div className="flex h-full items-center gap-4 rounded-3xl border border-border bg-card p-4 transition-all hover:-translate-y-1 hover:border-accent/50 hover:shadow-lg">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+                <QrCode className="size-6" />
+              </div>
+              <div className="flex flex-col">
+                <h3 className="font-bold">Escanear QR</h3>
+                <p className="text-[13px] text-muted-foreground">Registrar consulta rápido</p>
+              </div>
+              <ChevronRight className="ml-auto size-5 text-muted-foreground/40 transition-transform group-hover:translate-x-1" />
+            </div>
           </Link>
 
-          <Link href="/vet/patients" className="group focus-ring rounded-2xl">
-            <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
-              <CardContent className="p-5">
-                <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary">
-                  <Users className="size-[22px]" />
-                </div>
-                <h3 className="text-[15px] font-semibold">Mis pacientes</h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-                  {activeAccessCount} activos · {archivedAccessCount}{" "}
-                  archivados. Buscá, filtrá o archivá.
-                </p>
-              </CardContent>
-            </Card>
+          <Link href="/vet/patients" className="group focus-ring rounded-3xl">
+            <div className="flex h-full items-center gap-4 rounded-3xl border border-border bg-card p-4 transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Users className="size-6" />
+              </div>
+              <div className="flex flex-col">
+                <h3 className="font-bold">Mis pacientes</h3>
+                <p className="text-[13px] text-muted-foreground">{activeAccessCount} activos</p>
+              </div>
+              <ChevronRight className="ml-auto size-5 text-muted-foreground/40 transition-transform group-hover:translate-x-1" />
+            </div>
           </Link>
 
-          <Link href="/vet/plan" className="group focus-ring rounded-2xl">
-            <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-amber/60 hover:shadow-md">
-              <CardContent className="p-5">
-                <div className="mb-3 flex size-11 items-center justify-center rounded-xl bg-grad-gold text-white shadow-sm">
-                  <Crown className="size-[22px]" />
-                </div>
-                <h3 className="text-[15px] font-semibold">Mi plan</h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-                  {isPremium
-                    ? "Premium activo. Pacientes ilimitados y recetas con tu marca."
-                    : "Pacientes ilimitados, recetas y verificación de matrícula."}
-                </p>
-              </CardContent>
-            </Card>
+          <Link href="/vet/plan" className="group focus-ring rounded-3xl">
+            <div className="flex h-full items-center gap-4 rounded-3xl border border-border bg-card p-4 transition-all hover:-translate-y-1 hover:border-amber-500/50 hover:shadow-lg">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
+                <Crown className="size-6" />
+              </div>
+              <div className="flex flex-col">
+                <h3 className="font-bold">Mi plan</h3>
+                <p className="text-[13px] text-muted-foreground">{isPremium ? "Premium activo" : "Plan básico"}</p>
+              </div>
+              <ChevronRight className="ml-auto size-5 text-muted-foreground/40 transition-transform group-hover:translate-x-1" />
+            </div>
           </Link>
         </div>
       </section>
 
-      {/* ─── AGENDA + CONSULTAS RECIENTES ───────────────────────── */}
+      {/* ─── V2 AGENDA & RECIENTES ─── */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Agenda */}
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            <CalendarDays className="h-3.5 w-3.5" />
-            Agenda · próximos 45 días
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Próximos turnos</h2>
+          </div>
           {!features.practiceStats ? (
-            <LockedSection
-              title={t("lockedAgendaTitle")}
-              desc={t("lockedAgendaDesc")}
-              cta={t("lockedCta")}
-            />
+            <LockedSection title={t("lockedAgendaTitle")} desc={t("lockedAgendaDesc")} cta={t("lockedCta")} />
           ) : agenda.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-8 text-center">
-                <CalendarClock className="mx-auto h-7 w-7 text-muted-foreground/40" />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Sin vacunas ni turnos próximos. Cuando registres una vacuna
-                  con refuerzo, aparece acá.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="rounded-3xl border border-dashed border-border/60 bg-surface-2/40 py-12 text-center">
+              <CalendarClock className="mx-auto h-8 w-8 text-muted-foreground/40" />
+              <p className="mt-3 text-sm font-medium">No hay turnos próximos</p>
+            </div>
           ) : (
-            <Card>
-              <CardContent className="p-0">
-                <ul className="divide-y divide-border/60">
-                  {agenda.map((item) => {
-                    const overdue = item.date < today;
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          href={`/vet/patients/${item.animalId}`}
-                          className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/40"
-                        >
-                          <PetAvatar
-                            name={item.animalName}
-                            species={item.species}
-                            size={40}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="flex items-center gap-1.5 text-sm font-medium">
-                              {item.kind === "vaccine" ? (
-                                <Syringe className="size-3.5 shrink-0 text-emerald-500" />
-                              ) : (
-                                <CalendarClock className="size-3.5 shrink-0 text-primary" />
-                              )}
-                              <span className="truncate">{item.label}</span>
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {item.animalName}
-                            </p>
-                          </div>
-                          <span
-                            className={`shrink-0 text-xs font-medium ${
-                              overdue
-                                ? "text-rose-600 dark:text-rose-400"
-                                : "text-muted-foreground"
-                            }`}
-                          >
-                            {overdue ? "Vencida · " : ""}
-                            {item.date.toLocaleDateString("es-AR", {
-                              day: "numeric",
-                              month: "short",
-                            })}
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </CardContent>
-            </Card>
+            <div className="overflow-hidden rounded-3xl border border-border bg-card">
+              <ul className="divide-y divide-border/60">
+                {agenda.map((item) => {
+                  const overdue = item.date < today;
+                  return (
+                    <li key={item.id}>
+                      <Link href={`/vet/patients/${item.animalId}`} className="flex items-center gap-4 p-4 transition-colors hover:bg-secondary">
+                        <PetAvatar name={item.animalName} species={item.species} size={48} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold text-[15px]">
+                            {item.animalName}
+                          </p>
+                          <p className="flex items-center gap-1.5 truncate text-xs font-medium text-muted-foreground mt-0.5">
+                            {item.kind === "vaccine" ? (
+                              <Syringe className="size-3.5 shrink-0 text-emerald-500" />
+                            ) : (
+                              <CalendarClock className="size-3.5 shrink-0 text-primary" />
+                            )}
+                            {item.label}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={`text-[10px] font-bold uppercase tracking-wider ${overdue ? "text-rose-500" : "text-muted-foreground"}`}>
+                            {overdue ? "Vencido" : "Próximo"}
+                          </p>
+                          <p className={`text-sm font-semibold mt-0.5 ${overdue ? "text-rose-600 dark:text-rose-400" : "text-foreground"}`}>
+                            {item.date.toLocaleDateString("es-AR", { day: "numeric", month: "short" })}
+                          </p>
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
         </section>
 
-        {/* Consultas recientes */}
         <section>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            <Stethoscope className="h-3.5 w-3.5" />
-            Consultas recientes
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Consultas recientes</h2>
+          </div>
           {recentRecords.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-8 text-center">
-                <Clock className="mx-auto h-7 w-7 text-muted-foreground/40" />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Cuando registres una consulta, va a aparecer acá.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="rounded-3xl border border-dashed border-border/60 bg-surface-2/40 py-12 text-center">
+              <Clock className="mx-auto h-8 w-8 text-muted-foreground/40" />
+              <p className="mt-3 text-sm font-medium">Aún no hay consultas</p>
+            </div>
           ) : (
-            <Card>
-              <CardContent className="p-0">
-                <ul className="divide-y divide-border/60">
-                  {recentRecords.map((r) => (
-                    <li key={r.id}>
-                      <Link
-                        href={`/vet/patients/${r.animal.id}`}
-                        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/40"
-                      >
-                        <PetAvatar
-                          name={r.animal.name}
-                          species={r.animal.species}
-                          size={40}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
-                            {r.reason}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {r.animal.name} · {formatDateLong(r.visit_date)}
-                          </p>
-                        </div>
-                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <div className="overflow-hidden rounded-3xl border border-border bg-card">
+              <ul className="divide-y divide-border/60">
+                {recentRecords.map((r) => (
+                  <li key={r.id}>
+                    <Link href={`/vet/patients/${r.animal.id}`} className="flex items-center gap-4 p-4 transition-colors hover:bg-secondary">
+                      <PetAvatar name={r.animal.name} species={r.animal.species} size={48} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-bold text-[15px]">
+                          {r.animal.name}
+                        </p>
+                        <p className="truncate text-xs font-medium text-muted-foreground mt-0.5">
+                          {r.reason}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Fecha
+                        </p>
+                        <p className="text-sm font-semibold mt-0.5">
+                          {formatDateLong(r.visit_date)}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </section>
       </div>

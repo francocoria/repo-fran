@@ -18,6 +18,7 @@ import {
   Phone,
   Loader2,
   Stethoscope,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatRelative } from "@pet-app/lib/utils/format";
@@ -83,47 +84,54 @@ export function PatientsSearch({ accesses }: { accesses: PatientRow[] }) {
   if (accesses.length === 0) return null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+    <div className="space-y-6">
+      {/* ─── V2 SEARCH HEADER ─── */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/60" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("searchPlaceholder")}
-            className="pl-9"
+            className="pl-11 h-12 rounded-full border-border/60 bg-card shadow-sm text-[15px]"
           />
         </div>
-        <Button
-          variant={showArchived ? "default" : "outline"}
-          size="default"
-          onClick={() => setShowArchived(false)}
-          className="shrink-0"
-        >
-          {t("active", { count: activeCount })}
-        </Button>
-        {archivedCount > 0 && (
+        <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
           <Button
-            variant={showArchived ? "default" : "outline"}
+            variant={!showArchived ? "default" : "outline"}
             size="default"
-            onClick={() => setShowArchived(true)}
-            className="shrink-0"
+            onClick={() => setShowArchived(false)}
+            className="h-12 rounded-full px-6 font-semibold"
           >
-            {t("archived", { count: archivedCount })}
+            Activos ({activeCount})
           </Button>
-        )}
+          {archivedCount > 0 && (
+            <Button
+              variant={showArchived ? "default" : "outline"}
+              size="default"
+              onClick={() => setShowArchived(true)}
+              className="h-12 rounded-full px-6 font-semibold"
+            >
+              Archivados ({archivedCount})
+            </Button>
+          )}
+        </div>
       </div>
 
+      {/* ─── RESULT GRID ─── */}
       {filtered.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border/60 py-10 text-center text-sm text-muted-foreground">
-          {query
-            ? t("noMatch")
-            : showArchived
-              ? t("noArchived")
-              : t("noActive")}
-        </p>
+        <div className="rounded-3xl border border-dashed border-border/60 bg-surface-2/40 py-16 text-center">
+          <Search className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
+          <p className="text-[15px] font-medium text-muted-foreground">
+            {query
+              ? t("noMatch")
+              : showArchived
+                ? t("noArchived")
+                : t("noActive")}
+          </p>
+        </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((row) => (
             <PatientCard key={row.id} row={row} />
           ))}
@@ -160,17 +168,17 @@ function PatientCard({ row }: { row: PatientRow }) {
   return (
     <Link
       href={`/vet/patients/${row.animal.id}`}
-      className="group block focus-ring rounded-2xl"
+      className="group block focus-ring rounded-3xl"
     >
-      <article className="rounded-2xl border border-border bg-card p-4 transition-all hover:shadow-md hover:-translate-y-0.5">
-        <div className="flex gap-3">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-secondary">
+      <article className="flex h-full flex-col rounded-3xl border border-border bg-card p-5 transition-all hover:shadow-lg hover:-translate-y-1 hover:border-primary/40">
+        <div className="flex gap-4">
+          <div className="relative h-[68px] w-[68px] shrink-0 overflow-hidden rounded-full bg-secondary shadow-sm">
             {row.animal.photo_url ? (
               <Image
                 src={row.animal.photo_url}
                 alt={row.animal.name}
                 fill
-                sizes="64px"
+                sizes="68px"
                 className="object-cover"
               />
             ) : (
@@ -178,45 +186,48 @@ function PatientCard({ row }: { row: PatientRow }) {
                 {Icon}
               </div>
             )}
-            {row.animal.severeAllergiesCount > 0 && (
-              <div
-                className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow"
-                title={t("severeAllergies")}
-              >
-                <AlertTriangle className="h-3 w-3" />
-              </div>
-            )}
           </div>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 py-0.5">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold truncate">{row.animal.name}</h3>
-              {row.archived && (
-                <Badge variant="secondary" className="text-[10px]">
+              <h3 className="font-bold text-[17px] truncate tracking-tight">{row.animal.name}</h3>
+              {row.animal.severeAllergiesCount > 0 && (
+                <div
+                  className="flex h-5 items-center gap-1 rounded-full bg-rose-500/10 px-2 text-[10px] font-bold uppercase tracking-wider text-rose-600"
+                  title={t("severeAllergies")}
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  Alerta
+                </div>
+              )}
+              {row.archived && !row.animal.severeAllergiesCount && (
+                <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-bold">
                   {t("badgeArchived")}
                 </Badge>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            
+            <p className="mt-0.5 text-[13px] font-medium text-muted-foreground">
               {t(SPECIES_KEY[row.animal.species] ?? "speciesOther")}
               {row.animal.breed && ` · ${row.animal.breed}`}
             </p>
-            <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-              <User className="h-3 w-3" />
+            
+            <div className="mt-2.5 flex items-center gap-2 text-[13px] text-muted-foreground">
+              <User className="h-3.5 w-3.5 opacity-70" />
               <span className="truncate">{row.animal.owner_full_name}</span>
             </div>
             {row.animal.owner_phone && (
-              <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                <Phone className="h-3 w-3" />
+              <div className="mt-1 flex items-center gap-2 text-[13px] text-muted-foreground">
+                <Phone className="h-3.5 w-3.5 opacity-70" />
                 <span className="font-mono">{row.animal.owner_phone}</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/50 pt-2.5">
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Stethoscope className="h-3 w-3 shrink-0" />
+        <div className="mt-4 flex items-center justify-between gap-2 rounded-2xl bg-secondary/50 p-3">
+          <span className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground/80">
+            <Stethoscope className="h-4 w-4 text-primary" />
             {row.lastVisit ? (
               t("lastVisit", { when: formatRelative(row.lastVisit) })
             ) : (
@@ -227,20 +238,14 @@ function PatientCard({ row }: { row: PatientRow }) {
             type="button"
             onClick={handleArchive}
             disabled={isPending}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            className="inline-flex shrink-0 items-center justify-center size-8 rounded-full text-muted-foreground hover:bg-background hover:text-foreground hover:shadow-sm transition-all"
           >
             {isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : row.archived ? (
-              <>
-                <ArchiveRestore className="h-3 w-3" />
-                {t("reactivate")}
-              </>
+              <ArchiveRestore className="h-4 w-4" />
             ) : (
-              <>
-                <Archive className="h-3 w-3" />
-                {t("archive")}
-              </>
+              <Archive className="h-4 w-4" />
             )}
           </button>
         </div>
