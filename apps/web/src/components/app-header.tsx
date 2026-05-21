@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import { logout } from "@/app/(auth)/actions";
 import { useState, useTransition } from "react";
 import { VetSearch } from "@/components/vet/vet-search";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { usePathname } from "next/navigation";
 
 type UserRole = "owner" | "vet" | "admin";
@@ -147,6 +148,9 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
             </Link>
           </Button>
 
+          {/* Language switcher */}
+          <LanguageSwitcher variant="icon" />
+
           {/* Theme toggle */}
           <Button
             variant="ghost"
@@ -230,6 +234,9 @@ export function AppHeader({ userName, userRole, avatarUrl }: AppHeaderProps) {
               <Settings className="h-4 w-4" />
               {t("settings")}
             </Link>
+            <div className="px-3 py-2">
+              <LanguageSwitcher variant="full" />
+            </div>
             <button
               onClick={handleLogout}
               disabled={isPending}

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Brand, PetAvatar } from "@pet-app/ui";
 import { createSupabaseServerClient } from "@pet-app/lib";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import {
   CountUp,
   HeroPhone,
@@ -182,6 +183,7 @@ export default async function LandingPage() {
               </a>
             </nav>
             <div className="flex items-center gap-2">
+              <LanguageSwitcher variant="icon" />
               <Link
                 href="/login"
                 className="hidden rounded-full px-3 py-2 text-[13.5px] font-medium text-foreground md:inline-block"
@@ -1128,7 +1130,10 @@ export default async function LandingPage() {
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-8 text-xs text-subtle">
             <div>{t("footerCopyright")}</div>
-            <div>★★★★★ {t("footerRating")}</div>
+            <div className="flex items-center gap-4">
+              <span>★★★★★ {t("footerRating")}</span>
+              <LanguageSwitcher variant="full" />
+            </div>
           </div>
         </div>
       </footer>
