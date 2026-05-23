@@ -31,6 +31,7 @@ import {
   HeroPhone,
   Marquee,
   Reveal,
+  ThemeToggle,
 } from "../components/landing/landing-v2-client";
 
 export const dynamic = "force-dynamic";
@@ -184,6 +185,7 @@ export default async function LandingPage() {
             </nav>
             <div className="flex items-center gap-2">
               <LanguageSwitcher variant="icon" />
+              <ThemeToggle />
               <Link
                 href="/login"
                 className="hidden rounded-full px-3 py-2 text-[13.5px] font-medium text-foreground md:inline-block"
@@ -344,7 +346,7 @@ export default async function LandingPage() {
                   <div className="mt-0.5 text-xs text-muted-foreground">
                     ★★★★★{" "}
                     <span className="font-semibold text-foreground">4.9</span>{" "}
-                    · App Store
+                    · de calificación promedio
                   </div>
                 </div>
               </div>
@@ -485,64 +487,74 @@ export default async function LandingPage() {
             </div>
           </Reveal>
 
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
             {(["1", "2", "3"] as const).map((n, i) => {
               const tones = {
-                "1": { bg: "rgba(16,185,129,.12)", fg: "#047857" },
-                "2": {
-                  bg: "hsl(var(--primary) / 0.12)",
-                  fg: "hsl(var(--primary))",
-                },
-                "3": {
-                  bg: "hsl(var(--accent) / 0.12)",
-                  fg: "hsl(var(--accent-600))",
-                },
+                "1": { bg: "rgba(16,185,129,.12)", fg: "#047857", bd: "rgba(16,185,129,.3)" },
+                "2": { bg: "hsl(var(--primary) / 0.12)", fg: "hsl(var(--primary))", bd: "hsl(var(--primary) / 0.25)" },
+                "3": { bg: "hsl(var(--accent) / 0.12)", fg: "hsl(var(--accent-600))", bd: "hsl(var(--accent) / 0.25)" },
               } as const;
               const species: Record<string, "dog" | "cat"> = {
                 "1": "dog",
                 "2": "dog",
                 "3": "cat",
               };
+              const photos = {
+                "1": "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=600&h=500",
+                "2": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=600&h=500",
+                "3": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=600&h=500",
+              };
               const tone = tones[n];
               return (
                 <Reveal key={n} delay={((i + 1) as 1 | 2 | 3)}>
-                  <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface transition-transform hover:-translate-y-1.5">
-                    <div className="relative h-[200px]">
-                      <PetAvatar
-                        name={t(`stories${n}Name`)}
-                        species={species[n]}
-                        size={9999}
-                        radius={0}
-                      />
+                  <div className="group flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:border-primary/20">
+                    <div className="relative h-[220px] overflow-hidden">
+                      <div className="h-full w-full transition-transform duration-500 group-hover:scale-105">
+                        <PetAvatar
+                          name={t(`stories${n}Name`)}
+                          species={species[n]}
+                          size={9999}
+                          radius={0}
+                          photoUrl={photos[n]}
+                        />
+                      </div>
                       <div
-                        className="absolute inset-0"
+                        className="absolute inset-0 transition-opacity duration-300 group-hover:opacity-90"
                         style={{
                           background:
-                            "linear-gradient(180deg, transparent 50%, rgba(0,0,0,.5))",
+                            "linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.65) 100%)",
                         }}
                       />
                       <div
-                        className="absolute left-3.5 top-3.5 rounded-full px-3 py-1 text-[11px] font-bold backdrop-blur"
-                        style={{ background: tone.bg, color: tone.fg }}
+                        className="absolute left-4 top-4 rounded-full border px-3 py-1 text-[11px] font-bold backdrop-blur-md"
+                        style={{ background: tone.bg, color: tone.fg, borderColor: tone.bd }}
                       >
                         {t(`stories${n}Tag`)}
                       </div>
                       <div className="absolute bottom-4 left-4 text-white">
-                        <div className="text-[26px] font-extrabold tracking-tight">
+                        <div className="text-[24px] font-extrabold tracking-tight">
                           {t(`stories${n}Name`)}
                         </div>
-                        <div className="text-xs opacity-90">
+                        <div className="text-xs opacity-80">
                           {t(`stories${n}Owner`)}
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-1 flex-col p-6">
-                      <Sparkles
-                        className="mb-3 size-5 text-primary"
-                        strokeWidth={2.2}
-                      />
+                    <div className="relative flex flex-1 flex-col p-6">
+                      {/* Decorative quote mark background */}
+                      <span className="pointer-events-none absolute right-4 bottom-2 select-none text-[100px] font-serif font-bold leading-none text-muted-foreground/5 dark:text-muted-foreground/3">
+                        ”
+                      </span>
+                      
+                      <div className="mb-3.5 flex items-center gap-1">
+                        <div className="flex text-amber-500 text-xs">★★★★★</div>
+                        <Sparkles
+                          className="ml-auto size-4 text-primary opacity-60 group-hover:opacity-100 transition-opacity duration-300"
+                          strokeWidth={2.2}
+                        />
+                      </div>
                       <p
-                        className="text-[15.5px] leading-[1.5]"
+                        className="italic text-[15px] leading-[1.6] text-muted-foreground group-hover:text-foreground transition-colors duration-300"
                         style={{ textWrap: "pretty" }}
                       >
                         “{t(`stories${n}Quote`)}”
@@ -1174,8 +1186,9 @@ function FloatingPet({
         transform: `rotate(${rotate}deg)`,
         ["--rot" as never]: `${rotate}deg`,
         animation: `lv2-float-y ${duration}s ease-in-out infinite ${delay}s`,
-        boxShadow: "0 12px 32px rgba(0,0,0,.15)",
-        border: "3px solid hsl(var(--background))",
+        boxShadow: "0 12px 32px rgba(0,0,0,.08)",
+        border: "3px solid hsl(var(--background) / 0.5)",
+        opacity: 0.25,
       }}
     >
       <PetAvatar name={name} species={species} size={size} radius={0} />
@@ -1293,7 +1306,13 @@ function LostPosterMockup({
             className="overflow-hidden rounded-2xl"
             style={{ width: 160, height: 160 }}
           >
-            <PetAvatar name={petName} species="dog" size={180} radius={0} />
+            <PetAvatar
+              name={petName}
+              species="dog"
+              size={180}
+              radius={0}
+              photoUrl="https://images.unsplash.com/photo-1534361960057-19889db9621e?auto=format&fit=crop&q=80&w=400&h=400"
+            />
           </div>
         </div>
         <h3 className="mt-4 text-[36px] font-extrabold tracking-tight sm:text-[44px]">

@@ -12,7 +12,10 @@ import {
   CheckCircle2,
   Scale,
   Syringe,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { PetAvatar } from "@pet-app/ui";
 
 /* ──────────────────────────────────────────────────────────
@@ -355,7 +358,13 @@ function Screen1({
       <div className="px-4">
         <div className="overflow-hidden rounded-[18px] border border-border bg-surface">
           <div className="relative h-[130px]">
-            <PetAvatar name={petName} species="dog" size={9999} radius={0} />
+            <PetAvatar
+              name={petName}
+              species="dog"
+              size={9999}
+              radius={0}
+              photoUrl="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=400&h=400"
+            />
             <div
               className="absolute inset-0"
               style={{
@@ -482,7 +491,13 @@ function Screen3({
             className="overflow-hidden rounded-2xl border-2 border-white/30"
             style={{ width: 130, height: 130 }}
           >
-            <PetAvatar name={lostName} species="dog" size={130} radius={0} />
+            <PetAvatar
+              name={lostName}
+              species="dog"
+              size={130}
+              radius={0}
+              photoUrl="https://images.unsplash.com/photo-1534361960057-19889db9621e?auto=format&fit=crop&q=80&w=400&h=400"
+            />
           </div>
         </div>
         <div className="mt-3 text-[26px] font-extrabold tracking-tight">
@@ -620,5 +635,40 @@ export function Marquee({
         }}
       />
     </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────
+   ThemeToggle — dark/light theme switch
+   ────────────────────────────────────────────────────────── */
+export function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="size-9 rounded-full border border-border/40 bg-surface/40" />
+    );
+  }
+
+  const isDark = theme === "dark";
+
+  return (
+    <button
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="flex size-9 items-center justify-center rounded-full border border-border/70 bg-surface/50 text-muted-foreground hover:bg-surface hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all duration-200"
+      aria-label="Alternar tema"
+      title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+    >
+      {isDark ? (
+        <Sun className="size-[17px] text-amber-500 animate-pulse-rose" style={{ animationDuration: '4s' }} />
+      ) : (
+        <Moon className="size-[17px] text-primary" />
+      )}
+    </button>
   );
 }
