@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import crypto from "node:crypto";
 import { activatePremiumFromPayment } from "@/lib/premium-activation";
-import { getMpWebhookSecret } from "@/lib/mercadopago";
+import { getMpWebhookSecret, isMpSandbox } from "@/lib/mercadopago";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,12 +12,14 @@ export const dynamic = "force-dynamic";
  * MP nos manda un POST cuando un pago cambia de estado. Usamos el `id`
  * del pago para fetchear los detalles y activar la suscripción.
  *
- * La activación es una vía de RESPALDO: la página `/vet/plan` también
- * activa Premium al volver del checkout (redirect). Por eso, aunque la
- * firma falle o el webhook no llegue, el usuario igual queda activado.
+ * Validación de firma (CRÍTICO-6 del audit):
+ * - Producción: si MERCADOPAGO_WEBHOOK_SECRET está seteado y la firma falla
+ *   → 401. Si NO está seteado → 503 (config incompleta, falla cerrada).
+ * - Sandbox: si el secret está, se valida; si no, se permite sin firma para
+ *   facilitar testing con curl/postman.
  *
- * Validación: header `x-signature` que firma `id` + `request-id` con
- * MERCADOPAGO_WEBHOOK_SECRET.
+ * La vía de RESPALDO sigue siendo `/vet/plan` (redirect post-checkout):
+ * aunque el webhook devuelva 401, el usuario queda activo al volver.
  *
  * Idempotencia: `activatePremiumFromPayment` filtra por payment_id.
  */
@@ -27,21 +29,38 @@ export async function POST(request: NextRequest) {
   // MP manda `data.id` tanto en el body como en el query string.
   const urlDataId = request.nextUrl.searchParams.get("data.id");
 
-  // 1) Validar firma del webhook (si tenemos el secret)
+  // 1) Validar firma del webhook
   const secret = getMpWebhookSecret();
-  if (secret) {
+  const sandbox = isMpSandbox();
+
+  if (!secret) {
+    if (!sandbox) {
+      // Producción sin secret = configuración rota. No procesamos.
+      console.error(
+        "[mp-webhook] MERCADOPAGO_WEBHOOK_SECRET no configurado en producción",
+      );
+      return NextResponse.json(
+        { error: "Webhook no configurado" },
+        { status: 503 },
+      );
+    }
+    console.warn(
+      "[mp-webhook] sandbox sin secret — se procesa sin validar firma.",
+    );
+  } else {
     const signature = request.headers.get("x-signature") ?? "";
     const requestId = request.headers.get("x-request-id") ?? "";
     if (!verifyMpSignature(secret, signature, requestId, body, urlDataId)) {
-      // No cortamos el flujo: logueamos y seguimos. La activación es
-      // idempotente y la vía de redirect cubre el caso. Cortar acá
-      // sólo lograba que un secret mal configurado bloquee pagos reales.
-      console.warn(
-        "[mp-webhook] firma inválida — se procesa igual (idempotente).",
+      console.warn("[mp-webhook] firma inválida", {
+        hasSig: Boolean(signature),
+        hasReqId: Boolean(requestId),
+        urlDataId: Boolean(urlDataId),
+      });
+      return NextResponse.json(
+        { error: "Firma inválida" },
+        { status: 401 },
       );
     }
-  } else {
-    console.warn("[mp-webhook] MERCADOPAGO_WEBHOOK_SECRET no seteado.");
   }
 
   // 2) Parsear el payload
