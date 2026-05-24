@@ -23,31 +23,8 @@ const securityHeaders = [
     value:
       "camera=(self), microphone=(), geolocation=(self), interest-cohort=()",
   },
-  // CSP — audit ALTO-3 / MEDIO-7:
-  // - Quitado 'unsafe-eval' (ninguna lib en uso lo necesita).
-  // - 'unsafe-inline' en script-src se mantiene por Next.js 15 inline
-  //   scripts. Migrar a nonce-based CSP cuando tengamos tiempo (requiere
-  //   tocar middleware para inyectar nonce por request).
-  // - Reemplazado https://*.googleapis.com por hosts específicos para
-  //   reducir superficie de subdomain takeover.
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://*.supabase.co https://maps.googleapis.com https://*.gstatic.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' blob: data: https://*.supabase.co https://*.googleusercontent.com https://maps.googleapis.com https://maps.gstatic.com https://images.unsplash.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://maps.googleapis.com https://places.googleapis.com https://api.resend.com",
-      "frame-src 'self' https://*.supabase.co",
-      "media-src 'self' blob: https://*.supabase.co",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'none'",
-      "upgrade-insecure-requests",
-    ].join("; "),
-  },
+  // CSP se setea en el middleware (apps/web/src/middleware.ts) con nonce
+  // dinámico per-request — eso permite quitar 'unsafe-inline' de scripts.
 ];
 
 const nextConfig = {

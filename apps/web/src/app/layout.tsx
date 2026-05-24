@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -98,6 +99,10 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  // Nonce de CSP inyectado por el middleware (apps/web/src/middleware.ts).
+  // Sin nonce el script inline de theme-color no carga y la app flashea
+  // al violet por default — pero NO se rompe la funcionalidad.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <html
       lang={locale}
@@ -106,6 +111,7 @@ export default async function RootLayout({
     >
       <head>
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{ __html: THEME_COLOR_INIT_SCRIPT }}
         />
       </head>
