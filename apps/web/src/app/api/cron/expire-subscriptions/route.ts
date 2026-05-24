@@ -7,6 +7,7 @@ import {
 } from "@pet-app/emails";
 import { createSupabaseAdminClient } from "@pet-app/lib/supabase/admin";
 import { daysUntilExpiry } from "@pet-app/lib/utils/subscription";
+import { verifyCronAuth } from "@/lib/cron";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,22 +18,12 @@ export const maxDuration = 60;
  *  1. Marcar suscripciones vencidas (status: active → expired)
  *  2. Enviar emails de aviso (X días antes) y de vencimiento
  *
- * Configurado en vercel.json. Protegido con CRON_SECRET (Bearer token).
+ * Configurado en vercel.json. Protegido con CRON_SECRET (Bearer token,
+ * comparación timing-safe).
  */
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  const expected = process.env.CRON_SECRET;
-
-  if (!expected) {
-    return NextResponse.json(
-      { error: "CRON_SECRET no configurado" },
-      { status: 500 },
-    );
-  }
-
-  if (authHeader !== `Bearer ${expected}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = verifyCronAuth(request);
+  if (unauthorized) return unauthorized;
 
   const now = new Date();
   const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);

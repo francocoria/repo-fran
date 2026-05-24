@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@pet-app/db";
 import { sendEmail, vaccineReminderTemplate } from "@pet-app/emails";
 import { createSupabaseAdminClient } from "@pet-app/lib/supabase/admin";
+import { verifyCronAuth } from "@/lib/cron";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -11,18 +12,8 @@ const REMINDER_WINDOWS = [7, 1, 0, -1, -7];
 const DAYS_BEFORE_RESEND = 6;
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  const expected = process.env.CRON_SECRET;
-
-  if (!expected) {
-    return NextResponse.json(
-      { error: "CRON_SECRET no configurado" },
-      { status: 500 },
-    );
-  }
-  if (authHeader !== `Bearer ${expected}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = verifyCronAuth(request);
+  if (unauthorized) return unauthorized;
 
   const now = new Date();
   const startWindow = new Date(now);
