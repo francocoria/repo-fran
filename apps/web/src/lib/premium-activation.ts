@@ -2,6 +2,7 @@ import "server-only";
 import { getPaymentClient } from "@/lib/mercadopago";
 import { prisma } from "@pet-app/db";
 import { sendEmail, premiumActivatedTemplate } from "@pet-app/emails";
+import { logError, logInfo, logWarn } from "@/lib/logger";
 
 /**
  * Activación de Premium a partir de un pago de Mercado Pago.
@@ -36,10 +37,10 @@ export async function activatePremiumFromPayment(
     const paymentClient = getPaymentClient();
     const payment = await paymentClient.get({ id: String(paymentId) });
 
-    console.log("[premium-activation] payment:", {
+    logInfo("premium-activation", "payment fetched", {
       id: payment.id,
       status: payment.status,
-      external_reference: payment.external_reference,
+      vetId: payment.external_reference,
       amount: payment.transaction_amount,
     });
 
@@ -53,7 +54,9 @@ export async function activatePremiumFromPayment(
 
     const vetId = payment.external_reference;
     if (!vetId) {
-      console.error("[premium-activation] pago sin external_reference");
+      logWarn("premium-activation", "pago sin external_reference", {
+        paymentId: payment.id,
+      });
       return { ok: false, status: "no_reference" };
     }
 
@@ -81,7 +84,7 @@ export async function activatePremiumFromPayment(
       select: { id: true, full_name: true, user_id: true },
     });
     if (!vetProfile) {
-      console.error("[premium-activation] vet no encontrado:", vetId);
+      logWarn("premium-activation", "vet no encontrado", { vetId });
       return { ok: false, status: "no_vet" };
     }
 
@@ -144,13 +147,13 @@ export async function activatePremiumFromPayment(
         to: payment.payer.email,
         subject: tmpl.subject,
         html: tmpl.html,
-      }).catch((e) => console.error("[premium-activation] email:", e));
+      }).catch((e) => logError("premium-activation/email", e, { vetId }));
     }
 
     return { ok: true, status: "activated", vetId, expiresAt: newExpiresAt };
   } catch (error: unknown) {
+    logError("premium-activation", error);
     const detail = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[premium-activation] failed:", detail, error);
     return { ok: false, status: "error", detail };
   }
 }
