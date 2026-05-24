@@ -1,13 +1,21 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { headers } from "next/headers";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { AppHeader } from "@/components/app-header";
 import { MobileNav } from "@/components/mobile-nav";
+import { prisma } from "@pet-app/db";
+import { hasVerifiedTotp, requiresMfaChallenge } from "@/lib/mfa";
 
 /**
  * Layout protegido para veterinarios.
- * Verifica sesión + perfil de vet.
+ * Verifica sesión + perfil de vet + MFA obligatorio si Premium.
+ *
+ * MFA enforcement (audit ALTO-10):
+ *  - Solo vets con suscripción Premium activa están forzados
+ *  - Vets free pueden activar MFA opcionalmente sin enforcement
+ *  - Bypass de enforcement en /vet/settings/mfa para evitar loop
  */
 export default async function VetLayout({
   children,
@@ -20,6 +28,30 @@ export default async function VetLayout({
 
   if (!profile) {
     redirect("/onboarding");
+  }
+
+  // Enforcement MFA solo si el vet tiene Premium activo
+  const sub = await prisma.subscription.findUnique({
+    where: { vet_id: profile.id },
+    select: { plan: true, status: true, expires_at: true },
+  });
+  const isPremium =
+    sub?.status === "active" &&
+    sub.plan !== "free" &&
+    (sub.expires_at ? sub.expires_at > new Date() : true);
+
+  const pathname =
+    (await headers()).get("x-pathname") ??
+    (await headers()).get("next-url") ??
+    "";
+  const isMfaSettings = pathname.includes("/vet/settings/mfa");
+
+  if (isPremium && !isMfaSettings) {
+    const hasTotp = await hasVerifiedTotp();
+    if (!hasTotp) redirect("/vet/settings/mfa?required=1");
+    if (await requiresMfaChallenge()) {
+      redirect("/auth/mfa-challenge?redirectTo=/vet");
+    }
   }
 
   return (
