@@ -320,72 +320,76 @@ export async function inviteCoOwner(animalId: string, email: string) {
       return { success: false, error: "Email inválido." };
     }
 
-    // 1) Buscamos el usuario en auth.users (admin client — bypass RLS).
-    const admin = createSupabaseAdminClient();
-    const { data: usersData, error: listError } =
-      await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-
-    if (listError) {
-      console.error("[inviteCoOwner] listUsers error:", listError);
-      return { success: false, error: "No pudimos buscar el email." };
-    }
-
-    const invitedUser = usersData.users.find(
-      (u) => u.email?.toLowerCase() === cleanEmail,
-    );
+    // 1) Lookup directo a auth.users + owner_profiles por email (audit
+    // ALTO-1). Antes listábamos 1000 usuarios con service_role y
+    // filtrábamos en memoria — exponía emails de otros, era O(N) y
+    // rompía a partir de 1000+ usuarios.
+    type AuthLookupRow = {
+      user_id: string;
+      owner_id: string | null;
+      owner_full_name: string | null;
+    };
+    const rows = await prisma.$queryRaw<AuthLookupRow[]>`
+      SELECT
+        u.id::text       AS user_id,
+        op.id::text      AS owner_id,
+        op.full_name     AS owner_full_name
+      FROM auth.users u
+      LEFT JOIN public.owner_profiles op ON op.user_id = u.id
+      WHERE lower(u.email) = ${cleanEmail}
+      LIMIT 1
+    `;
+    const invitedUser = rows[0] ? { id: rows[0].user_id } : null;
 
     let invitedProfile: { id: string; full_name: string } | null = null;
     let recipientHasAccount = false;
 
-    if (invitedUser) {
-      // El email existe en Supabase Auth. Buscamos su owner_profile.
-      const op = await prisma.ownerProfile.findUnique({
-        where: { user_id: invitedUser.id },
-        select: { id: true, full_name: true },
-      });
-      if (op) {
-        invitedProfile = op;
-        recipientHasAccount = true;
+    if (invitedUser && rows[0]?.owner_id) {
+      const op = {
+        id: rows[0].owner_id,
+        full_name: rows[0].owner_full_name ?? "",
+      };
+      invitedProfile = op;
+      recipientHasAccount = true;
 
-        // No se puede invitar al dueño principal a su propia mascota
-        if (op.id === profile.id) {
-          return {
-            success: false,
-            error: "No podés invitarte a vos mismo.",
-          };
-        }
-
-        // ¿Ya existe co-dueño activo/pending para este animal?
-        const existing = await prisma.coOwner.findFirst({
-          where: {
-            animal_id: animalId,
-            owner_id: op.id,
-            status: { in: ["active", "pending"] },
-          },
-        });
-        if (existing) {
-          if (existing.status === "active") {
-            return {
-              success: false,
-              error: "Esa persona ya es co-dueña de esta mascota.",
-            };
-          }
-          return {
-            success: false,
-            error: "Ya hay una invitación pendiente para esa persona.",
-          };
-        }
-
-        // Crear el CoOwner pending — al aceptar lo pasamos a active.
-        await prisma.coOwner.create({
-          data: {
-            animal_id: animalId,
-            owner_id: op.id,
-            added_by_owner_id: profile.id,
-            status: "pending",
-          },
-        });
+      // No se puede invitar al dueño principal a su propia mascota
+      if (op.id === profile.id) {
+        return {
+          success: false,
+          error: "No podés invitarte a vos mismo.",
+        };
       }
+
+      // ¿Ya existe co-dueño activo/pending para este animal?
+      const existing = await prisma.coOwner.findFirst({
+        where: {
+          animal_id: animalId,
+          owner_id: op.id,
+          status: { in: ["active", "pending"] },
+        },
+      });
+      if (existing) {
+        if (existing.status === "active") {
+          return {
+            success: false,
+            error: "Esa persona ya es co-dueña de esta mascota.",
+          };
+        }
+        return {
+          success: false,
+          error: "Ya hay una invitación pendiente para esa persona.",
+        };
+      }
+
+      // Crear el CoOwner pending — al aceptar lo pasamos a active.
+      await prisma.coOwner.create({
+        data: {
+          animal_id: animalId,
+          owner_id: op.id,
+          added_by_owner_id: profile.id,
+          status: "pending",
+        },
+      });
     }
 
     // 2) Mandamos el email branded via Resend, con CTA distinto según

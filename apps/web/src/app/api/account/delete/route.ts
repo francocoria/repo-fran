@@ -14,6 +14,11 @@ export const dynamic = "force-dynamic";
  * el row de `auth.users` con admin key.
  *
  * Apple Guideline 5.1.1(v) / Google Play Data deletion: requerido.
+ *
+ * Confirmación obligatoria (audit ALTO-8): el body debe incluir
+ * { confirmation: "ELIMINAR" } igual que la Server Action equivalente.
+ * Esto evita borrados accidentales por bugs en la app (deep links,
+ * botones mal protegidos) y exige una acción consciente del usuario.
  */
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -23,6 +28,26 @@ export async function POST(request: NextRequest) {
   const accessToken = authHeader.slice("Bearer ".length).trim();
   if (!accessToken) {
     return NextResponse.json({ error: "Token vacío" }, { status: 401 });
+  }
+
+  // Body con confirmación obligatoria.
+  let body: { confirmation?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Body inválido (se esperaba JSON con { confirmation })" },
+      { status: 400 },
+    );
+  }
+  if (body.confirmation !== "ELIMINAR") {
+    return NextResponse.json(
+      {
+        error:
+          'Confirmación requerida. Mandá { "confirmation": "ELIMINAR" } en el body.',
+      },
+      { status: 400 },
+    );
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -48,6 +73,7 @@ export async function POST(request: NextRequest) {
       { status: 401 },
     );
   }
+  console.warn("[/api/account/delete] borrando cuenta:", user.id);
 
   try {
     const userId = user.id;

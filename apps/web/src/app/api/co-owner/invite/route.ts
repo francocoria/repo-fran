@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createSupabaseAdminClient } from "@pet-app/lib";
 import { prisma } from "@pet-app/db";
 import { sendEmail, coOwnerInvitedTemplate } from "@pet-app/emails";
 
@@ -98,70 +97,73 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3) Buscar el email en auth.users
-    const admin = createSupabaseAdminClient();
-    const { data: usersData, error: listError } =
-      await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (listError) {
-      console.error("[/api/co-owner/invite] listUsers:", listError);
-      return NextResponse.json(
-        { error: "No pudimos buscar el email." },
-        { status: 500 },
-      );
-    }
-
-    const invitedUser = usersData.users.find(
-      (u) => u.email?.toLowerCase() === cleanEmail,
-    );
+    // 3) Buscar el email en auth.users con query directa (audit ALTO-1).
+    // Antes listábamos 1000 users y filtrábamos en memoria — eso era O(N),
+    // exponía mails de otros users vía service_role y rompía a partir de
+    // 1000+ users. Esta query es O(1) con índice en auth.users.email.
+    type AuthLookupRow = {
+      user_id: string;
+      owner_id: string | null;
+      owner_full_name: string | null;
+    };
+    const rows = await prisma.$queryRaw<AuthLookupRow[]>`
+      SELECT
+        u.id::text       AS user_id,
+        op.id::text      AS owner_id,
+        op.full_name     AS owner_full_name
+      FROM auth.users u
+      LEFT JOIN public.owner_profiles op ON op.user_id = u.id
+      WHERE lower(u.email) = ${cleanEmail}
+      LIMIT 1
+    `;
+    const invitedUser = rows[0] ? { id: rows[0].user_id } : null;
 
     let invitedProfile: { id: string; full_name: string } | null = null;
     let recipientHasAccount = false;
 
-    if (invitedUser) {
-      const op = await prisma.ownerProfile.findUnique({
-        where: { user_id: invitedUser.id },
-        select: { id: true, full_name: true },
+    if (invitedUser && rows[0]?.owner_id) {
+      const op = {
+        id: rows[0].owner_id,
+        full_name: rows[0].owner_full_name ?? "",
+      };
+      invitedProfile = op;
+      recipientHasAccount = true;
+
+      if (op.id === profile.id) {
+        return NextResponse.json(
+          { error: "No podés invitarte a vos mismo." },
+          { status: 400 },
+        );
+      }
+
+      const existing = await prisma.coOwner.findFirst({
+        where: {
+          animal_id: animalId,
+          owner_id: op.id,
+          status: { in: ["active", "pending"] },
+        },
       });
-      if (op) {
-        invitedProfile = op;
-        recipientHasAccount = true;
-
-        if (op.id === profile.id) {
+      if (existing) {
+        if (existing.status === "active") {
           return NextResponse.json(
-            { error: "No podés invitarte a vos mismo." },
-            { status: 400 },
-          );
-        }
-
-        const existing = await prisma.coOwner.findFirst({
-          where: {
-            animal_id: animalId,
-            owner_id: op.id,
-            status: { in: ["active", "pending"] },
-          },
-        });
-        if (existing) {
-          if (existing.status === "active") {
-            return NextResponse.json(
-              { error: "Esa persona ya es co-dueña de esta mascota." },
-              { status: 409 },
-            );
-          }
-          return NextResponse.json(
-            { error: "Ya hay una invitación pendiente para esa persona." },
+            { error: "Esa persona ya es co-dueña de esta mascota." },
             { status: 409 },
           );
         }
-
-        await prisma.coOwner.create({
-          data: {
-            animal_id: animalId,
-            owner_id: op.id,
-            added_by_owner_id: profile.id,
-            status: "pending",
-          },
-        });
+        return NextResponse.json(
+          { error: "Ya hay una invitación pendiente para esa persona." },
+          { status: 409 },
+        );
       }
+
+      await prisma.coOwner.create({
+        data: {
+          animal_id: animalId,
+          owner_id: op.id,
+          added_by_owner_id: profile.id,
+          status: "pending",
+        },
+      });
     }
 
     // 4) Mandar email
