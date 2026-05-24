@@ -1,5 +1,6 @@
 import { Expo, type ExpoPushMessage } from "expo-server-sdk";
 import { prisma } from "@pet-app/db";
+import { logError } from "@/lib/logger";
 
 /**
  * Helper para enviar notificaciones push a la app nativa via Expo Push.
@@ -111,7 +112,7 @@ export async function sendPushToUser(
           }
         }
       } catch (err) {
-        console.error("[push] chunk send failed:", err);
+        logError("push/chunk", err);
         failed += chunk.length;
       }
     }

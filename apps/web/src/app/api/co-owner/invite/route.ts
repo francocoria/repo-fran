@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@pet-app/db";
 import { sendEmail, coOwnerInvitedTemplate } from "@pet-app/emails";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.success) {
-      console.error("[/api/co-owner/invite] email failed:", result.error);
+      logError("co-owner/invite/email", result.error);
       // Rollback de la fila pending si la creamos
       if (invitedProfile) {
         await prisma.coOwner.deleteMany({
@@ -218,8 +219,7 @@ export async function POST(request: NextRequest) {
         : "Listo, le mandamos un mail invitándola a registrarse.",
     });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[/api/co-owner/invite] failed:", msg);
+    logError("co-owner/invite", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

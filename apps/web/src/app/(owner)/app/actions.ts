@@ -6,6 +6,7 @@ import { validatePhoto, sanitizeFilename } from "@pet-app/lib/utils/files";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { createSupabaseServerClient, createSupabaseAdminClient } from "@pet-app/lib";
+import { logError } from "@/lib/logger";
 
 // ─── Helper: verify that current user owns or co-owns the animal ───
 async function verifyAnimalAccess(animalId: string) {
@@ -115,7 +116,7 @@ export async function createAnimal(formData: FormData) {
     revalidatePath("/app");
     return { success: true, animalId: animal.id, urlToken: animal.url_token };
   } catch (error: any) {
-    console.error("Animal create error:", error);
+    logError("animal/create", error);
     return { success: false, error: "Ocurrió un error al crear la mascota." };
   }
 }
@@ -168,7 +169,7 @@ export async function updateAnimal(animalId: string, formData: FormData) {
     return { success: true };
   } catch (error: any) {
     if (error.message === "FORBIDDEN") return { success: false, error: "No tenés permiso." };
-    console.error("Animal update error:", error);
+    logError("animal/update", error);
     return { success: false, error: "No se pudo actualizar la mascota." };
   }
 }
@@ -244,7 +245,7 @@ export async function uploadAnimalPhoto(animalId: string, formData: FormData) {
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Error desconocido";
     if (msg === "FORBIDDEN") return { success: false, error: "No tenés permiso." };
-    console.error("[uploadAnimalPhoto] failed:", msg, error);
+    logError("uploadAnimalPhoto", error);
     return { success: false, error: `No se pudo subir la foto: ${msg}` };
   }
 }
@@ -282,7 +283,7 @@ export async function addWeightEntry(animalId: string, formData: FormData) {
     return { success: true };
   } catch (error: any) {
     if (error.message === "FORBIDDEN") return { success: false, error: "No tenés permiso." };
-    console.error("Weight entry error:", error);
+    logError("weight/entry", error);
     return { success: false, error: "No se pudo registrar el peso." };
   }
 }
@@ -299,7 +300,7 @@ export async function deleteWeightEntry(animalId: string, entryId: string) {
     revalidatePath(`/app/animals/${animalId}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Weight delete error:", error);
+    logError("weight/delete", error);
     return { success: false, error: "No se pudo eliminar el registro." };
   }
 }
@@ -453,7 +454,7 @@ export async function inviteCoOwner(animalId: string, email: string) {
     const msg = error instanceof Error ? error.message : "Error desconocido";
     if (msg === "FORBIDDEN")
       return { success: false, error: "No tenés permiso." };
-    console.error("[inviteCoOwner] failed:", msg, error);
+    logError("inviteCoOwner", error);
     return { success: false, error: "No se pudo enviar la invitación." };
   }
 }
@@ -490,7 +491,7 @@ export async function acceptCoOwnerInvite(coOwnerId: string) {
     revalidatePath(`/app/animals/${invite.animal_id}`);
     return { success: true };
   } catch (error: unknown) {
-    console.error("[acceptCoOwnerInvite] failed:", error);
+    logError("acceptCoOwnerInvite", error);
     return { success: false, error: "No se pudo aceptar la invitación." };
   }
 }
@@ -525,7 +526,7 @@ export async function declineCoOwnerInvite(coOwnerId: string) {
     revalidatePath("/app/access");
     return { success: true };
   } catch (error: unknown) {
-    console.error("[declineCoOwnerInvite] failed:", error);
+    logError("declineCoOwnerInvite", error);
     return { success: false, error: "No se pudo rechazar la invitación." };
   }
 }
@@ -545,7 +546,7 @@ export async function removeCoOwner(animalId: string, coOwnerId: string) {
     revalidatePath(`/app/animals/${animalId}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Co-owner remove error:", error);
+    logError("coOwner/remove", error);
     return { success: false, error: "No se pudo remover el co-dueño." };
   }
 }
