@@ -27,12 +27,20 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  const PERSISTENT_MAX_AGE = 60 * 60 * 24 * 365; // 1 año en segundos
+  // Sesión de 30 días con refresh automático (audit ALTO-9).
+  // Reducido desde 365 días — Supabase refrescará el access token cada hora.
+  // Si el usuario está inactivo 30+ días, debe re-loguearse.
+  const PERSISTENT_MAX_AGE = 60 * 60 * 24 * 30; // 30 días en segundos
+
+  // SameSite=Lax es OBLIGATORIO para que el callback OAuth de Google
+  // funcione (top-level POST cross-site desde accounts.google.com).
+  // Strict bloquearía el flujo de login federado.
+  const SAME_SITE: "lax" | "strict" = "lax";
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookieOptions: {
       maxAge: PERSISTENT_MAX_AGE,
-      sameSite: "lax",
+      sameSite: SAME_SITE,
       secure: true,
     },
     cookies: {
@@ -53,7 +61,7 @@ export async function middleware(request: NextRequest) {
           response.cookies.set(name, value, {
             ...options,
             maxAge: PERSISTENT_MAX_AGE,
-            sameSite: "lax",
+            sameSite: SAME_SITE,
             secure: true,
           }),
         );

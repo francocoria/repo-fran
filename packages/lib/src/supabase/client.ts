@@ -4,9 +4,9 @@ import { createBrowserClient } from "@supabase/ssr";
  * Cliente de Supabase para el navegador.
  * Usa la anon key — RLS valida los permisos.
  *
- * Sesión configurada como persistente: cookies con max-age de 1 año,
- * refresh automático del token. La sesión sólo se cierra con signOut()
- * explícito.
+ * Sesión persistente de 30 días con refresh automático del access token.
+ * Reducido desde 1 año (audit ALTO-9). Si el usuario está inactivo 30+
+ * días, debe volver a loguearse.
  */
 export function createSupabaseBrowserClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -23,8 +23,8 @@ export function createSupabaseBrowserClient() {
       detectSessionInUrl: true,
     },
     cookieOptions: {
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30, // 30 días
+      sameSite: "lax", // requerido para OAuth callback (Google)
       secure: true,
     },
   });
