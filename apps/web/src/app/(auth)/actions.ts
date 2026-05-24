@@ -5,6 +5,13 @@ import { ownerSignupSchema, vetSignupSchema } from "@pet-app/lib";
 import { prisma } from "@pet-app/db";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import {
+  authByEmail,
+  authByIp,
+  ipKey,
+  otpVerify,
+  rateLimit,
+} from "@/lib/rate-limit";
 
 // ─── Tipos de retorno ───
 
@@ -13,15 +20,62 @@ type AuthResult = {
   error?: string;
 };
 
+/**
+ * Mapea errores de Supabase Auth a mensajes opacos para el cliente
+ * (audit MEDIO-2). Evita user enumeration: el atacante NO debe poder
+ * distinguir "email no existe" de "email ya registrado" o "rate limit
+ * por este email vs por IP". El detalle real se loguea server-side.
+ */
+function opaqueAuthError(
+  context: string,
+  error: { message?: string; code?: string; status?: number } | null,
+): string {
+  if (!error) return "No pudimos procesar tu solicitud. Reintentá.";
+
+  const msg = (error.message ?? "").toLowerCase();
+  console.error(`[auth/${context}]`, {
+    code: error.code,
+    status: error.status,
+    message: error.message,
+  });
+
+  // Rate limits sí los exponemos — el usuario legítimo necesita saber
+  // que tiene que esperar (no ayuda al atacante porque ya lo sabe).
+  if (msg.includes("rate limit") || error.status === 429) {
+    return "Demasiados intentos. Esperá unos minutos antes de reintentar.";
+  }
+  // Códigos / OTP inválidos: mensaje único para no diferenciar
+  // "código incorrecto" de "código expirado" de "email sin cuenta".
+  if (
+    msg.includes("invalid") ||
+    msg.includes("expired") ||
+    msg.includes("token") ||
+    msg.includes("otp") ||
+    msg.includes("not found")
+  ) {
+    return "Código inválido o expirado. Pedí uno nuevo.";
+  }
+  return "No pudimos procesar tu solicitud. Reintentá en unos segundos.";
+}
+
 // ─── Login con magic link / OTP code ───
 
 export async function loginWithMagicLink(email: string): Promise<AuthResult> {
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Rate limit: 5 req/min por IP + 3 req/5min por email
+  const ip = await ipKey();
+  const limitedByIp = await rateLimit(authByIp, ip);
+  if (limitedByIp) return { success: false, error: limitedByIp };
+  const limitedByEmail = await rateLimit(authByEmail, cleanEmail);
+  if (limitedByEmail) return { success: false, error: limitedByEmail };
+
   const supabase = await createSupabaseServerClient();
   const headerStore = await headers();
   const origin = headerStore.get("origin") ?? "http://localhost:3000";
 
   const { error } = await supabase.auth.signInWithOtp({
-    email: email.trim().toLowerCase(),
+    email: cleanEmail,
     options: {
       emailRedirectTo: `${origin}/auth/callback`,
       shouldCreateUser: true,
@@ -29,7 +83,7 @@ export async function loginWithMagicLink(email: string): Promise<AuthResult> {
   });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: opaqueAuthError("magicLink", error) };
   }
 
   return { success: true };
@@ -39,9 +93,15 @@ export async function verifyOtpCode(
   email: string,
   token: string,
 ): Promise<AuthResult & { redirectTo?: string }> {
-  const supabase = await createSupabaseServerClient();
   const cleanEmail = email.trim().toLowerCase();
   const cleanToken = token.trim();
+
+  // Rate limit anti brute-force del código: 10 intentos/5min por IP+email
+  const ip = await ipKey();
+  const limited = await rateLimit(otpVerify, `${ip}:${cleanEmail}`);
+  if (limited) return { success: false, error: limited };
+
+  const supabase = await createSupabaseServerClient();
 
   // Probamos tipo "email" (usuarios existentes con magic link OTP)
   let { data, error } = await supabase.auth.verifyOtp({
@@ -53,11 +113,9 @@ export async function verifyOtpCode(
   // Si fallo por token invalido, fallback a tipo "signup"
   // (Supabase manda OTP "signup" cuando el usuario es nuevo)
   if (error) {
-    console.error("[verifyOtp/email] failed:", {
-      code: (error as { code?: string }).code,
-      status: (error as { status?: number }).status,
-      message: error.message,
-    });
+    // Logueamos pero NO devolvemos detalle: con el opaque mapper el
+    // atacante no puede distinguir "no existe el email" de "token mal".
+    console.error("[verifyOtp/email] failed — probando signup fallback");
 
     const signupResult = await supabase.auth.verifyOtp({
       email: cleanEmail,
@@ -66,12 +124,10 @@ export async function verifyOtpCode(
     });
 
     if (signupResult.error) {
-      console.error("[verifyOtp/signup] failed:", {
-        code: (signupResult.error as { code?: string }).code,
-        status: (signupResult.error as { status?: number }).status,
-        message: signupResult.error.message,
-      });
-      return { success: false, error: signupResult.error.message };
+      return {
+        success: false,
+        error: opaqueAuthError("verifyOtp", signupResult.error),
+      };
     }
 
     data = signupResult.data;
@@ -146,6 +202,13 @@ export async function signupOwner(formData: FormData): Promise<AuthResult> {
     return { success: false, error: firstError };
   }
 
+  // Rate limit signup: 5/min por IP, 3/5min por email
+  const ip = await ipKey();
+  const limitedByIp = await rateLimit(authByIp, ip);
+  if (limitedByIp) return { success: false, error: limitedByIp };
+  const limitedByEmail = await rateLimit(authByEmail, parsed.data.email);
+  if (limitedByEmail) return { success: false, error: limitedByEmail };
+
   const supabase = await createSupabaseServerClient();
   const headerStore = await headers();
   const origin = headerStore.get("origin") ?? "http://localhost:3000";
@@ -164,7 +227,7 @@ export async function signupOwner(formData: FormData): Promise<AuthResult> {
   });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: opaqueAuthError("signupOwner", error) };
   }
 
   return { success: true };
@@ -188,6 +251,13 @@ export async function signupVet(formData: FormData): Promise<AuthResult> {
     return { success: false, error: firstError };
   }
 
+  // Rate limit signup vet: 5/min por IP, 3/5min por email
+  const ip = await ipKey();
+  const limitedByIp = await rateLimit(authByIp, ip);
+  if (limitedByIp) return { success: false, error: limitedByIp };
+  const limitedByEmail = await rateLimit(authByEmail, parsed.data.email);
+  if (limitedByEmail) return { success: false, error: limitedByEmail };
+
   const supabase = await createSupabaseServerClient();
   const headerStore = await headers();
   const origin = headerStore.get("origin") ?? "http://localhost:3000";
@@ -207,7 +277,7 @@ export async function signupVet(formData: FormData): Promise<AuthResult> {
   });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: opaqueAuthError("signupVet", error) };
   }
 
   return { success: true };
@@ -257,23 +327,28 @@ export async function createOwnerProfile(
       },
     });
 
-    // Bootstrap admin si corresponde
+    // Bootstrap admin: SOLO si no existe ningún admin todavía
+    // (audit MEDIO-3). Si la env queda seteada en prod después del primer
+    // bootstrap, nuevos registros con ese email NO escalan a admin.
     const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
     if (adminEmail && user.email === adminEmail) {
-      await prisma.adminUser.upsert({
-        where: { user_id: user.id },
-        create: { user_id: user.id, role: "superadmin" },
-        update: { role: "superadmin" },
-      });
+      const adminCount = await prisma.adminUser.count();
+      if (adminCount === 0) {
+        await prisma.adminUser.create({
+          data: { user_id: user.id, role: "superadmin" },
+        });
+        console.log("[bootstrap] primer admin creado:", user.email);
+      } else {
+        console.warn(
+          "[bootstrap] ADMIN_BOOTSTRAP_EMAIL match pero ya hay admins, ignorando",
+        );
+      }
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("createOwnerProfile error:", error);
-    return {
-      success: false,
-      error: error?.message ?? "No se pudo crear el perfil.",
-    };
+    return { success: false, error: "No se pudo crear el perfil." };
   }
 }
 
@@ -346,12 +421,9 @@ export async function createVetProfile(input?: {
     });
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("createVetProfile error:", error);
-    return {
-      success: false,
-      error: error?.message ?? "No se pudo crear el perfil.",
-    };
+    return { success: false, error: "No se pudo crear el perfil." };
   }
 }
 

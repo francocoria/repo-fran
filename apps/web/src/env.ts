@@ -39,6 +39,10 @@ const envSchema = z.object({
   // Cron
   CRON_SECRET: z.string().min(1).optional(),
 
+  // Rate limiting (Upstash) — opcional, sin esto el rate limit queda OFF
+  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+
   // Premium
   NEXT_PUBLIC_PREMIUM_WHATSAPP: z.string().optional(),
   NEXT_PUBLIC_PREMIUM_PRICE_USD_MONTHLY: z.coerce.number().default(10),
@@ -63,6 +67,8 @@ const parsed = envSchema.safeParse({
   NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
   ADMIN_BOOTSTRAP_EMAIL: process.env.ADMIN_BOOTSTRAP_EMAIL,
   CRON_SECRET: process.env.CRON_SECRET,
+  UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+  UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   NEXT_PUBLIC_PREMIUM_WHATSAPP: process.env.NEXT_PUBLIC_PREMIUM_WHATSAPP,
   NEXT_PUBLIC_PREMIUM_PRICE_USD_MONTHLY:
     process.env.NEXT_PUBLIC_PREMIUM_PRICE_USD_MONTHLY,
