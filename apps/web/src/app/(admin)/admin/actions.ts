@@ -11,6 +11,8 @@ import {
   verificationApprovedTemplate,
   verificationRejectedTemplate,
 } from "@pet-app/emails";
+import { writeAuditLog } from "@/lib/audit";
+import { logError } from "@/lib/logger";
 
 // ─── Helper ─────────────────────────────────────────────────────────
 
@@ -114,19 +116,18 @@ export async function activatePremium(formData: FormData) {
       },
     });
 
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        actor_id: user.id,
-        action: "premium.activated",
-        resource_type: "subscription",
-        resource_id: subscription.id,
-        metadata: {
-          vet_id: vet.id,
-          months: d.monthsGranted,
-          amount: d.amount,
-          currency: d.currency,
-        },
+    // Audit log con IP + UA (writeAuditLog no rompe el flujo si falla)
+    await writeAuditLog({
+      actorId: user.id,
+      action: "activate.premium",
+      resourceType: "subscription",
+      resourceId: subscription.id,
+      metadata: {
+        vet_id: vet.id,
+        months: d.monthsGranted,
+        amount: d.amount,
+        currency: d.currency,
+        method: d.method,
       },
     });
 
@@ -177,7 +178,7 @@ export async function activatePremium(formData: FormData) {
     if (error.message === "FORBIDDEN") {
       return { success: false, error: "Sin permisos." };
     }
-    console.error("activatePremium error:", error);
+    logError("activatePremium", error);
     return { success: false, error: "No se pudo activar." };
   }
 }
@@ -212,15 +213,14 @@ export async function approveVerification(requestId: string) {
         where: { id: req.vet_id },
         data: { verified: true, verified_at: new Date() },
       }),
-      prisma.auditLog.create({
-        data: {
-          actor_id: user.id,
-          action: "verification.approved",
-          resource_type: "vet_profile",
-          resource_id: req.vet_id,
-        },
-      }),
     ]);
+    await writeAuditLog({
+      actorId: user.id,
+      action: "approve.vet_license",
+      resourceType: "vet_profile",
+      resourceId: req.vet_id,
+      metadata: { requestId },
+    });
 
     // Email + notificación
     const admin = createSupabaseAdminClient();
@@ -264,7 +264,7 @@ export async function approveVerification(requestId: string) {
     if (error.message === "FORBIDDEN") {
       return { success: false, error: "Sin permisos." };
     }
-    console.error("approveVerification error:", error);
+    logError("approveVerification", error);
     return { success: false, error: "No se pudo aprobar." };
   }
 }
@@ -288,26 +288,22 @@ export async function rejectVerification(
       return { success: false, error: "Ya fue procesada." };
     }
 
-    await prisma.$transaction([
-      prisma.verificationRequest.update({
-        where: { id: requestId },
-        data: {
-          status: "rejected",
-          reviewed_at: new Date(),
-          reviewed_by_id: user.id,
-          rejection_reason: trimmedReason || null,
-        },
-      }),
-      prisma.auditLog.create({
-        data: {
-          actor_id: user.id,
-          action: "verification.rejected",
-          resource_type: "vet_profile",
-          resource_id: req.vet_id,
-          metadata: { reason: trimmedReason },
-        },
-      }),
-    ]);
+    await prisma.verificationRequest.update({
+      where: { id: requestId },
+      data: {
+        status: "rejected",
+        reviewed_at: new Date(),
+        reviewed_by_id: user.id,
+        rejection_reason: trimmedReason || null,
+      },
+    });
+    await writeAuditLog({
+      actorId: user.id,
+      action: "reject.vet_license",
+      resourceType: "vet_profile",
+      resourceId: req.vet_id,
+      metadata: { requestId, reason: trimmedReason },
+    });
 
     // Email
     const admin = createSupabaseAdminClient();
@@ -354,7 +350,7 @@ export async function rejectVerification(
     if (error.message === "FORBIDDEN") {
       return { success: false, error: "Sin permisos." };
     }
-    console.error("rejectVerification error:", error);
+    logError("rejectVerification", error);
     return { success: false, error: "No se pudo rechazar." };
   }
 }
@@ -376,14 +372,12 @@ export async function suspendSubscription(vetId: string, reason: string) {
       data: { status: "suspended", notes: trimmed || sub.notes },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        actor_id: user.id,
-        action: "subscription.suspended",
-        resource_type: "subscription",
-        resource_id: sub.id,
-        metadata: { reason: trimmed },
-      },
+    await writeAuditLog({
+      actorId: user.id,
+      action: "suspend.subscription",
+      resourceType: "subscription",
+      resourceId: sub.id,
+      metadata: { vetId, reason: trimmed },
     });
 
     revalidatePath(`/admin/vets/${vetId}`);
@@ -392,7 +386,7 @@ export async function suspendSubscription(vetId: string, reason: string) {
     if (error.message === "FORBIDDEN") {
       return { success: false, error: "Sin permisos." };
     }
-    console.error("suspendSubscription error:", error);
+    logError("suspendSubscription", error);
     return { success: false, error: "No se pudo suspender." };
   }
 }

@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@pet-app/lib";
 import { prisma } from "@pet-app/db";
+import { writeAuditLog } from "@/lib/audit";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,6 +80,15 @@ export async function POST(request: NextRequest) {
   try {
     const userId = user.id;
 
+    // Audit log ANTES del delete (la FK se invalida después).
+    await writeAuditLog({
+      actorId: userId,
+      action: "delete.account",
+      resourceType: "auth_user",
+      resourceId: userId,
+      metadata: { via: "mobile-rest", emailDomain: user.email?.split("@")[1] },
+    });
+
     // Borramos los registros propios primero (cascada vía Prisma).
     await prisma.ownerProfile.deleteMany({ where: { user_id: userId } });
     await prisma.vetProfile.deleteMany({ where: { user_id: userId } });
@@ -87,7 +98,7 @@ export async function POST(request: NextRequest) {
     const admin = createSupabaseAdminClient();
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
     if (deleteError) {
-      console.error("[/api/account/delete] auth.admin.deleteUser:", deleteError);
+      logError("api/account/delete/admin", deleteError);
       return NextResponse.json(
         { error: "No pudimos eliminar la cuenta" },
         { status: 500 },
@@ -96,8 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[/api/account/delete] failed:", msg);
+    logError("api/account/delete", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

@@ -12,6 +12,8 @@ import {
   otpVerify,
   rateLimit,
 } from "@/lib/rate-limit";
+import { writeAuditLog } from "@/lib/audit";
+import { logError } from "@/lib/logger";
 
 // ─── Tipos de retorno ───
 
@@ -347,7 +349,7 @@ export async function createOwnerProfile(
 
     return { success: true };
   } catch (error: unknown) {
-    console.error("createOwnerProfile error:", error);
+    logError("createOwnerProfile", error);
     return { success: false, error: "No se pudo crear el perfil." };
   }
 }
@@ -422,7 +424,7 @@ export async function createVetProfile(input?: {
 
     return { success: true };
   } catch (error: unknown) {
-    console.error("createVetProfile error:", error);
+    logError("createVetProfile", error);
     return { success: false, error: "No se pudo crear el perfil." };
   }
 }
@@ -465,6 +467,16 @@ export async function deleteAccount(
 
     const userId = user.id;
 
+    // Audit log ANTES del delete — si no, perdemos el actor cuando se
+    // borre la fila (foreign key se invalida).
+    await writeAuditLog({
+      actorId: userId,
+      action: "delete.account",
+      resourceType: "auth_user",
+      resourceId: userId,
+      metadata: { via: "server-action", emailDomain: user.email?.split("@")[1] },
+    });
+
     // Primero borramos los registros propios via Prisma para asegurar la
     // cascada (Supabase Auth no siempre cascadea hacia public schema).
     await prisma.ownerProfile.deleteMany({ where: { user_id: userId } });
@@ -475,7 +487,7 @@ export async function deleteAccount(
     const admin = createSupabaseAdminClient();
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
     if (deleteError) {
-      console.error("[deleteAccount] auth.admin.deleteUser failed:", deleteError);
+      logError("deleteAccount/admin", deleteError);
       return {
         success: false,
         error:
@@ -488,8 +500,7 @@ export async function deleteAccount(
 
     return { success: true };
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[deleteAccount] failed:", msg);
+    logError("deleteAccount", error);
     return {
       success: false,
       error: "Hubo un problema. Reintentá en unos minutos.",

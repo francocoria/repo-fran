@@ -8,6 +8,8 @@ import {
   effectivePlan,
   type SubscriptionState,
 } from "@pet-app/lib/utils/subscription";
+import { writeAuditLog } from "@/lib/audit";
+import { logError } from "@/lib/logger";
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -154,7 +156,7 @@ export async function requestAccessByToken(urlToken: string) {
     if (error.message === "NO_VET_PROFILE") {
       return { success: false, error: "Tu perfil de veterinario no está completo." };
     }
-    console.error("requestAccessByToken error:", error);
+    logError("requestAccessByToken", error);
     return { success: false, error: "No se pudo solicitar acceso." };
   }
 }
@@ -210,10 +212,18 @@ export async function approveAccess(accessId: string) {
       },
     });
 
+    await writeAuditLog({
+      actorId: user.id,
+      action: "approve.vet_access",
+      resourceType: "vet_access",
+      resourceId: accessId,
+      metadata: { vetId: access.vet_id, animalId: access.animal_id },
+    });
+
     revalidatePath("/app/access");
     return { success: true };
   } catch (error) {
-    console.error("approveAccess error:", error);
+    logError("approveAccess", error);
     return { success: false, error: "No se pudo aprobar." };
   }
 }
@@ -238,18 +248,27 @@ export async function rejectAccess(accessId: string) {
       return { success: false, error: "No tenés permiso." };
     }
 
-    await prisma.vetAccess.update({
+    const updated = await prisma.vetAccess.update({
       where: { id: accessId },
       data: {
         status: "revoked",
         revoked_at: new Date(),
       },
+      select: { vet_id: true, animal_id: true },
+    });
+
+    await writeAuditLog({
+      actorId: user.id,
+      action: "revoke.vet_access",
+      resourceType: "vet_access",
+      resourceId: accessId,
+      metadata: { vetId: updated.vet_id, animalId: updated.animal_id },
     });
 
     revalidatePath("/app/access");
     return { success: true };
   } catch (error) {
-    console.error("rejectAccess error:", error);
+    logError("rejectAccess", error);
     return { success: false, error: "No se pudo rechazar." };
   }
 }
@@ -287,7 +306,7 @@ export async function archivePatient(accessId: string) {
     if (error.message === "NO_VET_PROFILE") {
       return { success: false, error: "Perfil incompleto." };
     }
-    console.error("archivePatient error:", error);
+    logError("archivePatient", error);
     return { success: false, error: "No se pudo archivar." };
   }
 }
@@ -330,7 +349,7 @@ export async function unarchivePatient(accessId: string) {
     if (error.message === "NO_VET_PROFILE") {
       return { success: false, error: "Perfil incompleto." };
     }
-    console.error("unarchivePatient error:", error);
+    logError("unarchivePatient", error);
     return { success: false, error: "No se pudo desarchivar." };
   }
 }
