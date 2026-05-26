@@ -75,6 +75,10 @@ export default async function LostFeedPage() {
       where: { status: "active" },
       orderBy: { activated_at: "desc" },
       take: 100,
+      // PII (phone, full_name del dueño) NO se cargan acá — esta página
+      // es pública y crawleable. El contacto solo aparece en la página
+      // individual /lost/[slug] que requiere conocer el slug random
+      // (nanoid 10 chars, ~8.7×10¹⁴ combinaciones).
       select: {
         id: true,
         public_slug: true,
@@ -87,9 +91,6 @@ export default async function LostFeedPage() {
             species: true,
             breed: true,
             photo_url: true,
-            owner_profile: {
-              select: { phone: true, full_name: true }
-            }
           },
         },
       },
@@ -220,17 +221,17 @@ export default async function LostFeedPage() {
                   </div>
 
                   <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                    {featuredAlert.animal.owner_profile?.phone && (
-                      <a 
-                        href={`https://wa.me/${featuredAlert.animal.owner_profile.phone.replace(/\D/g, "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-600"
-                      >
-                        <MessageCircle className="size-4" />
-                        Tengo información
-                      </a>
-                    )}
+                    {/* El botón WhatsApp directo vivía acá, pero exponía
+                        el teléfono del dueño en el HTML del feed público
+                        (scrapeable). Ahora hay que entrar al perfil para
+                        obtener el contacto (BAJO-4). */}
+                    <Link
+                      href={`/lost/${featuredAlert.public_slug}`}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-emerald-600"
+                    >
+                      <MessageCircle className="size-4" />
+                      Tengo información
+                    </Link>
                     <Link
                       href={`/lost/${featuredAlert.public_slug}`}
                       className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold transition-colors hover:bg-secondary"
