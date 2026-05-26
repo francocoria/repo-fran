@@ -23,6 +23,17 @@ const securityHeaders = [
     value:
       "camera=(self), microphone=(), geolocation=(self), interest-cohort=()",
   },
+  // Cross-Origin-Opener-Policy (audit BAJO-1):
+  // Aísla la window de top-level cross-origin browsing contexts — bloquea
+  // ataques tipo XS-Leaks y opener spoofing. `allow-popups` deja funcionar
+  // el callback OAuth de Google (popup → window.opener.postMessage).
+  // COEP (Cross-Origin-Embedder-Policy) queda en backlog — habilitarlo
+  // requeriría CORP headers en todas las imgs externas (Supabase, Google
+  // avatars, Unsplash) o un image proxy.
+  {
+    key: "Cross-Origin-Opener-Policy",
+    value: "same-origin-allow-popups",
+  },
   // CSP se setea en el middleware (apps/web/src/middleware.ts) con nonce
   // dinámico per-request — eso permite quitar 'unsafe-inline' de scripts.
 ];
