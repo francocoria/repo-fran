@@ -8,6 +8,7 @@ import {
   APP_URL,
   isMpSandbox,
 } from "@/lib/mercadopago";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -84,10 +85,9 @@ export async function POST(_request: NextRequest) {
       sandbox,
     });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[/api/checkout/create] failed:", msg, error);
+    logError("api/checkout/create", error);
     return NextResponse.json(
-      { error: `No pudimos generar el checkout: ${msg}` },
+      { error: "No pudimos generar el checkout. Reintentá en unos minutos." },
       { status: 500 },
     );
   }

@@ -10,6 +10,7 @@ import {
 import { validateDocument, sanitizeFilename } from "@pet-app/lib/utils/files";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
+import { logError } from "@/lib/logger";
 import { createSupabaseServerClient } from "@pet-app/lib";
 
 // ─── Helper: verify owner/co-owner access ───────────────────────────
@@ -70,7 +71,7 @@ export async function addVaccine(animalId: string, formData: FormData) {
     return { success: true };
   } catch (error: any) {
     if (error.message === "FORBIDDEN") return { success: false, error: "Sin permiso." };
-    console.error("Vaccine add error:", error);
+    logError("vaccine/add", error);
     return { success: false, error: "No se pudo registrar la vacuna." };
   }
 }
@@ -84,7 +85,7 @@ export async function deleteVaccine(animalId: string, vaccineId: string) {
     revalidatePath(`/app/animals/${animalId}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Vaccine delete error:", error);
+    logError("vaccine/delete", error);
     return { success: false, error: "No se pudo eliminar." };
   }
 }
@@ -126,7 +127,7 @@ export async function addDeworming(animalId: string, formData: FormData) {
     return { success: true };
   } catch (error: any) {
     if (error.message === "FORBIDDEN") return { success: false, error: "Sin permiso." };
-    console.error("Deworming add error:", error);
+    logError("deworming/add", error);
     return { success: false, error: "No se pudo registrar." };
   }
 }
@@ -140,7 +141,7 @@ export async function deleteDeworming(animalId: string, dewormingId: string) {
     revalidatePath(`/app/animals/${animalId}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Deworming delete error:", error);
+    logError("deworming/delete", error);
     return { success: false, error: "No se pudo eliminar." };
   }
 }
@@ -185,7 +186,7 @@ export async function addMedication(animalId: string, formData: FormData) {
     return { success: true };
   } catch (error: any) {
     if (error.message === "FORBIDDEN") return { success: false, error: "Sin permiso." };
-    console.error("Medication add error:", error);
+    logError("medication/add", error);
     return { success: false, error: "No se pudo registrar." };
   }
 }
@@ -202,7 +203,7 @@ export async function toggleMedication(animalId: string, medicationId: string, a
     revalidatePath(`/app/animals/${animalId}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Medication toggle error:", error);
+    logError("medication/toggle", error);
     return { success: false, error: "No se pudo actualizar." };
   }
 }
@@ -216,7 +217,7 @@ export async function deleteMedication(animalId: string, medicationId: string) {
     revalidatePath(`/app/animals/${animalId}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Medication delete error:", error);
+    logError("medication/delete", error);
     return { success: false, error: "No se pudo eliminar." };
   }
 }
@@ -256,7 +257,7 @@ export async function addAllergy(animalId: string, formData: FormData) {
     return { success: true };
   } catch (error: any) {
     if (error.message === "FORBIDDEN") return { success: false, error: "Sin permiso." };
-    console.error("Allergy add error:", error);
+    logError("allergy/add", error);
     return { success: false, error: "No se pudo registrar." };
   }
 }
@@ -270,7 +271,7 @@ export async function deleteAllergy(animalId: string, allergyId: string) {
     revalidatePath(`/app/animals/${animalId}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Allergy delete error:", error);
+    logError("allergy/delete", error);
     return { success: false, error: "No se pudo eliminar." };
   }
 }
@@ -304,7 +305,7 @@ export async function uploadStudy(animalId: string, formData: FormData) {
       .upload(storagePath, file, { contentType: file.type, upsert: false });
 
     if (uploadError) {
-      console.error("Study upload error:", uploadError);
+      logError("study/upload/storage", uploadError);
       return { success: false, error: "Error al subir el archivo." };
     }
 
@@ -329,7 +330,7 @@ export async function uploadStudy(animalId: string, formData: FormData) {
     return { success: true };
   } catch (error: any) {
     if (error.message === "FORBIDDEN") return { success: false, error: "Sin permiso." };
-    console.error("Study upload error:", error);
+    logError("study/upload", error);
     return { success: false, error: "No se pudo subir el estudio." };
   }
 }
@@ -343,7 +344,7 @@ export async function deleteStudy(animalId: string, studyId: string) {
     revalidatePath(`/app/animals/${animalId}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Study delete error:", error);
+    logError("study/delete", error);
     return { success: false, error: "No se pudo eliminar." };
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@pet-app/db";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -85,8 +86,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ invites: result, count: result.length });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[/api/co-owner/pending] failed:", msg);
+    logError("api/co-owner/pending", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

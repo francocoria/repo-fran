@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser, getOwnerProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { generatePublicSlug } from "@pet-app/lib/utils/slug";
+import { logError } from "@/lib/logger";
 
 // ─── Helper: verificar acceso owner/co-owner ────────────────────
 
@@ -141,7 +142,7 @@ export async function activateLostMode(animalId: string, formData: FormData) {
     if (error.message === "NOT_FOUND") {
       return { success: false, error: "Mascota no encontrada." };
     }
-    console.error("activateLostMode error:", error);
+    logError("activateLostMode", error);
     return { success: false, error: "No se pudo activar." };
   }
 }
@@ -176,7 +177,7 @@ export async function deactivateLostMode(
     if (error.message === "FORBIDDEN") {
       return { success: false, error: "Sin permiso." };
     }
-    console.error("deactivateLostMode error:", error);
+    logError("deactivateLostMode", error);
     return { success: false, error: "No se pudo desactivar." };
   }
 }

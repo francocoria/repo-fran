@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { medicalRecordCreateSchema } from "@pet-app/lib/validators";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
+import { logError } from "@/lib/logger";
+import { writeAuditLog } from "@/lib/audit";
 
 // ─── Helper: verifica acceso aprobado del vet al animal ────────────
 async function verifyVetAccess(animalId: string) {
@@ -47,7 +49,7 @@ export async function getConsultTemplates() {
 
     return templates;
   } catch (error) {
-    console.error("getConsultTemplates error:", error);
+    logError("getConsultTemplates", error);
     return [];
   }
 }
@@ -117,6 +119,18 @@ export async function createConsult(animalId: string, formData: FormData) {
       });
     }
 
+    await writeAuditLog({
+      actorId: profile.user_id,
+      action: "create.medical_record",
+      resourceType: "medical_record",
+      resourceId: record.id,
+      metadata: {
+        animalId,
+        vetId: profile.id,
+        hasPrivateNotes: Boolean(d.privateNotes),
+      },
+    });
+
     revalidatePath(`/vet/patients/${animalId}`);
     revalidatePath(`/app/animals/${animalId}`);
 
@@ -128,7 +142,7 @@ export async function createConsult(animalId: string, formData: FormData) {
     if (error.message === "NO_VET_PROFILE") {
       return { success: false, error: "Tu perfil de veterinario no está completo." };
     }
-    console.error("createConsult error:", error);
+    logError("createConsult", error);
     return { success: false, error: "No se pudo registrar la consulta." };
   }
 }
@@ -201,11 +215,23 @@ export async function updateConsult(
       },
     });
 
+    await writeAuditLog({
+      actorId: user.id,
+      action: "update.medical_record",
+      resourceType: "medical_record",
+      resourceId: recordId,
+      metadata: {
+        animalId: existing.animal_id,
+        vetId: profile.id,
+        ageHours: Math.round(ageHours),
+      },
+    });
+
     revalidatePath(`/vet/patients/${existing.animal_id}`);
     revalidatePath(`/app/animals/${existing.animal_id}`);
     return { success: true };
   } catch (error) {
-    console.error("updateConsult error:", error);
+    logError("updateConsult", error);
     return { success: false, error: "No se pudo actualizar." };
   }
 }

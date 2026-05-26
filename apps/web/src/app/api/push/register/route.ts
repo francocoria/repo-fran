@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@pet-app/db";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,8 +73,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[/api/push/register] failed:", msg);
+    logError("api/push/register", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
@@ -124,8 +124,7 @@ export async function DELETE(request: NextRequest) {
     });
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error desconocido";
-    console.error("[/api/push/register DELETE] failed:", msg);
+    logError("api/push/register DELETE", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

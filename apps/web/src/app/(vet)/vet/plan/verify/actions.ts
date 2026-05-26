@@ -5,6 +5,7 @@ import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
 import { createSupabaseAdminClient } from "@pet-app/lib/supabase/admin";
 import { validatePhoto, sanitizeFilename } from "@pet-app/lib/utils/files";
+import { logError } from "@/lib/logger";
 
 const LICENSE_BUCKET = "licenses";
 
@@ -59,7 +60,7 @@ export async function requestVerification(formData: FormData) {
       });
 
     if (uploadError) {
-      console.error("Upload license error:", uploadError);
+      logError("verify/uploadLicense", uploadError);
       return { success: false, error: "No se pudo subir la imagen." };
     }
 
@@ -74,7 +75,7 @@ export async function requestVerification(formData: FormData) {
     revalidatePath("/vet/plan");
     return { success: true };
   } catch (error) {
-    console.error("requestVerification error:", error);
+    logError("requestVerification", error);
     return { success: false, error: "No se pudo enviar la solicitud." };
   }
 }

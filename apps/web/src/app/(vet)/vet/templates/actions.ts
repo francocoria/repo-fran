@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser, getVetProfile } from "@/lib/auth";
 import { prisma } from "@pet-app/db";
+import { logError } from "@/lib/logger";
 
 const templateSchema = z.object({
   name: z.string().trim().min(2, "Mínimo 2 caracteres").max(80),
@@ -75,7 +76,7 @@ export async function createConsultTemplate(formData: FormData) {
     if (error.message === "NO_VET_PROFILE") {
       return { success: false, error: "Perfil incompleto." };
     }
-    console.error("createConsultTemplate error:", error);
+    logError("createConsultTemplate", error);
     return { success: false, error: "No se pudo crear la plantilla." };
   }
 }
@@ -125,7 +126,7 @@ export async function updateConsultTemplate(id: string, formData: FormData) {
     revalidatePath("/vet/templates");
     return { success: true };
   } catch (error: any) {
-    console.error("updateConsultTemplate error:", error);
+    logError("updateConsultTemplate", error);
     return { success: false, error: "No se pudo actualizar." };
   }
 }
@@ -146,7 +147,7 @@ export async function deleteConsultTemplate(id: string) {
     revalidatePath("/vet/templates");
     return { success: true };
   } catch (error) {
-    console.error("deleteConsultTemplate error:", error);
+    logError("deleteConsultTemplate", error);
     return { success: false, error: "No se pudo borrar." };
   }
 }
