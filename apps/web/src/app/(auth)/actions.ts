@@ -23,6 +23,38 @@ type AuthResult = {
 };
 
 /**
+ * Devuelve un origin VALIDADO contra la whitelist del entorno (audit BAJO-5).
+ *
+ * Antes usábamos `headers().get("origin")` directo — eso lo controla el
+ * cliente y un atacante puede mandar otro dominio para que Supabase mande
+ * el magic link a una URL maliciosa. Supabase ya valida contra la
+ * whitelist del dashboard, pero validar también acá es defensa en
+ * profundidad y devuelve un mensaje claro si pasa algo raro.
+ *
+ * Whitelist:
+ *  - NEXT_PUBLIC_APP_URL (producción)
+ *  - https://${VERCEL_URL} (deploys preview de Vercel)
+ *  - http://localhost:3000 (dev local)
+ */
+async function safeOrigin(): Promise<string> {
+  const headerStore = await headers();
+  const provided = headerStore.get("origin");
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const vercelUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : null;
+
+  const allowed = new Set(
+    [appUrl, vercelUrl, "http://localhost:3000"].filter(Boolean) as string[],
+  );
+
+  if (provided && allowed.has(provided)) return provided;
+  // Fallback al canónico de producción (o localhost en dev).
+  return appUrl ?? "http://localhost:3000";
+}
+
+/**
  * Mapea errores de Supabase Auth a mensajes opacos para el cliente
  * (audit MEDIO-2). Evita user enumeration: el atacante NO debe poder
  * distinguir "email no existe" de "email ya registrado" o "rate limit
@@ -73,8 +105,7 @@ export async function loginWithMagicLink(email: string): Promise<AuthResult> {
   if (limitedByEmail) return { success: false, error: limitedByEmail };
 
   const supabase = await createSupabaseServerClient();
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? "http://localhost:3000";
+  const origin = await safeOrigin();
 
   const { error } = await supabase.auth.signInWithOtp({
     email: cleanEmail,
@@ -171,8 +202,7 @@ export async function verifyOtpCode(
 
 export async function loginWithGoogle(): Promise<string | null> {
   const supabase = await createSupabaseServerClient();
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? "http://localhost:3000";
+  const origin = await safeOrigin();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -212,8 +242,7 @@ export async function signupOwner(formData: FormData): Promise<AuthResult> {
   if (limitedByEmail) return { success: false, error: limitedByEmail };
 
   const supabase = await createSupabaseServerClient();
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? "http://localhost:3000";
+  const origin = await safeOrigin();
 
   // Enviar magic link y guardar metadata para el callback
   const { error } = await supabase.auth.signInWithOtp({
@@ -261,8 +290,7 @@ export async function signupVet(formData: FormData): Promise<AuthResult> {
   if (limitedByEmail) return { success: false, error: limitedByEmail };
 
   const supabase = await createSupabaseServerClient();
-  const headerStore = await headers();
-  const origin = headerStore.get("origin") ?? "http://localhost:3000";
+  const origin = await safeOrigin();
 
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
