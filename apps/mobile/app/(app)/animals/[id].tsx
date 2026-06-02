@@ -17,7 +17,6 @@ import {
   Camera,
   ChevronLeft,
   Pencil,
-  QrCode,
   Syringe,
   Pill,
   Scale,
@@ -358,6 +357,13 @@ export default function AnimalProfileScreen() {
         ? t("animalDetail.healthScoreMsgMid")
         : t("animalDetail.healthScoreMsgHigh");
 
+  // Antiparasitario "SUGERIDO": sin registros, o el último venció.
+  const dewormingSuggested =
+    health.dewormings.length === 0 ||
+    health.dewormings.some(
+      (d) => !!d.next_date && new Date(d.next_date).getTime() < Date.now(),
+    );
+
   const heroGradient = SPECIES_GRADIENT[animal.species] ?? SPECIES_GRADIENT.other;
   const sexLabel =
     animal.sex === "male" ? "♂" : animal.sex === "female" ? "♀" : null;
@@ -429,19 +435,8 @@ export default function AnimalProfileScreen() {
             </Pressable>
             <View className="flex-row gap-2">
               <GlassIconButton
-                onPress={handlePhotoChange}
-                disabled={uploadingPhoto}
-                icon={
-                  uploadingPhoto ? (
-                    <ActivityIndicator size="small" color="#0c0a09" />
-                  ) : (
-                    <Camera size={18} color="#0c0a09" />
-                  )
-                }
-              />
-              <GlassIconButton
                 onPress={() => setQrOpen(true)}
-                icon={<QrCode size={18} color="#0c0a09" />}
+                icon={<Share2 size={18} color="#0c0a09" />}
               />
               <GlassIconButton
                 onPress={() =>
@@ -454,6 +449,34 @@ export default function AnimalProfileScreen() {
               />
             </View>
           </View>
+
+          {/* Cambiar foto (badge sobre el hero) */}
+          <Pressable
+            onPress={handlePhotoChange}
+            disabled={uploadingPhoto}
+            style={{
+              position: "absolute",
+              right: 16,
+              bottom: 64,
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "rgba(255,255,255,0.92)",
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#0c0a09",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 6,
+              elevation: 3,
+            }}
+          >
+            {uploadingPhoto ? (
+              <ActivityIndicator size="small" color="#0c0a09" />
+            ) : (
+              <Camera size={18} color="#0c0a09" />
+            )}
+          </Pressable>
 
           {/* Bottom-left: badge perdido + pill especie + nombre + sub */}
           <View
@@ -609,11 +632,14 @@ export default function AnimalProfileScreen() {
         <Section
           icon={Syringe}
           title={t("animalDetail.sectionVaccines")}
+          subtitle={
+            health.vaccines.length === 0
+              ? t("animalDetail.emptyVaccines")
+              : undefined
+          }
           onAdd={() => setAddType("vaccine")}
         >
-          {health.vaccines.length === 0 ? (
-            <EmptyLine text={t("animalDetail.emptyVaccines")} />
-          ) : (
+          {health.vaccines.length > 0 &&
             health.vaccines.map((v) => (
               <ListRow
                 key={v.id}
@@ -627,38 +653,42 @@ export default function AnimalProfileScreen() {
                     : "")
                 }
               />
-            ))
-          )}
+            ))}
         </Section>
 
         {/* ─── MEDICACIÓN ──────────────────────────────────────── */}
         <Section
           icon={Pill}
           title={t("animalDetail.sectionMedications")}
+          subtitle={
+            health.medications.length === 0
+              ? t("animalDetail.emptyMedications")
+              : undefined
+          }
           onAdd={() => setAddType("medication")}
         >
-          {health.medications.length === 0 ? (
-            <EmptyLine text={t("animalDetail.emptyMedications")} />
-          ) : (
+          {health.medications.length > 0 &&
             health.medications.map((m) => (
               <ListRow
                 key={m.id}
                 title={m.name}
                 subtitle={`${m.dosage} · ${m.frequency}`}
               />
-            ))
-          )}
+            ))}
         </Section>
 
         {/* ─── ALERGIAS ────────────────────────────────────────── */}
         <Section
           icon={AlertTriangle}
           title={t("animalDetail.sectionAllergies")}
+          subtitle={
+            health.allergies.length === 0
+              ? t("animalDetail.emptyAllergies")
+              : undefined
+          }
           onAdd={() => setAddType("allergy")}
         >
-          {health.allergies.length === 0 ? (
-            <EmptyLine text={t("animalDetail.emptyAllergies")} />
-          ) : (
+          {health.allergies.length > 0 &&
             health.allergies.map((a) => (
               <ListRow
                 key={a.id}
@@ -668,19 +698,24 @@ export default function AnimalProfileScreen() {
                 )}`}
                 danger={a.severity === "severe"}
               />
-            ))
-          )}
+            ))}
         </Section>
 
         {/* ─── ANTIPARASITARIOS ────────────────────────────────── */}
         <Section
           icon={Bug}
           title={t("animalDetail.sectionDewormings")}
+          subtitle={
+            health.dewormings.length === 0
+              ? t("animalDetail.dewormingImportant", { name: animal.name })
+              : undefined
+          }
+          badge={
+            dewormingSuggested ? t("animalDetail.suggestedBadge") : undefined
+          }
           onAdd={() => setAddType("deworming")}
         >
-          {health.dewormings.length === 0 ? (
-            <EmptyLine text={t("animalDetail.emptyDewormings")} />
-          ) : (
+          {health.dewormings.length > 0 &&
             health.dewormings.map((d) => (
               <ListRow
                 key={d.id}
@@ -695,15 +730,20 @@ export default function AnimalProfileScreen() {
                     : "")
                 }
               />
-            ))
-          )}
+            ))}
         </Section>
 
         {/* ─── ESTUDIOS ────────────────────────────────────────── */}
-        <Section icon={FileText} title={t("animalDetail.sectionStudies")}>
-          {health.studies.length === 0 ? (
-            <EmptyLine text={t("animalDetail.emptyStudies")} />
-          ) : (
+        <Section
+          icon={FileText}
+          title={t("animalDetail.sectionStudies")}
+          subtitle={
+            health.studies.length === 0
+              ? t("animalDetail.emptyStudies")
+              : undefined
+          }
+        >
+          {health.studies.length > 0 &&
             health.studies.map((s) => (
               <ListRow
                 key={s.id}
@@ -713,34 +753,41 @@ export default function AnimalProfileScreen() {
                   { short: true },
                 )}`}
               />
-            ))
-          )}
+            ))}
         </Section>
 
         {/* ─── PESO ────────────────────────────────────────────── */}
         <Section
           icon={Scale}
           title={t("animalDetail.sectionWeight")}
+          subtitle={
+            health.weights.length === 0
+              ? t("animalDetail.emptyWeight")
+              : undefined
+          }
           onAdd={() => setAddType("weight")}
         >
-          {health.weights.length === 0 ? (
-            <EmptyLine text={t("animalDetail.emptyWeight")} />
-          ) : (
+          {health.weights.length > 0 &&
             health.weights.map((w) => (
               <ListRow
                 key={w.id}
                 title={`${Number(w.weight_kg).toFixed(1)} kg`}
                 subtitle={formatDate(w.recorded_at, { short: true })}
               />
-            ))
-          )}
+            ))}
         </Section>
 
         {/* ─── HISTORIAL DE CONSULTAS ──────────────────────────── */}
-        <Section icon={Stethoscope} title={t("animalDetail.sectionConsults")}>
-          {health.consults.length === 0 ? (
-            <EmptyLine text={t("animalDetail.emptyConsults")} />
-          ) : (
+        <Section
+          icon={Stethoscope}
+          title={t("animalDetail.sectionConsults")}
+          subtitle={
+            health.consults.length === 0
+              ? t("animalDetail.emptyConsults")
+              : undefined
+          }
+        >
+          {health.consults.length > 0 &&
             health.consults.map((c) => (
               <ListRow
                 key={c.id}
@@ -755,8 +802,7 @@ export default function AnimalProfileScreen() {
                 }
                 detail={c.diagnosis ?? undefined}
               />
-            ))
-          )}
+            ))}
         </Section>
 
         {/* ─── DATOS ───────────────────────────────────────────── */}
@@ -959,33 +1005,82 @@ function MiniStat({
 function Section({
   icon: Icon,
   title,
+  subtitle,
+  badge,
   onAdd,
   children,
 }: {
   icon: typeof Scale;
   title: string;
+  subtitle?: string;
+  badge?: string;
   onAdd?: () => void;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
-    <View className="mt-5 px-5">
-      <View className="mb-2 flex-row items-center gap-1.5">
-        <Icon size={13} color="#78716c" />
-        <Text className="flex-1 text-[11px] font-semibold uppercase tracking-wider text-subtle">
-          {title}
-        </Text>
-        {onAdd && (
-          <Pressable
-            onPress={onAdd}
-            hitSlop={8}
-            className="size-7 items-center justify-center rounded-lg bg-primary/10"
-            style={{ width: 28, height: 28 }}
+    <View className="mt-2.5 px-5">
+      <View className="rounded-2xl border border-border bg-surface">
+        {/* Fila principal */}
+        <View className="flex-row items-center gap-3 p-3">
+          <View
+            className="items-center justify-center rounded-xl"
+            style={{
+              width: 40,
+              height: 40,
+              backgroundColor: "rgba(124,58,237,0.08)",
+            }}
           >
-            <Plus size={16} color="#7c3aed" />
-          </Pressable>
-        )}
+            <Icon size={18} color="#7c3aed" />
+          </View>
+          <View className="min-w-0 flex-1">
+            <View className="flex-row items-center gap-2">
+              <Text
+                className="text-[15px] font-semibold text-foreground"
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
+              {badge ? (
+                <View
+                  className="rounded-full px-2 py-0.5"
+                  style={{ backgroundColor: "#dcfce7" }}
+                >
+                  <Text
+                    className="text-[9px] font-bold uppercase tracking-wider"
+                    style={{ color: "#16a34a" }}
+                  >
+                    {badge}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            {subtitle ? (
+              <Text className="mt-0.5 text-[12px] text-muted" numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+          {onAdd && (
+            <Pressable
+              onPress={onAdd}
+              hitSlop={6}
+              className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
+            >
+              <Plus size={14} color="#7c3aed" strokeWidth={2.6} />
+              <Text className="text-[12.5px] font-semibold text-primary">
+                {t("animalDetail.addShort")}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+        {/* Registros */}
+        {children ? (
+          <View className="gap-2.5 border-t border-border/60 px-3.5 pb-3.5 pt-3">
+            {children}
+          </View>
+        ) : null}
       </View>
-      <Card className="gap-2.5">{children}</Card>
     </View>
   );
 }
@@ -1022,9 +1117,6 @@ function ListRow({
   );
 }
 
-function EmptyLine({ text }: { text: string }) {
-  return <Text className="text-[13px] text-muted">{text}</Text>;
-}
 
 function DataLine({ label, value }: { label: string; value: string }) {
   return (

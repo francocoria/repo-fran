@@ -14,9 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   AlertTriangle,
-  Clock,
   MapPin,
-  Phone,
+  MessageCircle,
   Search,
   Share2,
 } from "lucide-react-native";
@@ -58,7 +57,7 @@ const SPECIES_GRADIENT: Record<string, [string, string]> = {
 
 export default function LostFeedScreen() {
   const { t } = useTranslation();
-  const { speciesLabel, formatDate } = useLocaleFormat();
+  const { speciesLabel } = useLocaleFormat();
   const [alerts, setAlerts] = useState<LostAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -137,7 +136,7 @@ export default function LostFeedScreen() {
             </Text>
           </View>
           <Text className="mt-1 text-[28px] font-extrabold tracking-tight text-foreground">
-            {t("owner.lost.title")}
+            {t("owner.lost.headline")}
           </Text>
           <Text className="mt-1 text-[13px] text-muted">
             {loading
@@ -153,11 +152,26 @@ export default function LostFeedScreen() {
         ) : alerts.length === 0 ? (
           <EmptyState />
         ) : (
-          <View className="mt-3 px-5" style={{ gap: 14 }}>
-            {alerts.map((a) => (
-              <LostCard key={a.id} alert={a} />
-            ))}
-          </View>
+          <>
+            {/* Destacada */}
+            <View className="mt-3 px-5">
+              <LostCard alert={alerts[0]!} />
+            </View>
+
+            {/* Resto, en filas compactas */}
+            {alerts.length > 1 && (
+              <View className="mt-6">
+                <Text className="mb-2 px-5 text-[11px] font-bold uppercase tracking-wider text-subtle">
+                  {t("owner.lost.othersTitle")}
+                </Text>
+                <View className="px-5" style={{ gap: 10 }}>
+                  {alerts.slice(1).map((a) => (
+                    <LostRow key={a.id} alert={a} />
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -168,19 +182,25 @@ export default function LostFeedScreen() {
     const gradient =
       SPECIES_GRADIENT[animal.species] ?? SPECIES_GRADIENT.other;
     const url = `${env.APP_URL}/lost/${alert.public_slug}`;
+    const initial = animal.name.trim().charAt(0).toUpperCase() || "?";
+    const sub = [speciesLabel(animal.species), animal.breed, animal.color]
+      .filter(Boolean)
+      .join(" · ");
 
     async function handleShare() {
       await Share.share({
-        message: t("owner.lost.shareMessage", {
-          name: animal.name,
-          url,
-        }),
+        message: t("owner.lost.shareMessage", { name: animal.name, url }),
       });
+    }
+
+    function handleWhatsApp() {
+      const msg = t("owner.lost.whatsappMessage", { name: animal.name, url });
+      void Linking.openURL(waLink(alert.contact_phone, msg));
     }
 
     return (
       <View
-        className="overflow-hidden rounded-[22px] border border-rose/20 bg-surface"
+        className="rounded-[20px] border-2 border-rose/25 bg-surface p-3.5"
         style={{
           shadowColor: "#e11d48",
           shadowOffset: { width: 0, height: 8 },
@@ -189,8 +209,170 @@ export default function LostFeedScreen() {
           elevation: 4,
         }}
       >
-        {/* Foto */}
-        <View style={{ position: "relative", height: 220 }}>
+        {/* Badge PERDIDA HACE X */}
+        <View
+          className="mb-3 flex-row items-center self-start"
+          style={{
+            gap: 5,
+            backgroundColor: "#e11d48",
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            borderRadius: 999,
+          }}
+        >
+          <AlertTriangle size={12} color="white" strokeWidth={2.6} />
+          <Text
+            style={{
+              color: "white",
+              fontSize: 10.5,
+              fontWeight: "800",
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+            }}
+          >
+            {t("owner.lost.badge")} {relativeTime(alert.activated_at, t)}
+          </Text>
+        </View>
+
+        {/* Avatar + datos */}
+        <View className="flex-row gap-3">
+          <View
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 16,
+              overflow: "hidden",
+            }}
+          >
+            {animal.photo_url ? (
+              <Image
+                source={{ uri: animal.photo_url }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
+            ) : (
+              <LinearGradient
+                colors={gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{ color: "white", fontSize: 26, fontWeight: "800" }}
+                >
+                  {initial}
+                </Text>
+              </LinearGradient>
+            )}
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text
+              className="text-[20px] font-extrabold tracking-tight text-foreground"
+              numberOfLines={1}
+            >
+              {animal.name}
+            </Text>
+            {sub ? (
+              <Text
+                className="mt-0.5 text-[12.5px] text-muted"
+                numberOfLines={2}
+              >
+                {sub}
+              </Text>
+            ) : null}
+            {alert.last_seen_location ? (
+              <View className="mt-1 flex-row items-center gap-1">
+                <MapPin size={12} color="#e11d48" strokeWidth={2.2} />
+                <Text
+                  className="flex-1 text-[12px] font-medium text-foreground"
+                  numberOfLines={1}
+                >
+                  {alert.last_seen_location}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Recompensa */}
+        {alert.reward_description ? (
+          <View
+            className="mt-3 flex-row items-center self-start"
+            style={{
+              gap: 6,
+              backgroundColor: "rgba(245, 158, 11, 0.12)",
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ fontSize: 12, color: "#92400e", fontWeight: "700" }}>
+              🏷 {t("owner.lost.rewardLabel")}: {alert.reward_description}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Acciones */}
+        <View className="mt-3 flex-row gap-2">
+          <Pressable
+            onPress={handleWhatsApp}
+            className="flex-1 flex-row items-center justify-center gap-2 rounded-[12px] py-3"
+            style={{
+              backgroundColor: "#25D366",
+              shadowColor: "#25D366",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.25,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <MessageCircle size={16} color="white" strokeWidth={2.4} />
+            <Text className="text-[13.5px] font-bold text-white">
+              {t("owner.lost.whatsappAvisar")}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void Linking.openURL(url)}
+            className="items-center justify-center rounded-[12px] border border-border bg-surface px-4"
+          >
+            <Text className="text-[13px] font-semibold text-foreground">
+              {t("owner.lost.seeMore")}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={handleShare}
+            className="items-center justify-center rounded-[12px] border border-border bg-surface"
+            style={{ width: 46 }}
+          >
+            <Share2 size={17} color="#0c0a09" strokeWidth={2.2} />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  function LostRow({ alert }: { alert: LostAlert }) {
+    const animal = alert.animal!;
+    const gradient =
+      SPECIES_GRADIENT[animal.species] ?? SPECIES_GRADIENT.other;
+    const url = `${env.APP_URL}/lost/${alert.public_slug}`;
+
+    function handleWhatsApp() {
+      const msg = t("owner.lost.whatsappMessage", { name: animal.name, url });
+      void Linking.openURL(waLink(alert.contact_phone, msg));
+    }
+
+    return (
+      <View className="flex-row items-center gap-3 rounded-[16px] border border-rose/15 bg-surface p-2.5">
+        {/* Miniatura */}
+        <View
+          style={{ width: 58, height: 58, borderRadius: 14, overflow: "hidden" }}
+        >
           {animal.photo_url ? (
             <Image
               source={{ uri: animal.photo_url }}
@@ -205,166 +387,46 @@ export default function LostFeedScreen() {
               style={{ width: "100%", height: "100%" }}
             />
           )}
-          {/* Velo arriba */}
-          <LinearGradient
-            colors={["rgba(0,0,0,0.5)", "transparent"]}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 90,
-            }}
-          />
-          {/* Velo abajo para legibilidad */}
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.7)"]}
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 110,
-            }}
-          />
-
-          {/* Badge PERDIDA (top-left) */}
-          <View
-            style={{
-              position: "absolute",
-              top: 12,
-              left: 12,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 5,
-              backgroundColor: "#e11d48",
-              paddingHorizontal: 10,
-              paddingVertical: 5,
-              borderRadius: 999,
-            }}
-          >
-            <AlertTriangle size={12} color="white" strokeWidth={2.6} />
-            <Text
-              style={{
-                color: "white",
-                fontSize: 10.5,
-                fontWeight: "800",
-                letterSpacing: 0.6,
-              }}
-            >
-              {t("owner.lost.badge")}
-            </Text>
-          </View>
-
-          {/* Tiempo desde activación (top-right) */}
-          <View
-            style={{
-              position: "absolute",
-              top: 12,
-              right: 12,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 4,
-              backgroundColor: "rgba(255,255,255,0.92)",
-              paddingHorizontal: 8,
-              paddingVertical: 4,
-              borderRadius: 999,
-            }}
-          >
-            <Clock size={10} color="#0c0a09" strokeWidth={2.2} />
-            <Text style={{ fontSize: 10.5, fontWeight: "700", color: "#0c0a09" }}>
-              {relativeTime(alert.activated_at, t)}
-            </Text>
-          </View>
-
-          {/* Nombre y especie sobre la foto (bottom-left) */}
-          <View
-            style={{ position: "absolute", left: 14, right: 14, bottom: 12 }}
-          >
-            <Text
-              style={{
-                color: "white",
-                fontSize: 26,
-                fontWeight: "800",
-                letterSpacing: -0.8,
-              }}
-            >
-              {animal.name}
-            </Text>
-            <Text
-              style={{
-                color: "rgba(255,255,255,0.85)",
-                fontSize: 12.5,
-                fontWeight: "600",
-                marginTop: 2,
-              }}
-            >
-              {speciesLabel(animal.species)}
-              {animal.breed ? ` · ${animal.breed}` : ""}
-              {animal.color ? ` · ${animal.color}` : ""}
-            </Text>
-          </View>
         </View>
 
-        {/* Datos + acciones */}
-        <View className="gap-3 p-4">
-          {alert.last_seen_location && (
-            <Row
-              icon={MapPin}
-              label={t("owner.lost.lastSeenAt", {
-                place: alert.last_seen_location,
-              })}
-              sub={
-                alert.last_seen_at
-                  ? formatDate(alert.last_seen_at, { short: true })
-                  : null
-              }
-            />
-          )}
-          {alert.reward_description && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                backgroundColor: "rgba(245, 158, 11, 0.12)",
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 8,
-                alignSelf: "flex-start",
-              }}
-            >
-              <Text style={{ fontSize: 12, color: "#92400e", fontWeight: "700" }}>
-                🏷 {t("owner.lost.rewardLabel")}: {alert.reward_description}
+        {/* Datos */}
+        <View className="min-w-0 flex-1">
+          <Text
+            className="text-[15px] font-bold text-foreground"
+            numberOfLines={1}
+          >
+            {animal.name}
+          </Text>
+          <Text className="text-[12px] text-muted" numberOfLines={1}>
+            {speciesLabel(animal.species)}
+            {animal.breed ? ` · ${animal.breed}` : ""}
+          </Text>
+          {alert.last_seen_location ? (
+            <View className="mt-0.5 flex-row items-center gap-1">
+              <MapPin size={11} color="#78716c" strokeWidth={2.2} />
+              <Text
+                className="flex-1 text-[11.5px] text-subtle"
+                numberOfLines={1}
+              >
+                {alert.last_seen_location}
               </Text>
             </View>
+          ) : (
+            <Text className="mt-0.5 text-[11.5px] text-subtle">
+              {relativeTime(alert.activated_at, t)}
+            </Text>
           )}
-          <View className="flex-row gap-2">
-            <Pressable
-              onPress={() => callPhone(alert.contact_phone)}
-              className="flex-1 flex-row items-center justify-center gap-2 rounded-[12px] bg-rose py-3"
-              style={{
-                shadowColor: "#e11d48",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                elevation: 3,
-              }}
-            >
-              <Phone size={15} color="white" strokeWidth={2.4} />
-              <Text className="text-[13.5px] font-bold text-white">
-                {t("owner.lost.contact", { name: alert.contact_name })}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleShare}
-              className="items-center justify-center rounded-[12px] border border-border bg-surface"
-              style={{ width: 48 }}
-            >
-              <Share2 size={17} color="#0c0a09" strokeWidth={2.2} />
-            </Pressable>
-          </View>
         </View>
+
+        {/* WhatsApp */}
+        <Pressable
+          onPress={handleWhatsApp}
+          hitSlop={8}
+          className="items-center justify-center rounded-full"
+          style={{ width: 42, height: 42, backgroundColor: "#25D366" }}
+        >
+          <MessageCircle size={19} color="white" strokeWidth={2.4} />
+        </Pressable>
       </View>
     );
   }
@@ -395,38 +457,6 @@ export default function LostFeedScreen() {
   }
 }
 
-function Row({
-  icon: Icon,
-  label,
-  sub,
-}: {
-  icon: typeof MapPin;
-  label: string;
-  sub?: string | null;
-}) {
-  return (
-    <View className="flex-row items-start gap-2">
-      <View
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 8,
-          backgroundColor: "rgba(124,58,237,0.08)",
-          alignItems: "center",
-          justifyContent: "center",
-          marginTop: 1,
-        }}
-      >
-        <Icon size={14} color="#7c3aed" strokeWidth={2.2} />
-      </View>
-      <View className="min-w-0 flex-1">
-        <Text className="text-[13px] font-medium text-foreground">{label}</Text>
-        {sub && <Text className="mt-0.5 text-[11.5px] text-muted">{sub}</Text>}
-      </View>
-    </View>
-  );
-}
-
 function relativeTime(iso: string, t: (k: string, p?: Record<string, string | number>) => string) {
   const then = new Date(iso).getTime();
   const now = Date.now();
@@ -440,6 +470,8 @@ function relativeTime(iso: string, t: (k: string, p?: Record<string, string | nu
   return t("owner.lost.daysAgo", { count: days });
 }
 
-function callPhone(phone: string) {
-  void Linking.openURL(`tel:${phone.replace(/[^\d+]/g, "")}`);
+/** Link wa.me con mensaje pre-cargado. wa.me requiere sólo dígitos (sin +). */
+function waLink(phone: string, text: string) {
+  const digits = phone.replace(/\D/g, "");
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }

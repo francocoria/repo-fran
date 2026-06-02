@@ -14,6 +14,7 @@ import {
   Bell,
   Bug,
   CalendarDays,
+  ChevronRight,
   Crown,
   ShieldCheck,
   Stethoscope,
@@ -51,6 +52,91 @@ interface Reminder {
   pet: ReminderPet;
 }
 
+type RecCategory = "vaccine" | "deworming" | "checkup";
+
+interface Recommendation {
+  id: string;
+  category: RecCategory;
+  /** clave i18n del título, ej "owner.notifications.recRabies" */
+  titleKey: string;
+  /** clave i18n del subtítulo */
+  hintKey: string;
+  pet: ReminderPet;
+}
+
+/** Categoría activa del filtro de tabs. */
+type TabCategory = "all" | "vaccine" | "deworming" | "checkup";
+
+/** Edad en meses desde una fecha de nacimiento ISO, o null si no hay dato. */
+function ageInMonths(birth: string | null): number | null {
+  if (!birth) return null;
+  const b = toLocalDate(birth);
+  const now = new Date();
+  return (
+    (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth())
+  );
+}
+
+/**
+ * Motor de recomendaciones de cuidado preventivo. Sólo perros y gatos
+ * (vacunación inteligente). Sugiere lo que falta: vacuna núcleo / plan de
+ * cachorro, desparasitación y control anual.
+ */
+function buildRecommendations(
+  animals: Array<ReminderPet & { birth_date: string | null }>,
+  hasVaccine: Set<string>,
+  hasDeworming: Set<string>,
+): Recommendation[] {
+  const recs: Recommendation[] = [];
+  for (const a of animals) {
+    if (a.species !== "dog" && a.species !== "cat") continue;
+    const months = ageInMonths(a.birth_date);
+    const isYoung = months != null && months < 12;
+    const pet: ReminderPet = {
+      id: a.id,
+      name: a.name,
+      species: a.species,
+      photo_url: a.photo_url,
+    };
+
+    if (!hasVaccine.has(a.id)) {
+      recs.push({
+        id: `rec_vax_${a.id}`,
+        category: "vaccine",
+        titleKey: isYoung
+          ? "owner.notifications.recPuppyPlan"
+          : "owner.notifications.recRabies",
+        hintKey: isYoung
+          ? "owner.notifications.recPuppyPlanHint"
+          : "owner.notifications.recRabiesHint",
+        pet,
+      });
+    }
+
+    if (!hasDeworming.has(a.id)) {
+      recs.push({
+        id: `rec_dew_${a.id}`,
+        category: "deworming",
+        titleKey: "owner.notifications.recDeworming",
+        hintKey: "owner.notifications.recDewormingHint",
+        pet,
+      });
+    }
+
+    // Control anual: para adultos (o edad desconocida).
+    if (!isYoung) {
+      recs.push({
+        id: `rec_chk_${a.id}`,
+        category: "checkup",
+        titleKey: "owner.notifications.recCheckup",
+        hintKey: "owner.notifications.recCheckupHint",
+        pet,
+      });
+    }
+  }
+  return recs;
+}
+
 const NOTIF_ICONS: Record<string, LucideIcon> = {
   vet_access_request: Stethoscope,
   vet_access_approved: ShieldCheck,
@@ -80,6 +166,8 @@ export default function RemindersScreen() {
   const { formatDate } = useLocaleFormat();
   const [notifs, setNotifs] = useState<NotificationItem[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [activeTab, setActiveTab] = useState<TabCategory>("all");
   const [loading, setLoading] = useState(true);
   const stripRef = useRef<ScrollView>(null);
 
@@ -114,10 +202,11 @@ export default function RemindersScreen() {
       .maybeSingle();
 
     let nextReminders: Reminder[] = [];
+    let nextRecs: Recommendation[] = [];
     if (profile) {
       const { data: animals } = await supabase
         .from("animals")
-        .select("id, name, species, photo_url")
+        .select("id, name, species, photo_url, birth_date")
         .eq("owner_id", profile.id)
         .neq("status", "archived");
 
@@ -127,53 +216,71 @@ export default function RemindersScreen() {
           (animals ?? []).map((a) => [a.id, a as ReminderPet]),
         );
 
+        // Traemos todas las filas (no sólo las que tienen próxima fecha):
+        // las que tienen next date generan recordatorios; la presencia/ausencia
+        // alimenta el motor de recomendaciones.
         const [vaccinesRes, dewormingsRes] = await Promise.all([
           supabase
             .from("vaccines")
             .select("id, animal_id, name, next_dose_date")
-            .in("animal_id", animalIds)
-            .not("next_dose_date", "is", null),
+            .in("animal_id", animalIds),
           supabase
             .from("deworming")
             .select("id, animal_id, product, next_date")
-            .in("animal_id", animalIds)
-            .not("next_date", "is", null),
+            .in("animal_id", animalIds),
         ]);
 
+        const vaccineRows = (vaccinesRes.data ?? []) as Array<{
+          id: string;
+          animal_id: string;
+          name: string;
+          next_dose_date: string | null;
+        }>;
+        const dewormingRows = (dewormingsRes.data ?? []) as Array<{
+          id: string;
+          animal_id: string;
+          product: string;
+          next_date: string | null;
+        }>;
+
         nextReminders = [
-          ...((vaccinesRes.data ?? []) as Array<{
-            id: string;
-            animal_id: string;
-            name: string;
-            next_dose_date: string;
-          }>).map<Reminder>((v) => ({
-            id: `v_${v.id}`,
-            kind: "vaccine",
-            title: v.name,
-            date: v.next_dose_date,
-            pet: petsById[v.animal_id]!,
-          })),
-          ...((dewormingsRes.data ?? []) as Array<{
-            id: string;
-            animal_id: string;
-            product: string;
-            next_date: string;
-          }>).map<Reminder>((d) => ({
-            id: `d_${d.id}`,
-            kind: "deworming",
-            title: d.product,
-            date: d.next_date,
-            pet: petsById[d.animal_id]!,
-          })),
+          ...vaccineRows
+            .filter((v) => v.next_dose_date)
+            .map<Reminder>((v) => ({
+              id: `v_${v.id}`,
+              kind: "vaccine",
+              title: v.name,
+              date: v.next_dose_date as string,
+              pet: petsById[v.animal_id]!,
+            })),
+          ...dewormingRows
+            .filter((d) => d.next_date)
+            .map<Reminder>((d) => ({
+              id: `d_${d.id}`,
+              kind: "deworming",
+              title: d.product,
+              date: d.next_date as string,
+              pet: petsById[d.animal_id]!,
+            })),
         ]
           .filter((r) => r.pet)
           .sort((a, b) => a.date.localeCompare(b.date));
+
+        // Motor de recomendaciones: sólo perros y gatos (vacunación inteligente).
+        const hasVaccine = new Set(vaccineRows.map((v) => v.animal_id));
+        const hasDeworming = new Set(dewormingRows.map((d) => d.animal_id));
+        nextRecs = buildRecommendations(
+          (animals ?? []) as Array<ReminderPet & { birth_date: string | null }>,
+          hasVaccine,
+          hasDeworming,
+        );
       }
     }
 
     const { data: notifData } = await notifQ;
     setNotifs(notifData ?? []);
     setReminders(nextReminders);
+    setRecommendations(nextRecs);
     setLoading(false);
   }, []);
 
@@ -188,43 +295,96 @@ export default function RemindersScreen() {
     );
   }
 
-  // 14 días desde hoy
+  const openPet = (id: string) =>
+    router.push({
+      pathname: "/(app)/animals/[id]",
+      params: { id },
+    } as never);
+
+  // Semana actual, de lunes a domingo
   const days = useMemo(() => {
-    return Array.from({ length: 14 }).map((_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
+    const monday = new Date(today);
+    const dow = (today.getDay() + 6) % 7; // 0 = lunes
+    monday.setDate(today.getDate() - dow);
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
       return d;
     });
   }, [today]);
 
-  // mapa "YYYY-MM-DD" → cantidad de reminders ese día (sólo dentro del strip)
+  // mapa "YYYY-MM-DD" → cantidad de reminders ese día
   const remindersByDay = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of reminders) {
-      const d = toLocalDate(r.date);
-      const diff = daysBetween(today, d);
-      if (diff >= 0 && diff < 14) {
-        const key = isoKey(d);
-        map.set(key, (map.get(key) ?? 0) + 1);
-      }
+      const key = isoKey(toLocalDate(r.date));
+      map.set(key, (map.get(key) ?? 0) + 1);
     }
     return map;
-  }, [reminders, today]);
+  }, [reminders]);
 
-  // separar atrasados / próximos (60 días) / lejanos
-  const { overdue, upcoming } = useMemo(() => {
+  // Recordatorios filtrados por la categoría del tab activo
+  const tabReminders = useMemo(() => {
+    if (activeTab === "vaccine")
+      return reminders.filter((r) => r.kind === "vaccine");
+    if (activeTab === "deworming")
+      return reminders.filter((r) => r.kind === "deworming");
+    if (activeTab === "checkup") return [] as Reminder[];
+    return reminders;
+  }, [reminders, activeTab]);
+
+  // Buckets temporales: atrasados / hoy / esta semana / más adelante (≤60d)
+  const { overdue, todayItems, week, later } = useMemo(() => {
     const overdue: Reminder[] = [];
-    const upcoming: Reminder[] = [];
-    for (const r of reminders) {
-      const d = toLocalDate(r.date);
-      const diff = daysBetween(today, d);
+    const todayItems: Reminder[] = [];
+    const week: Reminder[] = [];
+    const later: Reminder[] = [];
+    for (const r of tabReminders) {
+      const diff = daysBetween(today, toLocalDate(r.date));
       if (diff < 0) overdue.push(r);
-      else if (diff <= 60) upcoming.push(r);
+      else if (diff === 0) todayItems.push(r);
+      else if (diff <= 7) week.push(r);
+      else if (diff <= 60) later.push(r);
     }
-    return { overdue, upcoming };
-  }, [reminders, today]);
+    return { overdue, todayItems, week, later };
+  }, [tabReminders, today]);
 
+  // Recomendaciones filtradas por la categoría del tab activo
+  const tabRecs = useMemo(() => {
+    if (activeTab === "all") return recommendations;
+    return recommendations.filter((r) => r.category === activeTab);
+  }, [recommendations, activeTab]);
+
+  // Título de la sección de recomendaciones: por mascota si son todas de una.
+  const recPetName = useMemo(() => {
+    if (tabRecs.length === 0) return null;
+    const names = new Set(tabRecs.map((r) => r.pet.name));
+    return names.size === 1 ? tabRecs[0]!.pet.name : null;
+  }, [tabRecs]);
+
+  const reminderCount =
+    overdue.length + todayItems.length + week.length + later.length;
+  const tabHasContent = reminderCount > 0 || tabRecs.length > 0;
   const unreadCount = notifs.filter((n) => !n.read).length;
+
+  // Contadores por tab (recordatorios + recomendaciones de esa categoría)
+  const tabCounts = useMemo<Record<TabCategory, number>>(() => {
+    const vac = reminders.filter((r) => r.kind === "vaccine").length;
+    const dew = reminders.filter((r) => r.kind === "deworming").length;
+    const recVac = recommendations.filter((r) => r.category === "vaccine").length;
+    const recDew = recommendations.filter(
+      (r) => r.category === "deworming",
+    ).length;
+    const recChk = recommendations.filter(
+      (r) => r.category === "checkup",
+    ).length;
+    return {
+      all: reminders.length + recommendations.length,
+      vaccine: vac + recVac,
+      deworming: dew + recDew,
+      checkup: recChk,
+    };
+  }, [reminders, recommendations]);
 
   const dayNames = useMemo(() => {
     const fmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
@@ -250,24 +410,17 @@ export default function RemindersScreen() {
 
         {/* Header */}
         <View className="px-5 pb-1 pt-3">
-          <Text className="text-[12px] tracking-wide text-muted">
-            {t("owner.notifications.eyebrow")}
-          </Text>
           <Text className="text-[28px] font-extrabold tracking-tight text-foreground">
             {t("owner.notifications.title")}
           </Text>
           <Text className="mt-1 text-[13px] text-muted">
             {loading
               ? t("common.loading")
-              : reminders.length === 0
-                ? t("owner.notifications.subtitleEmpty")
-                : t("owner.notifications.subtitleCount", {
-                    count: reminders.length,
-                  })}
+              : t("owner.notifications.subtitleWeek")}
           </Text>
         </View>
 
-        {/* Tira de calendario (14 días) */}
+        {/* Tira de calendario (semana) */}
         <View className="mt-4">
           <ScrollView
             ref={stripRef}
@@ -278,7 +431,7 @@ export default function RemindersScreen() {
             {days.map((d, i) => {
               const key = isoKey(d);
               const count = remindersByDay.get(key) ?? 0;
-              const isToday = i === 0;
+              const isToday = daysBetween(today, d) === 0;
               return (
                 <DayChip
                   key={key}
@@ -291,6 +444,13 @@ export default function RemindersScreen() {
             })}
           </ScrollView>
         </View>
+
+        {/* Tabs de categoría */}
+        <CategoryTabs
+          active={activeTab}
+          onChange={setActiveTab}
+          counts={tabCounts}
+        />
 
         {loading ? (
           <ActivityIndicator color="#7c3aed" style={{ marginTop: 32 }} />
@@ -308,105 +468,163 @@ export default function RemindersScreen() {
                     key={r.id}
                     reminder={r}
                     today={today}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(app)/animals/[id]",
-                        params: { id: r.pet.id },
-                      } as never)
-                    }
+                    onPress={() => openPet(r.pet.id)}
                   />
                 ))}
               </Section>
             )}
 
-            {/* Próximos (60 días) */}
-            <Section
-              title={t("owner.notifications.upcomingTitle")}
-              count={upcoming.length}
-              tone="primary"
-            >
-              {upcoming.length === 0 ? (
-                <EmptyHint
-                  icon={CalendarDays}
-                  text={t("owner.notifications.upcomingEmpty")}
-                />
-              ) : (
-                upcoming.map((r) => (
+            {/* Hoy */}
+            {todayItems.length > 0 && (
+              <Section
+                title={t("owner.notifications.todaySection", {
+                  date: formatDate(today, { short: true }),
+                })}
+                count={todayItems.length}
+                tone="primary"
+              >
+                {todayItems.map((r) => (
                   <ReminderRow
                     key={r.id}
                     reminder={r}
                     today={today}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(app)/animals/[id]",
-                        params: { id: r.pet.id },
-                      } as never)
-                    }
+                    onPress={() => openPet(r.pet.id)}
                   />
-                ))
-              )}
-            </Section>
+                ))}
+              </Section>
+            )}
 
-            {/* Notificaciones del sistema */}
-            <Section
-              title={t("owner.notifications.notifsTitle")}
-              count={unreadCount > 0 ? unreadCount : undefined}
-              tone="soft"
-            >
-              {notifs.length === 0 ? (
+            {/* Esta semana */}
+            {week.length > 0 && (
+              <Section
+                title={t("owner.notifications.weekSection")}
+                count={week.length}
+                tone="primary"
+              >
+                {week.map((r) => (
+                  <ReminderRow
+                    key={r.id}
+                    reminder={r}
+                    today={today}
+                    onPress={() => openPet(r.pet.id)}
+                  />
+                ))}
+              </Section>
+            )}
+
+            {/* Más adelante (≤60 días) */}
+            {later.length > 0 && (
+              <Section
+                title={t("owner.notifications.laterTitle")}
+                count={later.length}
+                tone="soft"
+              >
+                {later.map((r) => (
+                  <ReminderRow
+                    key={r.id}
+                    reminder={r}
+                    today={today}
+                    onPress={() => openPet(r.pet.id)}
+                  />
+                ))}
+              </Section>
+            )}
+
+            {/* Recomendado para vos */}
+            {tabRecs.length > 0 && (
+              <Section
+                title={
+                  recPetName
+                    ? t("owner.notifications.recommendedForTitle", {
+                        name: recPetName,
+                      })
+                    : t("owner.notifications.recommendedTitle")
+                }
+                count={tabRecs.length}
+                tone="primary"
+              >
+                {tabRecs.map((rec) => (
+                  <RecommendationRow
+                    key={rec.id}
+                    rec={rec}
+                    onPress={() => openPet(rec.pet.id)}
+                  />
+                ))}
+              </Section>
+            )}
+
+            {/* Vacío por categoría */}
+            {!tabHasContent && activeTab !== "all" && (
+              <View className="mt-6">
                 <EmptyHint
-                  icon={Bell}
-                  text={t("owner.notifications.emptyHint")}
+                  icon={CalendarDays}
+                  text={t("owner.notifications.tabEmpty")}
                 />
-              ) : (
-                notifs.map((item) => {
-                  const Icon = NOTIF_ICONS[item.type] ?? Bell;
-                  return (
-                    <Pressable
-                      key={item.id}
-                      onPress={() => !item.read && markRead(item.id)}
-                      className={`mx-5 mb-2 flex-row gap-3 rounded-xl border border-border p-3 ${
-                        !item.read ? "bg-primary/5" : "bg-surface"
-                      }`}
-                    >
-                      <View
-                        className="items-center justify-center rounded-lg bg-surface-2"
-                        style={{ width: 36, height: 36 }}
+              </View>
+            )}
+
+            {/* Notificaciones del sistema (sólo en "Todos") */}
+            {activeTab === "all" && (
+              <Section
+                title={t("owner.notifications.notifsTitle")}
+                count={unreadCount > 0 ? unreadCount : undefined}
+                tone="soft"
+              >
+                {notifs.length === 0 ? (
+                  <EmptyHint
+                    icon={Bell}
+                    text={t("owner.notifications.emptyHint")}
+                  />
+                ) : (
+                  notifs.map((item) => {
+                    const Icon = NOTIF_ICONS[item.type] ?? Bell;
+                    return (
+                      <Pressable
+                        key={item.id}
+                        onPress={() => !item.read && markRead(item.id)}
+                        className={`mx-5 mb-2 flex-row gap-3 rounded-xl border border-border p-3 ${
+                          !item.read ? "bg-primary/5" : "bg-surface"
+                        }`}
                       >
-                        <Icon size={16} color="#7c3aed" />
-                      </View>
-                      <View className="flex-1">
-                        <View className="flex-row items-center justify-between">
-                          <Text
-                            className={`text-[14px] ${!item.read ? "font-semibold text-foreground" : "font-medium text-foreground"}`}
-                            numberOfLines={1}
-                          >
-                            {item.title}
-                          </Text>
-                          {!item.read && (
-                            <View
-                              className="rounded-full bg-primary"
-                              style={{ width: 6, height: 6 }}
-                            />
-                          )}
+                        <View
+                          className="items-center justify-center rounded-lg bg-surface-2"
+                          style={{ width: 36, height: 36 }}
+                        >
+                          <Icon size={16} color="#7c3aed" />
                         </View>
-                        {item.body && (
-                          <Text
-                            className="mt-0.5 text-[12.5px] text-muted"
-                            numberOfLines={2}
-                          >
-                            {item.body}
+                        <View className="flex-1">
+                          <View className="flex-row items-center justify-between">
+                            <Text
+                              className={`text-[14px] ${!item.read ? "font-semibold text-foreground" : "font-medium text-foreground"}`}
+                              numberOfLines={1}
+                            >
+                              {item.title}
+                            </Text>
+                            {!item.read && (
+                              <View
+                                className="rounded-full bg-primary"
+                                style={{ width: 6, height: 6 }}
+                              />
+                            )}
+                          </View>
+                          {item.body && (
+                            <Text
+                              className="mt-0.5 text-[12.5px] text-muted"
+                              numberOfLines={2}
+                            >
+                              {item.body}
+                            </Text>
+                          )}
+                          <Text className="mt-1 text-[11px] text-subtle">
+                            {formatDate(item.created_at)}
                           </Text>
-                        )}
-                        <Text className="mt-1 text-[11px] text-subtle">
-                          {formatDate(item.created_at)}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })
-              )}
-            </Section>
+                        </View>
+                      </Pressable>
+                    );
+                  })
+                )}
+              </Section>
+            )}
           </>
         )}
       </ScrollView>
@@ -679,5 +897,125 @@ function EmptyHint({
       <Icon size={22} color="#a8a29e" strokeWidth={1.8} />
       <Text className="text-center text-[12.5px] text-muted">{text}</Text>
     </View>
+  );
+}
+
+const TAB_DEFS: Array<{ key: TabCategory; labelKey: string }> = [
+  { key: "all", labelKey: "owner.notifications.tabAll" },
+  { key: "vaccine", labelKey: "owner.notifications.tabVaccines" },
+  { key: "deworming", labelKey: "owner.notifications.tabDewormings" },
+  { key: "checkup", labelKey: "owner.notifications.tabCheckups" },
+];
+
+function CategoryTabs({
+  active,
+  onChange,
+  counts,
+}: {
+  active: TabCategory;
+  onChange: (c: TabCategory) => void;
+  counts: Record<TabCategory, number>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <View className="mt-4">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+      >
+        {TAB_DEFS.map((tab) => {
+          const isActive = tab.key === active;
+          const count = counts[tab.key];
+          return (
+            <Pressable
+              key={tab.key}
+              onPress={() => onChange(tab.key)}
+              className={`flex-row items-center gap-1.5 rounded-full border px-4 py-2 ${
+                isActive
+                  ? "border-primary bg-primary"
+                  : "border-border bg-surface"
+              }`}
+            >
+              <Text
+                className={`text-[13px] font-semibold ${
+                  isActive ? "text-white" : "text-muted"
+                }`}
+              >
+                {t(tab.labelKey)}
+              </Text>
+              {count > 0 && (
+                <View
+                  className="items-center justify-center rounded-full"
+                  style={{
+                    minWidth: 18,
+                    height: 18,
+                    paddingHorizontal: 5,
+                    backgroundColor: isActive
+                      ? "rgba(255,255,255,0.25)"
+                      : "rgba(124,58,237,0.12)",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: "800",
+                      color: isActive ? "#ffffff" : "#7c3aed",
+                    }}
+                  >
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+function RecommendationRow({
+  rec,
+  onPress,
+}: {
+  rec: Recommendation;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation();
+  const Icon =
+    rec.category === "vaccine"
+      ? Syringe
+      : rec.category === "deworming"
+        ? Bug
+        : Stethoscope;
+  return (
+    <Pressable
+      onPress={onPress}
+      className="mx-5 mb-2 flex-row items-center gap-3 rounded-xl border border-border bg-surface p-3"
+    >
+      <PetAvatar
+        name={rec.pet.name}
+        species={rec.pet.species}
+        photoUrl={rec.pet.photo_url}
+        size={42}
+        radius={12}
+      />
+      <View className="flex-1">
+        <View className="flex-row items-center gap-1.5">
+          <Icon size={13} color="#7c3aed" strokeWidth={2.2} />
+          <Text
+            className="text-[14px] font-semibold text-foreground"
+            numberOfLines={1}
+          >
+            {t(rec.titleKey)}
+          </Text>
+        </View>
+        <Text className="mt-0.5 text-[12px] text-muted" numberOfLines={1}>
+          {rec.pet.name} · {t(rec.hintKey)}
+        </Text>
+      </View>
+      <ChevronRight size={18} color="#a8a29e" />
+    </Pressable>
   );
 }

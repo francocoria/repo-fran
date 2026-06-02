@@ -37,5 +37,13 @@ export function useLocaleFormat() {
     });
   }
 
-  return { speciesLabel, ageLabel, formatDate };
+  function monthYear(value: Date | string): string {
+    const date = typeof value === "string" ? new Date(value) : value;
+    return date.toLocaleDateString(localeTag, {
+      month: "long",
+      year: "numeric",
+    });
+  }
+
+  return { speciesLabel, ageLabel, formatDate, monthYear };
 }

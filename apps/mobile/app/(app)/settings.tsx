@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -10,7 +11,22 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { LogOut, Mail, Trash2 } from "lucide-react-native";
+import {
+  Bell,
+  Check,
+  ChevronDown,
+  Heart,
+  Languages,
+  Lock,
+  LogOut,
+  Mail,
+  Palette,
+  Pencil,
+  ShieldCheck,
+  Trash2,
+  User,
+} from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 import { Button } from "../../src/components/ui/button";
 import { Input } from "../../src/components/ui/input";
 import { useSession, signOut } from "../../src/lib/session";
@@ -18,12 +34,13 @@ import { useProfile } from "../../src/lib/session";
 import { useAnimals } from "../../src/hooks/use-animals";
 import { supabase } from "../../src/lib/supabase";
 import { env } from "../../src/lib/env";
-import { useTranslation } from "../../src/lib/i18n";
-import { LanguageSwitcher } from "../../src/components/language-switcher";
+import { useTranslation, LOCALES } from "../../src/lib/i18n";
+import { useLocaleFormat } from "../../src/lib/i18n/format";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
+  const { monthYear } = useLocaleFormat();
   const { session } = useSession();
   const { data: profile } = useProfile(session?.user.id);
   const { data: animals } = useAnimals();
@@ -33,6 +50,13 @@ export default function SettingsScreen() {
   const [city, setCity] = useState("");
   const [profileId, setProfileId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [openRow, setOpenRow] = useState<string | null>(null);
+
+  const toggle = (key: string) =>
+    setOpenRow((cur) => (cur === key ? null : key));
+
+  const activeLocaleLabel =
+    LOCALES.find((l) => l.code === locale)?.label ?? locale;
 
   useEffect(() => {
     if (!session) return;
@@ -88,6 +112,24 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             await signOut();
+            router.replace("/login");
+          },
+        },
+      ],
+    );
+  }
+
+  async function handleSignOutAll() {
+    Alert.alert(
+      t("owner.settings.signOutAll"),
+      t("owner.settings.signOutAllBody"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("owner.settings.signOutConfirm"),
+          style: "destructive",
+          onPress: async () => {
+            await supabase.auth.signOut({ scope: "global" });
             router.replace("/login");
           },
         },
@@ -188,6 +230,9 @@ export default function SettingsScreen() {
     .map((s) => s[0]?.toUpperCase() ?? "")
     .join("") || "·";
   const petCount = animals?.length ?? 0;
+  const memberSince = session?.user.created_at
+    ? monthYear(session.user.created_at)
+    : null;
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
@@ -261,80 +306,179 @@ export default function SettingsScreen() {
               <Text className="mt-0.5 text-[12.5px] text-muted" numberOfLines={1}>
                 {session?.user.email}
               </Text>
-              {petCount > 0 ? (
-                <View className="mt-2 flex-row gap-2">
-                  <View className="rounded-full bg-primary/10 px-2 py-0.5">
-                    <Text className="text-[10px] font-semibold tracking-wider text-primary">
-                      {t("owner.settings.petCountBadge", { count: petCount })}
+              <View className="mt-1.5 flex-row items-center gap-1.5">
+                <Heart size={12} color="#7c3aed" fill="#7c3aed" />
+                <Text className="text-[11.5px] text-subtle" numberOfLines={1}>
+                  {petCount > 0
+                    ? t("owner.settings.petCountBadge", { count: petCount })
+                    : t("owner.settings.noPets")}
+                  {memberSince
+                    ? ` · ${t("owner.settings.memberSince", { date: memberSince })}`
+                    : ""}
+                </Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={() => toggle("personal")}
+              hitSlop={8}
+              className="items-center justify-center rounded-full bg-primary/10"
+              style={{ width: 34, height: 34 }}
+            >
+              <Pencil size={15} color="#7c3aed" />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ─── CUENTA ─────────────────────────────────────────── */}
+        <SectionLabel text={t("owner.settings.accountGroup")} />
+        <View className="px-5">
+          <View className="overflow-hidden rounded-[18px] border border-border bg-surface">
+            <Row
+              icon={User}
+              title={t("owner.settings.sectionPersonal")}
+              subtitle={t("owner.settings.rowPersonalSub")}
+              open={openRow === "personal"}
+              onPress={() => toggle("personal")}
+              first
+            >
+              <View className="gap-3.5">
+                <Input
+                  label={t("owner.settings.fullNameLabel")}
+                  required
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder={t("owner.settings.fullNamePlaceholder")}
+                />
+                <Input
+                  label={t("owner.settings.phoneLabel")}
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder={t("owner.settings.phonePlaceholder")}
+                  keyboardType="phone-pad"
+                />
+                <Input
+                  label={t("owner.settings.cityLabel")}
+                  value={city}
+                  onChangeText={setCity}
+                  placeholder={t("owner.settings.cityPlaceholder")}
+                />
+                <Button
+                  label={t("common.saveChanges")}
+                  onPress={handleSave}
+                  loading={saving}
+                  fullWidth
+                />
+              </View>
+            </Row>
+            <Row
+              icon={Mail}
+              title={t("owner.settings.emailLabel")}
+              subtitle={session?.user.email ?? undefined}
+              trailing={<Lock size={15} color="#a8a29e" />}
+            />
+            <Row
+              icon={ShieldCheck}
+              title={t("owner.settings.rowSecurity")}
+              subtitle={t("owner.settings.rowSecuritySub")}
+              open={openRow === "security"}
+              onPress={() => toggle("security")}
+            >
+              <View className="gap-3">
+                <Pressable
+                  onPress={handleSignOutAll}
+                  className="flex-row items-center gap-2 rounded-xl border border-border bg-surface-2 px-3 py-3"
+                >
+                  <LogOut size={15} color="#0c0a09" />
+                  <Text className="text-[13.5px] font-medium text-foreground">
+                    {t("owner.settings.signOutAll")}
+                  </Text>
+                </Pressable>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-[13.5px] text-foreground">
+                    {t("owner.settings.twoFactor")}
+                  </Text>
+                  <View className="rounded-full bg-surface-2 px-2 py-0.5">
+                    <Text className="text-[10.5px] font-semibold text-subtle">
+                      {t("owner.settings.comingSoon")}
                     </Text>
                   </View>
                 </View>
-              ) : null}
-            </View>
-          </View>
-        </View>
-
-        {/* Sección: Datos personales */}
-        <SectionLabel text={t("owner.settings.sectionPersonal")} />
-        <View className="px-5">
-          <View
-            className="rounded-[18px] border border-border bg-surface p-4"
-            style={{
-              shadowColor: "#0c0a09",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.04,
-              shadowRadius: 12,
-              elevation: 1,
-            }}
-          >
-            <View className="gap-3.5">
-              <Input
-                label={t("owner.settings.fullNameLabel")}
-                required
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder={t("owner.settings.fullNamePlaceholder")}
-              />
-              <View className="gap-1.5">
-                <Text className="text-[13px] font-medium text-foreground">
-                  {t("owner.settings.emailLabel")}
-                </Text>
-                <View className="flex-row items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-3">
-                  <Mail size={14} color="#78716c" />
-                  <Text className="flex-1 text-[14px] text-muted" numberOfLines={1}>
-                    {session?.user.email}
-                  </Text>
-                </View>
-                <Text className="text-xs text-subtle">
-                  {t("owner.settings.emailCantChange")}
-                </Text>
               </View>
-              <Input
-                label={t("owner.settings.phoneLabel")}
-                value={phone}
-                onChangeText={setPhone}
-                placeholder={t("owner.settings.phonePlaceholder")}
-                keyboardType="phone-pad"
-              />
-              <Input
-                label={t("owner.settings.cityLabel")}
-                value={city}
-                onChangeText={setCity}
-                placeholder={t("owner.settings.cityPlaceholder")}
-              />
-              <Button
-                label={t("common.saveChanges")}
-                onPress={handleSave}
-                loading={saving}
-                fullWidth
-              />
-            </View>
+            </Row>
           </View>
         </View>
 
-        {/* Sección: Preferencias / Idioma */}
-        <SectionLabel text={t("owner.settings.sectionLanguage")} />
-        <LanguageSwitcher />
+        {/* ─── PREFERENCIAS ───────────────────────────────────── */}
+        <SectionLabel text={t("owner.settings.prefsGroup")} />
+        <View className="px-5">
+          <View className="overflow-hidden rounded-[18px] border border-border bg-surface">
+            <Row
+              icon={Languages}
+              title={t("owner.settings.rowLanguage")}
+              subtitle={activeLocaleLabel}
+              open={openRow === "language"}
+              onPress={() => toggle("language")}
+              first
+            >
+              <View className="gap-0.5">
+                {LOCALES.map((l) => {
+                  const active = l.code === locale;
+                  return (
+                    <Pressable
+                      key={l.code}
+                      onPress={() => setLocale(l.code)}
+                      className="flex-row items-center justify-between rounded-lg px-1 py-2.5"
+                    >
+                      <Text
+                        className={`text-[14px] ${
+                          active
+                            ? "font-semibold text-primary"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {l.label}
+                      </Text>
+                      {active && <Check size={16} color="#7c3aed" />}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Row>
+            <Row
+              icon={Bell}
+              title={t("owner.settings.rowNotifications")}
+              subtitle={t("owner.settings.rowNotificationsSub")}
+              open={openRow === "notifications"}
+              onPress={() => toggle("notifications")}
+            >
+              <View className="gap-3">
+                <Text className="text-[12.5px] leading-5 text-muted">
+                  {t("owner.settings.notifHint")}
+                </Text>
+                <Pressable
+                  onPress={() => void Linking.openSettings()}
+                  className="flex-row items-center gap-2 rounded-xl border border-border bg-surface-2 px-3 py-3"
+                >
+                  <Bell size={15} color="#0c0a09" />
+                  <Text className="text-[13.5px] font-medium text-foreground">
+                    {t("owner.settings.openSystemSettings")}
+                  </Text>
+                </Pressable>
+              </View>
+            </Row>
+            <Row
+              icon={Palette}
+              title={t("owner.settings.rowAppearance")}
+              subtitle={t("owner.settings.rowAppearanceSub")}
+              open={openRow === "appearance"}
+              onPress={() => toggle("appearance")}
+            >
+              <Text className="text-[12.5px] leading-5 text-muted">
+                {t("owner.settings.appearanceHint")}
+              </Text>
+            </Row>
+          </View>
+        </View>
 
         {/* Logout + Eliminar */}
         <View className="mt-6 gap-2.5 px-5">
@@ -374,5 +518,73 @@ function SectionLabel({ text }: { text: string }) {
     <Text className="mb-2 mt-6 px-7 text-[11px] font-bold uppercase tracking-wider text-subtle">
       {text}
     </Text>
+  );
+}
+
+function Row({
+  icon: Icon,
+  title,
+  subtitle,
+  trailing,
+  open,
+  onPress,
+  first,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  subtitle?: string;
+  trailing?: React.ReactNode;
+  open?: boolean;
+  onPress?: () => void;
+  first?: boolean;
+  children?: React.ReactNode;
+}) {
+  const expandable = !!children;
+  return (
+    <View className={first ? "" : "border-t border-border/60"}>
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        className="flex-row items-center gap-3 px-3.5 py-3"
+      >
+        <View
+          className="items-center justify-center rounded-xl"
+          style={{
+            width: 38,
+            height: 38,
+            backgroundColor: "rgba(124,58,237,0.08)",
+          }}
+        >
+          <Icon size={17} color="#7c3aed" />
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text
+            className="text-[14.5px] font-semibold text-foreground"
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text className="mt-0.5 text-[12px] text-muted" numberOfLines={1}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+        {trailing ??
+          (expandable ? (
+            <View
+              style={{
+                transform: [{ rotate: open ? "180deg" : "0deg" }],
+              }}
+            >
+              <ChevronDown size={18} color="#a8a29e" />
+            </View>
+          ) : null)}
+      </Pressable>
+      {expandable && open ? (
+        <View className="px-3.5 pb-4 pt-0.5">{children}</View>
+      ) : null}
+    </View>
   );
 }
