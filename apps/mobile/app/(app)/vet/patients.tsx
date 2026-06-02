@@ -1,7 +1,23 @@
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Archive, ChevronRight, MessageCircle, ScanLine, Users } from "lucide-react-native";
+import {
+  Archive,
+  ChevronRight,
+  MessageCircle,
+  ScanLine,
+  Search,
+  Users,
+} from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { PetAvatar } from "../../../src/components/pet-avatar";
 import { Badge } from "../../../src/components/ui/badge";
@@ -17,6 +33,40 @@ export default function VetPatientsScreen() {
 
   const active = patients.filter((p) => !p.archived);
   const archived = patients.filter((p) => p.archived);
+
+  const [query, setQuery] = useState("");
+  const [species, setSpecies] = useState<"all" | "dog" | "cat" | "other">(
+    "all",
+  );
+
+  const counts = useMemo(
+    () => ({
+      all: active.length,
+      dog: active.filter((p) => p.animal_species === "dog").length,
+      cat: active.filter((p) => p.animal_species === "cat").length,
+      other: active.filter(
+        (p) => p.animal_species !== "dog" && p.animal_species !== "cat",
+      ).length,
+    }),
+    [active],
+  );
+
+  const list = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const matchSpecies = (s: string) =>
+      species === "all"
+        ? true
+        : species === "other"
+          ? s !== "dog" && s !== "cat"
+          : s === species;
+    const matchQuery = (p: VetPatient) =>
+      !q ||
+      p.animal_name.toLowerCase().includes(q) ||
+      (p.owner_name?.toLowerCase().includes(q) ?? false);
+    return [...active, ...archived].filter(
+      (p) => matchSpecies(p.animal_species) && matchQuery(p),
+    );
+  }, [active, archived, query, species]);
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={[]}>
@@ -87,27 +137,122 @@ export default function VetPatientsScreen() {
           </View>
         </View>
       ) : (
-        <FlatList
-          data={[...active, ...archived]}
-          keyExtractor={(item) => item.access_id}
-          renderItem={({ item }) => (
-            <PatientRow
-              patient={item}
-              onPress={() => router.push(`/(app)/vet/patients/${item.animal_id}` as never)}
+        <>
+          {/* Buscador */}
+          <View className="px-4 pb-2">
+            <View
+              className="flex-row items-center gap-2 rounded-xl border border-border bg-surface px-3"
+              style={{ height: 44 }}
+            >
+              <Search size={17} color="#a8a29e" />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder={t("vet.patients.searchPlaceholder")}
+                placeholderTextColor="#a8a29e"
+                className="flex-1 text-[14px] text-foreground"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          </View>
+
+          {/* Filtros por especie */}
+          <View className="flex-row gap-2 px-4 pb-2">
+            <FilterPill
+              label={t("vet.patients.filterAll")}
+              count={counts.all}
+              active={species === "all"}
+              onPress={() => setSpecies("all")}
             />
-          )}
-          ItemSeparatorComponent={() => <View className="h-2" />}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={refetch}
-              tintColor="#06b6d4"
+            <FilterPill
+              label={t("vet.patients.filterDogs")}
+              count={counts.dog}
+              active={species === "dog"}
+              onPress={() => setSpecies("dog")}
             />
-          }
-          contentContainerStyle={{ paddingBottom: 120, paddingTop: 4 }}
-        />
+            <FilterPill
+              label={t("vet.patients.filterCats")}
+              count={counts.cat}
+              active={species === "cat"}
+              onPress={() => setSpecies("cat")}
+            />
+            <FilterPill
+              label={t("vet.patients.filterOther")}
+              count={counts.other}
+              active={species === "other"}
+              onPress={() => setSpecies("other")}
+            />
+          </View>
+
+          <FlatList
+            data={list}
+            keyExtractor={(item) => item.access_id}
+            renderItem={({ item }) => (
+              <PatientRow
+                patient={item}
+                onPress={() =>
+                  router.push(`/(app)/vet/patients/${item.animal_id}` as never)
+                }
+              />
+            )}
+            ItemSeparatorComponent={() => <View className="h-2" />}
+            ListEmptyComponent={
+              <View className="items-center px-8 py-16">
+                <Search size={28} color="#d6d3d1" />
+                <Text className="mt-3 text-center text-[13px] text-muted">
+                  {t("vet.patients.noResults")}
+                </Text>
+              </View>
+            }
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={refetch}
+                tintColor="#06b6d4"
+              />
+            }
+            contentContainerStyle={{ paddingBottom: 120, paddingTop: 4 }}
+          />
+        </>
       )}
     </SafeAreaView>
+  );
+}
+
+function FilterPill({
+  label,
+  count,
+  active,
+  onPress,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-full border py-2 ${
+        active ? "border-accent bg-accent" : "border-border bg-surface"
+      }`}
+    >
+      <Text
+        className={`text-[12.5px] font-semibold ${
+          active ? "text-white" : "text-muted"
+        }`}
+      >
+        {label}
+      </Text>
+      <Text
+        className={`text-[11px] font-bold ${
+          active ? "text-white/80" : "text-subtle"
+        }`}
+      >
+        {count}
+      </Text>
+    </Pressable>
   );
 }
 

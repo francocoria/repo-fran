@@ -16,13 +16,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   AlertTriangle,
+  Bug,
   ChevronLeft,
-  ChevronRight,
+  FileText,
   Lock,
   MessageCircle,
   Phone,
   Pill,
+  Plus,
+  Scale,
+  Sparkles,
   Stethoscope,
+  Syringe,
   X,
 } from "lucide-react-native";
 import { Badge } from "../../../../src/components/ui/badge";
@@ -33,9 +38,35 @@ import { useSession } from "../../../../src/lib/session";
 import { useTranslation } from "../../../../src/lib/i18n";
 import { useLocaleFormat } from "../../../../src/lib/i18n/format";
 
+// Diagnósticos frecuentes — chips de auto-completado (paridad con web).
+const COMMON_DIAGNOSES = [
+  "Otitis",
+  "Dermatitis",
+  "Gastroenteritis",
+  "Conjuntivitis",
+  "Pulgas / Garrapatas",
+  "Gingivitis",
+  "Parásitos intestinales",
+  "Cistitis",
+  "Vómitos agudos",
+  "Diarrea aguda",
+  "Control rutinario",
+  "Vacunación de rutina",
+  "Desparasitación",
+  "Obesidad",
+];
+
+interface ConsultTemplate {
+  id: string;
+  name: string;
+  content: Record<string, string>;
+  is_system: boolean;
+}
+
 interface PatientData {
   animal: any;
   owner: { full_name: string; phone: string | null; city: string | null } | null;
+  allergies: { id: string; allergen: string; type: string; severity: string }[];
   severeAllergies: { id: string; allergen: string }[];
   records: {
     id: string;
@@ -46,6 +77,28 @@ interface PatientData {
     is_mine: boolean;
   }[];
   activeMeds: { id: string; name: string; dosage: string; frequency: string }[];
+  vaccines: {
+    id: string;
+    name: string;
+    applied_date: string | null;
+    next_dose_date: string | null;
+  }[];
+  dewormings: {
+    id: string;
+    product: string;
+    type: string;
+    applied_date: string | null;
+    next_date: string | null;
+  }[];
+  weights: { id: string; weight_kg: number; recorded_at: string }[];
+  studies: { id: string; title: string; type: string; study_date: string }[];
+  myNotes: {
+    id: string;
+    visit_date: string;
+    reason: string;
+    private_notes: string | null;
+    public_notes: string | null;
+  }[];
   myVetId: string;
 }
 
@@ -57,6 +110,9 @@ export default function VetPatientView() {
   const [data, setData] = useState<PatientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [newConsultOpen, setNewConsultOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"history" | "health" | "notes">(
+    "history",
+  );
 
   async function loadPatient() {
     if (!id) return;
@@ -72,7 +128,17 @@ export default function VetPatientView() {
       .single();
     if (!vetProfile) return;
 
-    const [animalRes, allergiesRes, recordsRes, medsRes] = await Promise.all([
+    const [
+      animalRes,
+      allergiesRes,
+      recordsRes,
+      medsRes,
+      vaccinesRes,
+      dewormingsRes,
+      weightsRes,
+      studiesRes,
+      myNotesRes,
+    ] = await Promise.all([
       supabase
         .from("animals")
         .select(
@@ -82,9 +148,8 @@ export default function VetPatientView() {
         .single(),
       supabase
         .from("allergies")
-        .select("id, allergen, severity")
-        .eq("animal_id", id)
-        .eq("severity", "severe"),
+        .select("id, allergen, type, severity")
+        .eq("animal_id", id),
       supabase
         .from("medical_records")
         .select("id, visit_date, reason, diagnosis, vet_id")
@@ -96,12 +161,44 @@ export default function VetPatientView() {
         .select("id, name, dosage, frequency, active")
         .eq("animal_id", id)
         .eq("active", true),
+      supabase
+        .from("vaccines")
+        .select("id, name, applied_date, next_dose_date")
+        .eq("animal_id", id)
+        .order("applied_date", { ascending: false }),
+      supabase
+        .from("deworming")
+        .select("id, product, type, applied_date, next_date")
+        .eq("animal_id", id)
+        .order("applied_date", { ascending: false }),
+      supabase
+        .from("weight_entries")
+        .select("id, weight_kg, recorded_at")
+        .eq("animal_id", id)
+        .order("recorded_at", { ascending: false })
+        .limit(12),
+      supabase
+        .from("studies")
+        .select("id, title, type, study_date")
+        .eq("animal_id", id)
+        .order("study_date", { ascending: false }),
+      // Notas: SOLO las de mis propias consultas (no se leakean las privadas
+      // de otros veterinarios — RLS filtra filas, no columnas).
+      supabase
+        .from("medical_records")
+        .select("id, visit_date, reason, private_notes, public_notes")
+        .eq("animal_id", id)
+        .eq("vet_id", vetProfile.id)
+        .order("visit_date", { ascending: false }),
     ]);
+
+    const allAllergies = (allergiesRes.data ?? []) as PatientData["allergies"];
 
     setData({
       animal: animalRes.data,
       owner: animalRes.data?.owner_profile ?? null,
-      severeAllergies: allergiesRes.data ?? [],
+      allergies: allAllergies,
+      severeAllergies: allAllergies.filter((a) => a.severity === "severe"),
       records:
         (recordsRes.data ?? []).map((r) => ({
           ...r,
@@ -113,6 +210,13 @@ export default function VetPatientView() {
         dosage: m.dosage ?? "",
         frequency: m.frequency ?? "",
       })),
+      vaccines: (vaccinesRes.data ?? []) as PatientData["vaccines"],
+      dewormings: (dewormingsRes.data ?? []) as PatientData["dewormings"],
+      weights: (weightsRes.data ?? []) as PatientData["weights"],
+      studies: (studiesRes.data ?? []) as PatientData["studies"],
+      myNotes: ((myNotesRes.data ?? []) as PatientData["myNotes"]).filter(
+        (n) => n.private_notes || n.public_notes,
+      ),
       myVetId: vetProfile.id,
     });
     setLoading(false);
@@ -131,7 +235,19 @@ export default function VetPatientView() {
     );
   }
 
-  const { animal, owner, severeAllergies, records, activeMeds } = data;
+  const {
+    animal,
+    owner,
+    allergies,
+    severeAllergies,
+    records,
+    activeMeds,
+    vaccines,
+    dewormings,
+    weights,
+    studies,
+    myNotes,
+  } = data;
   const ageText = animal.birth_date ? ageLabel(animal.birth_date) : null;
   const cleanPhone = owner?.phone?.replace(/\D/g, "");
 
@@ -228,7 +344,8 @@ export default function VetPatientView() {
                   {t("vet.patientDetail.severeAllergyTitle")}
                 </Text>
                 <Text className="text-[13.5px] font-bold text-white leading-tight">
-                  NO administrar {severeAllergies.map((a) => a.allergen).join(", ")}
+                  {t("vet.patientDetail.doNotAdminister")}{" "}
+                  {severeAllergies.map((a) => a.allergen).join(", ")}
                 </Text>
               </View>
             </View>
@@ -349,7 +466,7 @@ export default function VetPatientView() {
               </View>
               <View className="flex-1 min-w-0">
                 <Text className="text-[10.5px] font-bold uppercase tracking-wider text-accent">
-                  Medicación activa
+                  {t("vet.patientDetail.activeMedsTitle")}
                 </Text>
                 <Text className="text-[13.5px] font-bold text-foreground mt-0.5" numberOfLines={1}>
                   {activeMeds[0].name}
@@ -362,58 +479,230 @@ export default function VetPatientView() {
           </View>
         )}
 
-        {/* Tabs visual element */}
+        {/* Tabs */}
         <View className="mt-4 px-4 flex-row gap-2">
-          <View className="flex-1 bg-accent border border-accent rounded-xl py-2.5 items-center justify-center">
-            <Text className="text-[13px] font-semibold text-white">Historial</Text>
-          </View>
-          <View className="flex-1 bg-surface border border-border rounded-xl py-2.5 items-center justify-center">
-            <Text className="text-[13px] font-semibold text-muted">Salud</Text>
-          </View>
-          <View className="flex-1 bg-surface border border-border rounded-xl py-2.5 items-center justify-center">
-            <Text className="text-[13px] font-semibold text-muted">Notas</Text>
-          </View>
+          <TabButton
+            label={t("vet.patientDetail.tabHistory")}
+            active={activeTab === "history"}
+            onPress={() => setActiveTab("history")}
+          />
+          <TabButton
+            label={t("vet.patientDetail.tabHealth")}
+            active={activeTab === "health"}
+            onPress={() => setActiveTab("health")}
+          />
+          <TabButton
+            label={t("vet.patientDetail.tabNotes")}
+            active={activeTab === "notes"}
+            onPress={() => setActiveTab("notes")}
+          />
         </View>
 
-        {/* Consultations List */}
-        <View className="mt-4 px-3 gap-2">
-          {records.length === 0 ? (
-            <Card>
-              <View className="items-center py-8">
-                <Stethoscope size={32} color="#d6d3d1" />
-                <Text className="mt-3 text-[13px] text-muted text-center px-6">
-                  {t("vet.patientDetail.noConsults")}
-                </Text>
-              </View>
-            </Card>
-          ) : (
-            records.map((r) => (
-              <View
-                key={r.id}
-                className={`rounded-2xl border p-3.5 ${
-                  r.is_mine ? "border-accent/30 bg-accent/5" : "border-border bg-surface"
-                }`}
-              >
-                <View className="flex-row items-center justify-between">
-                  <Text className="font-mono text-[11px] text-subtle font-semibold">
-                    {formatDate(r.visit_date, { short: true })}
+        {/* ─── HISTORIAL ───────────────────────────────────────── */}
+        {activeTab === "history" && (
+          <View className="mt-4 px-3 gap-2">
+            {records.length === 0 ? (
+              <Card>
+                <View className="items-center py-8">
+                  <Stethoscope size={32} color="#d6d3d1" />
+                  <Text className="mt-3 text-[13px] text-muted text-center px-6">
+                    {t("vet.patientDetail.noConsults")}
                   </Text>
-                  {r.is_mine && (
-                    <Badge label={t("vet.patientDetail.badgeMine")} tone="accent" />
+                </View>
+              </Card>
+            ) : (
+              records.map((r) => (
+                <View
+                  key={r.id}
+                  className={`rounded-2xl border p-3.5 ${
+                    r.is_mine
+                      ? "border-accent/30 bg-accent/5"
+                      : "border-border bg-surface"
+                  }`}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text className="font-mono text-[11px] text-subtle font-semibold">
+                      {formatDate(r.visit_date, { short: true })}
+                    </Text>
+                    {r.is_mine && (
+                      <Badge
+                        label={t("vet.patientDetail.badgeMine")}
+                        tone="accent"
+                      />
+                    )}
+                  </View>
+                  <Text className="mt-1.5 text-[14px] font-bold text-foreground">
+                    {r.reason}
+                  </Text>
+                  {r.diagnosis && (
+                    <Text className="mt-1 text-[12.5px] text-muted leading-relaxed">
+                      {r.diagnosis}
+                    </Text>
                   )}
                 </View>
-                <Text className="mt-1.5 text-[14px] font-bold text-foreground">
-                  {r.reason}
-                </Text>
-                {r.diagnosis && (
-                  <Text className="mt-1 text-[12.5px] text-muted leading-relaxed">
-                    {r.diagnosis}
+              ))
+            )}
+          </View>
+        )}
+
+        {/* ─── SALUD ───────────────────────────────────────────── */}
+        {activeTab === "health" && (
+          <View className="mt-4 px-3 gap-3">
+            <HealthSection
+              icon={Syringe}
+              title={t("animalDetail.sectionVaccines")}
+              empty={t("animalDetail.emptyVaccines")}
+            >
+              {vaccines.length > 0 &&
+                vaccines.map((v) => (
+                  <HealthRow
+                    key={v.id}
+                    title={v.name}
+                    sub={[
+                      v.applied_date
+                        ? formatDate(v.applied_date, { short: true })
+                        : null,
+                      v.next_dose_date
+                        ? t("animalDetail.vaccineNext", {
+                            date: formatDate(v.next_dose_date, { short: true }),
+                          })
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
+                ))}
+            </HealthSection>
+
+            <HealthSection
+              icon={Bug}
+              title={t("animalDetail.sectionDewormings")}
+              empty={t("animalDetail.emptyDewormings")}
+            >
+              {dewormings.length > 0 &&
+                dewormings.map((d) => (
+                  <HealthRow
+                    key={d.id}
+                    title={d.product}
+                    sub={[
+                      t(`animalDetail.dewormingType.${d.type}`),
+                      d.applied_date
+                        ? formatDate(d.applied_date, { short: true })
+                        : null,
+                      d.next_date
+                        ? t("animalDetail.dewormingNext", {
+                            date: formatDate(d.next_date, { short: true }),
+                          })
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
+                ))}
+            </HealthSection>
+
+            <HealthSection
+              icon={Scale}
+              title={t("animalDetail.sectionWeight")}
+              empty={t("animalDetail.emptyWeight")}
+            >
+              {weights.length > 0 &&
+                weights.map((w) => (
+                  <HealthRow
+                    key={w.id}
+                    title={`${Number(w.weight_kg).toFixed(1)} kg`}
+                    sub={formatDate(w.recorded_at, { short: true })}
+                  />
+                ))}
+            </HealthSection>
+
+            <HealthSection
+              icon={AlertTriangle}
+              title={t("animalDetail.sectionAllergies")}
+              empty={t("animalDetail.emptyAllergies")}
+            >
+              {allergies.length > 0 &&
+                allergies.map((a) => (
+                  <HealthRow
+                    key={a.id}
+                    title={a.allergen}
+                    sub={`${t(`animalDetail.allergyType.${a.type}`)} · ${t(
+                      `animalDetail.allergySeverity.${a.severity}`,
+                    )}`}
+                    danger={a.severity === "severe"}
+                  />
+                ))}
+            </HealthSection>
+
+            <HealthSection
+              icon={FileText}
+              title={t("animalDetail.sectionStudies")}
+              empty={t("animalDetail.emptyStudies")}
+            >
+              {studies.length > 0 &&
+                studies.map((s) => (
+                  <HealthRow
+                    key={s.id}
+                    title={s.title}
+                    sub={`${t(`animalDetail.studyType.${s.type}`)} · ${formatDate(
+                      s.study_date,
+                      { short: true },
+                    )}`}
+                  />
+                ))}
+            </HealthSection>
+          </View>
+        )}
+
+        {/* ─── NOTAS (solo mías) ───────────────────────────────── */}
+        {activeTab === "notes" && (
+          <View className="mt-4 px-3 gap-2">
+            {myNotes.length === 0 ? (
+              <Card>
+                <View className="items-center py-8">
+                  <Lock size={30} color="#d6d3d1" />
+                  <Text className="mt-3 text-[13px] text-muted text-center px-6">
+                    {t("vet.patientDetail.noNotes")}
                   </Text>
-                )}
-              </View>
-            ))
-          )}
-        </View>
+                </View>
+              </Card>
+            ) : (
+              myNotes.map((n) => (
+                <View
+                  key={n.id}
+                  className="rounded-2xl border border-border bg-surface p-3.5"
+                >
+                  <Text className="font-mono text-[11px] font-semibold text-subtle">
+                    {formatDate(n.visit_date, { short: true })} · {n.reason}
+                  </Text>
+                  {n.private_notes ? (
+                    <View className="mt-2">
+                      <View className="flex-row items-center gap-1">
+                        <Lock size={11} color="#78716c" />
+                        <Text className="text-[10px] font-bold uppercase tracking-wider text-subtle">
+                          {t("vet.patientDetail.privateNotesLabel")}
+                        </Text>
+                      </View>
+                      <Text className="mt-0.5 text-[13px] leading-relaxed text-foreground">
+                        {n.private_notes}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {n.public_notes ? (
+                    <View className="mt-2">
+                      <Text className="text-[10px] font-bold uppercase tracking-wider text-accent">
+                        {t("vet.patientDetail.publicNotesLabel")}
+                      </Text>
+                      <Text className="mt-0.5 text-[13px] leading-relaxed text-foreground">
+                        {n.public_notes}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ))
+            )}
+          </View>
+        )}
 
         <View className="mt-6 mx-3">
           <Button
@@ -431,6 +720,8 @@ export default function VetPatientView() {
         onClose={() => setNewConsultOpen(false)}
         animalId={animal.id}
         animalName={animal.name}
+        severeAllergies={severeAllergies}
+        activeMeds={activeMeds}
         onCreated={() => {
           setNewConsultOpen(false);
           // Refrescamos contadores
@@ -448,6 +739,8 @@ interface NewConsultModalProps {
   onClose: () => void;
   animalId: string;
   animalName: string;
+  severeAllergies: { allergen: string }[];
+  activeMeds: { name: string; dosage: string }[];
   onCreated: () => void;
 }
 
@@ -456,6 +749,8 @@ function NewConsultModal({
   onClose,
   animalId,
   animalName,
+  severeAllergies,
+  activeMeds,
   onCreated,
 }: NewConsultModalProps) {
   const { t } = useTranslation();
@@ -468,6 +763,43 @@ function NewConsultModal({
   const [publicNotes, setPublicNotes] = useState("");
   const [privateNotes, setPrivateNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [templates, setTemplates] = useState<ConsultTemplate[]>([]);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+
+  // Cargar plantillas (sistema + propias) — RLS filtra el acceso.
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("consult_templates")
+        .select("id, name, content, is_system")
+        .order("is_system", { ascending: false })
+        .order("name", { ascending: true });
+      if (!cancelled && data) {
+        setTemplates(data as ConsultTemplate[]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible]);
+
+  function applyTemplate(tpl: ConsultTemplate) {
+    setActiveTemplateId(tpl.id);
+    const c = tpl.content ?? {};
+    if (typeof c.examination === "string") setExamination(c.examination);
+    if (typeof c.diagnosis === "string") setDiagnosis(c.diagnosis);
+    if (typeof c.treatment === "string") setTreatment(c.treatment);
+    if (typeof c.next_steps === "string") setNextSteps(c.next_steps);
+  }
+
+  function appendDiagnosis(dx: string) {
+    setDiagnosis((prev) => {
+      if (prev.toLowerCase().includes(dx.toLowerCase())) return prev;
+      return prev.trim() ? `${prev.trim()}\n· ${dx}` : `· ${dx}`;
+    });
+  }
 
   function reset() {
     setReason("");
@@ -477,6 +809,7 @@ function NewConsultModal({
     setNextSteps("");
     setPublicNotes("");
     setPrivateNotes("");
+    setActiveTemplateId(null);
   }
 
   async function handleSubmit() {
@@ -585,14 +918,87 @@ function NewConsultModal({
           contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Banner de seguridad — alergias graves */}
+          {severeAllergies.length > 0 && (
+            <View className="mb-3 flex-row items-center gap-2.5 rounded-xl bg-rose px-3.5 py-3">
+              <AlertTriangle size={17} color="#fff" strokeWidth={2.4} />
+              <View className="flex-1">
+                <Text className="text-[10px] font-extrabold uppercase tracking-wider text-white/90">
+                  {t("vet.patientDetail.doNotAdminister")}
+                </Text>
+                <Text className="text-[13px] font-bold leading-tight text-white">
+                  {severeAllergies.map((a) => a.allergen).join(", ")}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Banner de seguridad — medicación activa */}
+          {activeMeds.length > 0 && (
+            <View className="mb-3 flex-row items-center gap-2.5 rounded-xl border border-accent/20 bg-accent/5 px-3.5 py-3">
+              <View
+                className="items-center justify-center rounded-lg bg-accent"
+                style={{ width: 30, height: 30 }}
+              >
+                <Pill size={15} color="#fff" strokeWidth={2.4} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[10px] font-bold uppercase tracking-wider text-accent">
+                  {t("vet.patientDetail.activeMedsTitle")}
+                </Text>
+                <Text className="text-[13px] font-semibold text-foreground" numberOfLines={2}>
+                  {activeMeds
+                    .map((m) => (m.dosage ? `${m.name} (${m.dosage})` : m.name))
+                    .join(", ")}
+                </Text>
+              </View>
+            </View>
+          )}
+
           <Text className="mb-2 text-[12px] uppercase tracking-wider text-subtle">
             {t("vet.patientDetail.patient")}
           </Text>
-          <View className="mb-5 rounded-lg border border-border bg-surface-2/40 px-3 py-2">
+          <View className="mb-4 rounded-lg border border-border bg-surface-2/40 px-3 py-2">
             <Text className="text-[14px] font-medium text-foreground">
               {animalName}
             </Text>
           </View>
+
+          {/* Plantillas rápidas */}
+          {templates.length > 0 && (
+            <View className="mb-5">
+              <View className="mb-2 flex-row items-center gap-1.5">
+                <Sparkles size={13} color="#06b6d4" />
+                <Text className="text-[11px] uppercase tracking-wider text-subtle">
+                  {t("vet.patientDetail.templatesLabel")}
+                </Text>
+              </View>
+              <View className="flex-row flex-wrap gap-2">
+                {templates.map((tpl) => {
+                  const active = activeTemplateId === tpl.id;
+                  return (
+                    <Pressable
+                      key={tpl.id}
+                      onPress={() => applyTemplate(tpl)}
+                      className={`rounded-full border px-3 py-1.5 ${
+                        active
+                          ? "border-accent bg-accent/10"
+                          : "border-border bg-surface"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[12px] font-medium ${
+                          active ? "text-accent" : "text-muted"
+                        }`}
+                      >
+                        {tpl.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
 
           <FieldLabel required>
             {t("vet.patientDetail.reasonLabel")}
@@ -602,6 +1008,7 @@ function NewConsultModal({
             onChangeText={setReason}
             placeholder={t("vet.patientDetail.reasonPlaceholder")}
             multiline={false}
+            maxLength={200}
           />
 
           <FieldLabel>{t("vet.patientDetail.examinationLabel")}</FieldLabel>
@@ -610,6 +1017,7 @@ function NewConsultModal({
             onChangeText={setExamination}
             placeholder={t("vet.patientDetail.examinationPlaceholder")}
             multiline
+            maxLength={2000}
           />
 
           <FieldLabel>{t("vet.patientDetail.diagnosisLabel")}</FieldLabel>
@@ -618,7 +1026,25 @@ function NewConsultModal({
             onChangeText={setDiagnosis}
             placeholder={t("vet.patientDetail.diagnosisPlaceholder")}
             multiline
+            maxLength={2000}
           />
+          <View className="-mt-2 mb-4">
+            <Text className="mb-1.5 text-[11px] font-medium text-subtle">
+              {t("vet.patientDetail.commonDiagnoses")}
+            </Text>
+            <View className="flex-row flex-wrap gap-1.5">
+              {COMMON_DIAGNOSES.map((dx) => (
+                <Pressable
+                  key={dx}
+                  onPress={() => appendDiagnosis(dx)}
+                  className="flex-row items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1"
+                >
+                  <Plus size={11} color="#78716c" />
+                  <Text className="text-[11.5px] font-medium text-muted">{dx}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
           <FieldLabel>{t("vet.patientDetail.treatmentLabel")}</FieldLabel>
           <ConsultInput
@@ -626,6 +1052,7 @@ function NewConsultModal({
             onChangeText={setTreatment}
             placeholder={t("vet.patientDetail.treatmentPlaceholder")}
             multiline
+            maxLength={2000}
           />
 
           <FieldLabel>{t("vet.patientDetail.nextStepsLabel")}</FieldLabel>
@@ -634,6 +1061,7 @@ function NewConsultModal({
             onChangeText={setNextSteps}
             placeholder={t("vet.patientDetail.nextStepsPlaceholder")}
             multiline
+            maxLength={1000}
           />
 
           <FieldLabel>{t("vet.patientDetail.publicNotesLabel")}</FieldLabel>
@@ -642,6 +1070,7 @@ function NewConsultModal({
             onChangeText={setPublicNotes}
             placeholder={t("vet.patientDetail.publicNotesPlaceholder")}
             multiline
+            maxLength={2000}
           />
           <Text className="-mt-2 mb-3 text-[11px] text-subtle">
             {t("vet.patientDetail.publicNotesHint")}
@@ -658,6 +1087,7 @@ function NewConsultModal({
             onChangeText={setPrivateNotes}
             placeholder={t("vet.patientDetail.privateNotesPlaceholder")}
             multiline
+            maxLength={2000}
           />
           <Text className="-mt-2 text-[11px] text-subtle">
             {t("vet.patientDetail.privateNotesHint")}
@@ -665,6 +1095,86 @@ function NewConsultModal({
         </ScrollView>
       </SafeAreaView>
     </Modal>
+  );
+}
+
+function TabButton({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`flex-1 items-center justify-center rounded-xl border py-2.5 ${
+        active ? "border-accent bg-accent" : "border-border bg-surface"
+      }`}
+    >
+      <Text
+        className={`text-[13px] font-semibold ${
+          active ? "text-white" : "text-muted"
+        }`}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function HealthSection({
+  icon: Icon,
+  title,
+  empty,
+  children,
+}: {
+  icon: typeof Syringe;
+  title: string;
+  empty: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View className="rounded-2xl border border-border bg-surface p-3.5">
+      <View className="mb-1.5 flex-row items-center gap-2">
+        <Icon size={15} color="#06b6d4" />
+        <Text className="text-[11px] font-bold uppercase tracking-wider text-subtle">
+          {title}
+        </Text>
+      </View>
+      {children ? (
+        <View>{children}</View>
+      ) : (
+        <Text className="text-[12.5px] text-muted">{empty}</Text>
+      )}
+    </View>
+  );
+}
+
+function HealthRow({
+  title,
+  sub,
+  danger,
+}: {
+  title: string;
+  sub?: string;
+  danger?: boolean;
+}) {
+  return (
+    <View className="border-b border-border/40 py-2 last:border-0 last:pb-0">
+      <Text
+        className={`text-[13.5px] font-medium ${
+          danger ? "text-rose" : "text-foreground"
+        }`}
+      >
+        {title}
+      </Text>
+      {sub ? (
+        <Text className="mt-0.5 text-[11.5px] text-muted">{sub}</Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -688,11 +1198,13 @@ function ConsultInput({
   onChangeText,
   placeholder,
   multiline,
+  maxLength,
 }: {
   value: string;
   onChangeText: (s: string) => void;
   placeholder: string;
   multiline: boolean;
+  maxLength?: number;
 }) {
   return (
     <TextInput
@@ -701,6 +1213,7 @@ function ConsultInput({
       placeholder={placeholder}
       placeholderTextColor="#a8a29e"
       multiline={multiline}
+      maxLength={maxLength}
       numberOfLines={multiline ? 3 : 1}
       style={{
         borderWidth: 1,

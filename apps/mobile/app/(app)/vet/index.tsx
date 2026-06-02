@@ -237,33 +237,41 @@ export default function VetHomeScreen() {
       <View className="mt-4 px-3 gap-2.5">
         <View className="flex-row gap-2.5">
           <VetStatTile
-            label="Hoy"
+            label={t("vet.home.statToday")}
             value={String(todayConsultsCount)}
             icon={Calendar}
-            subtitle="consultas hoy"
+            subtitle={t("vet.home.statTodaySub")}
             tone="primary"
           />
           <VetStatTile
-            label="Pacientes"
+            label={t("vet.home.statPatients")}
             value={isPremium ? `${activeCount}` : `${activeCount}/${FREE_CAP}`}
             icon={Users}
-            subtitle="activos"
+            subtitle={t("vet.home.statPatientsSub")}
             tone="accent"
           />
         </View>
         <View className="flex-row gap-2.5">
           <VetStatTile
-            label="Esta semana"
+            label={t("vet.home.statWeek")}
             value={String(weekConsultsCount)}
             icon={TrendingUp}
-            subtitle="consultas"
+            subtitle={t("vet.home.statWeekSub")}
             tone="emerald"
           />
           <VetStatTile
-            label="Plan"
-            value={subscription?.plan === "premium" ? "Premium" : subscription?.plan === "trial" ? "Trial" : "Gratuito"}
+            label={t("vet.home.statPlan")}
+            value={
+              subscription?.plan === "premium"
+                ? t("vet.home.planValuePremium")
+                : subscription?.plan === "trial"
+                  ? t("vet.home.planValueTrial")
+                  : t("vet.home.planValueFree")
+            }
             icon={Crown}
-            subtitle={expired ? "Vencido" : "Activo"}
+            subtitle={
+              expired ? t("vet.home.planExpired") : t("vet.home.planActive")
+            }
             tone="amber"
           />
         </View>
@@ -272,11 +280,11 @@ export default function VetHomeScreen() {
       {/* Actions / Navigation list */}
       <View className="mt-5 px-5 flex-row items-center justify-between">
         <Text className="text-[11px] font-semibold uppercase tracking-wider text-subtle">
-          Actividad reciente
+          {t("vet.home.recentActivity")}
         </Text>
         <Pressable onPress={() => router.push("/(app)/vet/patients" as never)}>
           <Text className="text-[12px] font-semibold text-accent">
-            Ver todas →
+            {t("vet.home.seeAll")} →
           </Text>
         </Pressable>
       </View>
@@ -287,7 +295,7 @@ export default function VetHomeScreen() {
           <Card className="items-center py-8">
             <Users size={32} color="#d6d3d1" />
             <Text className="mt-3 text-[13px] text-muted text-center px-6">
-              Sin consultas registradas recientemente. Utilizá Escanear QR para iniciar una consulta.
+              {t("vet.home.emptyActivity")}
             </Text>
           </Card>
         ) : (
