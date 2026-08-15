@@ -1,6 +1,23 @@
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 
 /**
+ * Lee una variable de entorno limpiando los escapes LITERALES que quedan
+ * pegados al copiar valores al panel de Vercel: una barra invertida seguida
+ * de "r" o de "n", no un salto de línea real.
+ *
+ * No es cosmético. MERCADOPAGO_MODE tenía uno de esos al final, así que no
+ * era exactamente "production": isProduction() daba false y la app se creía
+ * en sandbox. En sandbox sin secret el webhook procesa SIN validar la firma,
+ * y el token de acceso tampoco servía por arrastrar los mismos caracteres.
+ */
+function env(nombre: string): string | undefined {
+  const v = process.env[nombre];
+  if (v === undefined) return undefined;
+  // Ojo: son los escapes LITERALES (barra invertida + r), no saltos reales.
+  return v.replace(/\\r|\\n/g, "").trim();
+}
+
+/**
  * El modo lo controla SOLO la variable `MERCADOPAGO_MODE`.
  * Si no es exactamente "production", estamos en sandbox.
  *
@@ -9,7 +26,7 @@ import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
  * propósito para salir en vivo.
  */
 function isProduction(): boolean {
-  return process.env.MERCADOPAGO_MODE === "production";
+  return env("MERCADOPAGO_MODE") === "production";
 }
 
 /**
@@ -18,9 +35,11 @@ function isProduction(): boolean {
  * Sandbox    → MERCADOPAGO_ACCESS_TOKEN_TEST.
  */
 function getAccessToken(): string {
+  // Se conserva la separación estricta por modo: en sandbox NUNCA se cae al
+  // token de producción. Lo único que cambia es que el valor se lee saneado.
   const token = isProduction()
-    ? process.env.MERCADOPAGO_ACCESS_TOKEN
-    : process.env.MERCADOPAGO_ACCESS_TOKEN_TEST;
+    ? env("MERCADOPAGO_ACCESS_TOKEN")
+    : env("MERCADOPAGO_ACCESS_TOKEN_TEST");
   if (!token) {
     throw new Error(
       isProduction()
@@ -34,9 +53,8 @@ function getAccessToken(): string {
 /** Secret del webhook según el modo. */
 export function getMpWebhookSecret(): string | undefined {
   return isProduction()
-    ? process.env.MERCADOPAGO_WEBHOOK_SECRET
-    : (process.env.MERCADOPAGO_WEBHOOK_SECRET_TEST ??
-        process.env.MERCADOPAGO_WEBHOOK_SECRET);
+    ? env("MERCADOPAGO_WEBHOOK_SECRET")
+    : (env("MERCADOPAGO_WEBHOOK_SECRET_TEST") ?? env("MERCADOPAGO_WEBHOOK_SECRET"));
 }
 
 export function getMpConfig(): MercadoPagoConfig {
